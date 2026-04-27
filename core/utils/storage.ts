@@ -10,6 +10,14 @@ export interface KVStore {
   clearAll(): void
 }
 
+// Safe localStorage accessor — returns null in SSR/Node where localStorage
+// may exist but not implement the Storage interface (Expo SSR stub)
+function ls(): Storage | null {
+  if (typeof localStorage === 'undefined') return null
+  if (typeof localStorage.getItem !== 'function') return null
+  return localStorage
+}
+
 // Web fallback — uses localStorage with a namespaced prefix
 class WebStorage implements KVStore {
   private prefix: string
@@ -17,38 +25,40 @@ class WebStorage implements KVStore {
   private k(key: string) { return this.prefix + key }
 
   getString(key: string): string | undefined {
-    const v = localStorage.getItem(this.k(key))
+    const v = ls()?.getItem(this.k(key)) ?? null
     return v === null ? undefined : v
   }
 
   getBoolean(key: string): boolean | undefined {
-    const v = localStorage.getItem(this.k(key))
+    const v = ls()?.getItem(this.k(key)) ?? null
     if (v === null) return undefined
     return v === 'true'
   }
 
   getNumber(key: string): number | undefined {
-    const v = localStorage.getItem(this.k(key))
+    const v = ls()?.getItem(this.k(key)) ?? null
     if (v === null) return undefined
     const n = parseFloat(v)
     return isNaN(n) ? undefined : n
   }
 
   set(key: string, value: string | number | boolean) {
-    localStorage.setItem(this.k(key), String(value))
+    ls()?.setItem(this.k(key), String(value))
   }
 
   delete(key: string) {
-    localStorage.removeItem(this.k(key))
+    ls()?.removeItem(this.k(key))
   }
 
   clearAll() {
+    const store = ls()
+    if (!store) return
     const toRemove: string[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
+    for (let i = 0; i < store.length; i++) {
+      const k = store.key(i)
       if (k?.startsWith(this.prefix)) toRemove.push(k)
     }
-    toRemove.forEach(k => localStorage.removeItem(k))
+    toRemove.forEach(k => store.removeItem(k))
   }
 }
 
