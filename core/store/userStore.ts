@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import { MMKV } from 'react-native-mmkv'
+import { createStorage } from '@core/utils/storage'
 import { dbGetUserProfile, dbInsertUserProfile, dbUpdateUserProfile } from '@core/db/userQueries'
 import type { UserProfile } from '@core/types'
 
 export type Units = 'metric' | 'imperial'
 
-const mmkv = new MMKV({ id: 'user-store' })
+const mmkv = createStorage('user-store')
 
 interface UserState {
   profile: UserProfile | null
