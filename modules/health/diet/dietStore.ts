@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { MMKV } from 'react-native-mmkv'
+import { createStorage } from '@core/utils/storage'
 import * as Crypto from 'expo-crypto'
 import {
   dbSearchFoods, dbInsertMeal, dbDeleteMeal,
@@ -23,7 +23,7 @@ export interface MealWithEntries {
   totalFatG: number
 }
 
-const mmkv = new MMKV({ id: 'diet-store' })
+const mmkv = createStorage('diet-store')
 const DEFAULT_WATER_GOAL_ML = 2500
 
 function todayStr(): string {

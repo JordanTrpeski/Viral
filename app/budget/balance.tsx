@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { MMKV } from 'react-native-mmkv'
+import { createStorage } from '@core/utils/storage'
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
@@ -14,7 +14,7 @@ import {
   dbGetMonthlyNetHistory,
 } from '@core/db/budgetQueries'
 
-const mmkv = new MMKV({ id: 'budget-balance' })
+const mmkv = createStorage('budget-balance')
 const KEY_GOAL_AMOUNT = 'savings_goal_amount'
 const KEY_GOAL_TYPE   = 'savings_goal_type'   // 'fixed' | 'percent'
 

@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
 import Constants from 'expo-constants'
-import { MMKV } from 'react-native-mmkv'
+import { createStorage } from '@core/utils/storage'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button, BottomSheet } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
@@ -23,8 +23,8 @@ import type { OnboardingGoal } from '@core/store/onboardingStore'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
-const mmkv = new MMKV({ id: 'user-store' })
-const notifStorage = new MMKV({ id: 'notifications' })
+const mmkv = createStorage('user-store')
+const notifStorage = createStorage('notifications')
 
 // ─── Goal config ────────────────────────────────────────────────────────────
 
