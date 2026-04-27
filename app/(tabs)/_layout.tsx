@@ -49,6 +49,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabIcon name="checkmark-circle" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="budget"
+        options={{
+          title: 'Budget',
+          tabBarIcon: ({ color }) => <TabIcon name="wallet" color={color} />,
+        }}
+      />
     </Tabs>
   )
 }
