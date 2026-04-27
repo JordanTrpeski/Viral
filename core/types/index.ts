@@ -5,6 +5,7 @@ export interface UserProfile {
   weightKg: number
   heightCm: number
   goals: string[]
+  calorieGoalKcal?: number
   createdAt: string
   updatedAt: string
 }

@@ -1,3 +1,11 @@
+// Body Weight
+export interface WeightEntry {
+  id: string
+  date: string        // YYYY-MM-DD
+  weightKg: number
+  createdAt: string
+}
+
 // Workout
 export type MuscleGroup = 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'core' | 'cardio'
 export type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'bodyweight' | 'cable' | 'other'
@@ -64,6 +72,21 @@ export interface MealEntry {
   mealId: string
   foodId: string
   amountGrams: number
+  createdAt: string
+}
+
+// Templates
+export interface WorkoutTemplate {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export interface TemplateExercise {
+  id: string
+  templateId: string
+  exerciseId: string
+  orderIndex: number
   createdAt: string
 }
 
