@@ -9,4 +9,7 @@ config.resolver.alias = {
   '@modules': path.resolve(__dirname, 'modules'),
 }
 
+// Allow .wasm files to be served as static assets on web
+config.resolver.assetExts = [...(config.resolver.assetExts ?? []), 'wasm']
+
 module.exports = withNativeWind(config, { input: './global.css' })
