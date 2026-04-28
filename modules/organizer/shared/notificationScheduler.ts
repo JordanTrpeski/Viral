@@ -1,3 +1,4 @@
+import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import { dbGetPeople, dbGetTiers, dbGetTierRules, dbGetPersonRules } from '@core/db/organizerQueries'
 import {
@@ -9,6 +10,7 @@ const ID_PREFIX = 'organizer_birthday_'
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export async function runBirthdayScheduler(): Promise<void> {
+  if (Platform.OS === 'web') return
   const { status } = await Notifications.getPermissionsAsync()
   if (status !== 'granted') return
 
@@ -98,6 +100,7 @@ export async function runBirthdayScheduler(): Promise<void> {
 }
 
 export async function sendTestBirthdayNotification(): Promise<void> {
+  if (Platform.OS === 'web') return
   const { status } = await Notifications.getPermissionsAsync()
   if (status !== 'granted') return
 
@@ -112,6 +115,7 @@ export async function sendTestBirthdayNotification(): Promise<void> {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false
   const { status: existing } = await Notifications.getPermissionsAsync()
   if (existing === 'granted') return true
   const { status } = await Notifications.requestPermissionsAsync()

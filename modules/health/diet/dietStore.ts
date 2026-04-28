@@ -191,8 +191,8 @@ export const useDietStore = create<DietState>((set, get) => ({
 
   addWater: (ml) => {
     const date = todayStr()
-    const newTotal = dbAddWater(date, ml)
-    set({ waterMl: newTotal })
+    dbAddWater(date, ml)
+    set({ waterMl: Math.max(0, get().waterMl + ml) })
   },
 
   setWaterGoal: (ml) => {

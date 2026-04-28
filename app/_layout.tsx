@@ -1,5 +1,6 @@
 import '../global.css'
 import { useEffect, useState } from 'react'
+import { Platform, TextInput } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
@@ -14,6 +15,14 @@ import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
 import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
 
 SplashScreen.preventAutoHideAsync()
+
+// @gorhom/bottom-sheet calls TextInput.State.currentlyFocusedInput which doesn't exist on web
+if (Platform.OS === 'web') {
+  const State = (TextInput as unknown as { State?: Record<string, unknown> }).State
+  if (State && !State.currentlyFocusedInput) {
+    State.currentlyFocusedInput = () => null
+  }
+}
 
 export { ErrorBoundary } from 'expo-router'
 
