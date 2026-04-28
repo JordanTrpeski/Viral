@@ -1,4 +1,5 @@
 import type { WorkoutSet } from '@modules/health/shared/types'
+import { localDateStr } from '@core/utils/units'
 
 export function calcTotalVolume(sets: Pick<WorkoutSet, 'weightKg' | 'reps'>[]): number {
   return sets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0)
@@ -22,5 +23,5 @@ export function formatVolume(kg: number): string {
 }
 
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }

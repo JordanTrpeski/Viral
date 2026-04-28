@@ -12,6 +12,7 @@ import {
   dbGetMonthlyIncomeTotals,
   IncomeEntryWithCategory,
 } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Range helpers ─────────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ function fromDate(range: Range): string {
   if (range === '30d') {
     const d = new Date(now)
     d.setDate(d.getDate() - 30)
-    return d.toISOString().slice(0, 10)
+    return localDateStr(d)
   }
   if (range === 'year') {
     return `${now.getFullYear()}-01-01`

@@ -7,6 +7,7 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
 import { dbGetDailyTotals } from '@core/db/budgetQueries'
 import type { RecurringIncomeSummary } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Month header ───────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ export default function BudgetScreen() {
     loadCategories, loadMonth, loadPendingRecurring,
   } = useBudgetStore()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
 
   // Week totals for "This Week" card
   const [weekIncome, setWeekIncome]     = useState(0)
@@ -125,7 +126,7 @@ export default function BudgetScreen() {
     const diff = day === 0 ? -6 : 1 - day
     const start = new Date(now)
     start.setDate(now.getDate() + diff)
-    const startStr = start.toISOString().slice(0, 10)
+    const startStr = localDateStr(start)
     const daily = dbGetDailyTotals(startStr, today)
     setWeekIncome(daily.reduce((s, d) => s + d.income, 0))
     setWeekSpending(daily.reduce((s, d) => s + d.spending, 0))

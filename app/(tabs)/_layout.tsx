@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { View, Text } from 'react-native'
 import { colors } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { localDateStr } from '@core/utils/units'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -12,7 +13,7 @@ function TabIcon({ name, color }: { name: IoniconsName; color: string }) {
 
 function OrganizerTabIcon({ color }: { color: string }) {
   const reminders = useOrganizerStore((s) => s.reminders)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   const overdueCount = reminders.filter((r) => !r.isCompleted && r.dueDate < today).length
   return (
     <View>

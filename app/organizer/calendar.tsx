@@ -8,6 +8,7 @@ import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bot
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import type { OrganizerEvent, OrganizerPerson } from '@core/types'
+import { localDateStr } from '@core/utils/units'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ const MONTH_NAMES = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function todayStr() { return new Date().toISOString().slice(0, 10) }
+function todayStr() { return localDateStr() }
 
 function dateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`

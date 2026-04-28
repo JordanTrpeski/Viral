@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto'
 import { db } from './database'
+import { localDateStr } from '@core/utils/units'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -483,7 +484,7 @@ export function dbGetDailyTotals(startDate: string, endDate: string): DailyTotal
   const start = new Date(startDate + 'T12:00:00')
   const end   = new Date(endDate + 'T12:00:00')
   for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const date = d.toISOString().slice(0, 10)
+    const date = localDateStr(d)
     const income   = incomeMap[date]  ?? 0
     const spending = spendMap[date]   ?? 0
     result.push({ date, income, spending, net: income - spending })

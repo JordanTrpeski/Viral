@@ -14,6 +14,7 @@ import {
   dbGetMonthlyExpenseTotals,
   ExpenseEntryWithCategory,
 } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Month nav helpers ─────────────────────────────────────────────────────────
 
@@ -194,7 +195,7 @@ export default function MonthlyScreen() {
     loadMonth, loadCategories,
   } = useBudgetStore()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   const nowYear  = parseInt(today.slice(0, 4), 10)
   const nowMonth = parseInt(today.slice(5, 7), 10)
 

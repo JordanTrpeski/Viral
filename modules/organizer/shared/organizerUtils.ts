@@ -1,4 +1,5 @@
 import type { OrganizerPerson } from '@core/types'
+import { localDateStr } from '@core/utils/units'
 
 export function daysUntilBirthday(day: number, month: number, from = new Date()): number {
   const thisYear = from.getFullYear()
@@ -18,7 +19,7 @@ export function nextBirthdayDate(day: number, month: number, from = new Date()):
   const fromDay = new Date(from)
   fromDay.setHours(0, 0, 0, 0)
   if (bday < fromDay) bday.setFullYear(thisYear + 1)
-  return bday.toISOString().slice(0, 10)
+  return localDateStr(bday)
 }
 
 export function ageTheyAreTurning(birthdayYear: number, day: number, month: number, from = new Date()): number {

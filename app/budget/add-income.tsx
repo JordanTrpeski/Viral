@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { localDateStr } from '@core/utils/units'
 
 type RecurrencePeriod = 'daily' | 'weekly' | 'monthly'
 
@@ -14,10 +15,10 @@ function DatePicker({ value, onChange }: { value: string; onChange: (d: string) 
   function shift(days: number) {
     const d = new Date(value + 'T12:00:00')
     d.setDate(d.getDate() + days)
-    const next = d.toISOString().slice(0, 10)
-    if (next <= new Date().toISOString().slice(0, 10)) onChange(next)
+    const next = localDateStr(d)
+    if (next <= localDateStr()) onChange(next)
   }
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   const label = value === today ? 'Today' : value.slice(5).replace('-', '/')
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -85,7 +86,7 @@ export default function AddIncomeScreen() {
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>()
   const { incomeCategories, addIncome } = useBudgetStore()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   const [sourceName, setSourceName] = useState('')
   const [amountText, setAmountText] = useState('')
   const [date, setDate] = useState(dateParam ?? today)

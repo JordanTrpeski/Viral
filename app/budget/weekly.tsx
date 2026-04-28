@@ -11,6 +11,7 @@ import {
   DailyTotal,
   WeeklyCategoryTotal,
 } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Week helpers ───────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function addDays(date: Date, n: number): Date {
   return d
 }
 
-function toISO(d: Date): string { return d.toISOString().slice(0, 10) }
+function toISO(d: Date): string { return localDateStr(d) }
 
 function weekLabel(start: Date): string {
   const end  = addDays(start, 6)
@@ -183,7 +184,7 @@ function CategoryRow({ cat, totalSpending }: { cat: WeeklyCategoryTotal; totalSp
 
 export default function WeeklyScreen() {
   const router = useRouter()
-  const today  = new Date().toISOString().slice(0, 10)
+  const today  = localDateStr()
 
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [dailyData, setDailyData] = useState<DailyTotal[]>([])

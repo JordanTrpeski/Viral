@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { localDateStr } from '@core/utils/units'
 import * as Crypto from 'expo-crypto'
 import {
   dbGetWeightForDate,
@@ -32,12 +33,12 @@ interface BodyWeightState {
 
 function calcStreak(dates: string[]): number {
   if (dates.length === 0) return 0
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   let streak = 0
-  let cursor = new Date(today)
+  const cursor = new Date(today + 'T00:00:00')
 
   for (let i = 0; i < dates.length; i++) {
-    const expected = cursor.toISOString().slice(0, 10)
+    const expected = localDateStr(cursor)
     if (dates[i] !== expected) break
     streak++
     cursor.setDate(cursor.getDate() - 1)

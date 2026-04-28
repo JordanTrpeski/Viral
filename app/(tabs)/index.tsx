@@ -16,6 +16,7 @@ import { useBudgetStore } from '@modules/budget/budgetStore'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { formatVolume, formatDuration, todayStr } from '@modules/health/workout/workoutUtils'
+import { localDateStr } from '@core/utils/units'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
 
 // ─── Day Score rings ──────────────────────────────────────────────────────────
@@ -634,7 +635,7 @@ export default function HomeScreen() {
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().slice(0, 10)
+    return localDateStr(d)
   })
 
   const dateLabel = new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })
