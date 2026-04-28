@@ -224,6 +224,22 @@ export default function BudgetScreen() {
           </View>
         </View>
 
+        {/* Income history link */}
+        <Pressable
+          onPress={() => router.push('/budget/income-history' as never)}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: colors.surface, borderRadius: radius.md,
+            borderWidth: 1, borderColor: colors.border,
+            paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income history</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        </Pressable>
+
         {/* Pending recurring banners */}
         {pendingRecurring.map((p) => (
           <Pressable
