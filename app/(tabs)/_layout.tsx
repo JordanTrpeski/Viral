@@ -1,11 +1,37 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { View, Text } from 'react-native'
 import { colors } from '@core/theme'
+import { useOrganizerStore } from '@modules/organizer/organizerStore'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
 function TabIcon({ name, color }: { name: IoniconsName; color: string }) {
   return <Ionicons name={name} size={24} color={color} />
+}
+
+function OrganizerTabIcon({ color }: { color: string }) {
+  const reminders = useOrganizerStore((s) => s.reminders)
+  const today = new Date().toISOString().slice(0, 10)
+  const overdueCount = reminders.filter((r) => !r.isCompleted && r.dueDate < today).length
+  return (
+    <View>
+      <Ionicons name="calendar" size={24} color={color} />
+      {overdueCount > 0 && (
+        <View style={{
+          position: 'absolute', top: -4, right: -6,
+          backgroundColor: colors.danger,
+          borderRadius: 8, minWidth: 16, height: 16,
+          alignItems: 'center', justifyContent: 'center',
+          paddingHorizontal: 3,
+        }}>
+          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 14 }}>
+            {overdueCount > 99 ? '99+' : overdueCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  )
 }
 
 export default function TabLayout() {
@@ -54,6 +80,13 @@ export default function TabLayout() {
         options={{
           title: 'Budget',
           tabBarIcon: ({ color }) => <TabIcon name="wallet" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="organizer"
+        options={{
+          title: 'Organizer',
+          tabBarIcon: ({ color }) => <OrganizerTabIcon color={color} />,
         }}
       />
     </Tabs>

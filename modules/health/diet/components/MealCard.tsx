@@ -10,9 +10,10 @@ interface Props {
   onAddFood: () => void
   onDeleteEntry: (entryId: string) => void
   onDeleteMeal: () => void
+  onSaveTemplate: () => void
 }
 
-export default function MealCard({ item, onAddFood, onDeleteEntry, onDeleteMeal }: Props) {
+export default function MealCard({ item, onAddFood, onDeleteEntry, onDeleteMeal, onSaveTemplate }: Props) {
   const { meal, entries, totalCalories, totalProteinG, totalCarbsG, totalFatG } = item
   const label = MEAL_TYPE_LABELS[meal.mealType] ?? meal.mealType
   const icon = MEAL_TYPE_ICONS[meal.mealType] ?? 'nutrition-outline'
@@ -65,6 +66,11 @@ export default function MealCard({ item, onAddFood, onDeleteEntry, onDeleteMeal 
         <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
           {totalCalories} kcal
         </Text>
+        {entries.length > 0 && (
+          <Pressable onPress={onSaveTemplate} hitSlop={8} style={{ padding: spacing.xs }}>
+            <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
+          </Pressable>
+        )}
         <Pressable onPress={confirmDeleteMeal} hitSlop={8} style={{ padding: spacing.xs }}>
           <Ionicons name="trash-outline" size={16} color={colors.danger} />
         </Pressable>

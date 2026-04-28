@@ -11,6 +11,7 @@ import { seedExercisesIfNeeded } from '@modules/health/workout/exerciseSeed'
 import { seedChecklistIfNeeded } from '@modules/checklist/checklistSeed'
 import { seedFoodsIfNeeded } from '@modules/health/diet/foodSeed'
 import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
+import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -31,6 +32,7 @@ export default function RootLayout() {
     seedChecklistIfNeeded()
     seedFoodsIfNeeded()
     seedBudgetCategoriesIfNeeded()
+    seedOrganizerTiersIfNeeded()
     loadProfile()
     setReady(true)
     SplashScreen.hideAsync()
@@ -59,6 +61,7 @@ export default function RootLayout() {
         <Stack.Screen name="health" />
         <Stack.Screen name="checklist" />
         <Stack.Screen name="budget" />
+        <Stack.Screen name="organizer" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

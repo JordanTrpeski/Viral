@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, Pressable, TextInput } from 'react-native'
+import { View, Text, ScrollView, Pressable, TextInput, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -65,18 +65,26 @@ export default function DietScreen() {
   const {
     meals, macroGoals, totalCalories, totalProteinG, totalCarbsG, totalFatG,
     waterMl, waterGoalMl, loadToday, createMeal, deleteMeal, deleteEntry, addWater,
+    mealTemplates, loadMealTemplates, saveMealAsTemplate, loadMealTemplate, deleteMealTemplate,
   } = useDietStore()
 
-  const mealSheetRef   = useRef<GorhomBottomSheet>(null)
-  const waterSheetRef  = useRef<GorhomBottomSheet>(null)
-  const [customWaterMl, setCustomWaterMl] = useState('')
+  const mealSheetRef      = useRef<GorhomBottomSheet>(null)
+  const waterSheetRef     = useRef<GorhomBottomSheet>(null)
+  const templateSheetRef  = useRef<GorhomBottomSheet>(null)
+  const [customWaterMl,   setCustomWaterMl]   = useState('')
+  const [pendingMealId,   setPendingMealId]   = useState<string | null>(null)
 
-  useEffect(() => { loadToday() }, [])
+  useEffect(() => { loadToday(); loadMealTemplates() }, [])
 
   function handleAddMeal(type: MealType) {
     mealSheetRef.current?.close()
     const mealId = createMeal(type)
-    router.push({ pathname: '/health/food-search', params: { mealId } } as never)
+    if (mealTemplates.length > 0) {
+      setPendingMealId(mealId)
+      templateSheetRef.current?.expand()
+    } else {
+      router.push({ pathname: '/health/food-search', params: { mealId } } as never)
+    }
   }
 
   function handleAddFood(mealId: string) {
@@ -90,6 +98,18 @@ export default function DietScreen() {
       setCustomWaterMl('')
       waterSheetRef.current?.close()
     }
+  }
+
+  function handleSaveTemplate(mealId: string) {
+    Alert.prompt(
+      'Save as Template',
+      'Give this meal a name:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress: (name) => { if (name?.trim()) saveMealAsTemplate(mealId, name.trim()) } },
+      ],
+      'plain-text',
+    )
   }
 
   const { calorieGoal, proteinGoalG, carbsGoalG, fatGoalG } = macroGoals
@@ -203,6 +223,7 @@ export default function DietScreen() {
             onAddFood={() => handleAddFood(item.meal.id)}
             onDeleteEntry={(entryId) => deleteEntry(entryId, item.meal.id)}
             onDeleteMeal={() => deleteMeal(item.meal.id)}
+            onSaveTemplate={() => handleSaveTemplate(item.meal.id)}
           />
         ))}
 
@@ -260,6 +281,71 @@ export default function DietScreen() {
               </Pressable>
             ))}
           </View>
+        </View>
+      </BottomSheet>
+
+      {/* Template picker sheet — shown after creating a meal if templates exist */}
+      <BottomSheet ref={templateSheetRef} snapPoints={['60%']}>
+        <View style={{ padding: spacing.lg }}>
+          <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginBottom: spacing.xs }}>
+            Load a template?
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.md }}>
+            Or add food manually — templates just pre-fill the meal.
+          </Text>
+          <Pressable
+            onPress={() => {
+              templateSheetRef.current?.close()
+              if (pendingMealId) router.push({ pathname: '/health/food-search', params: { mealId: pendingMealId } } as never)
+              setPendingMealId(null)
+            }}
+            style={({ pressed }) => ({
+              backgroundColor: colors.surface2, borderRadius: radius.md,
+              borderWidth: 1, borderColor: colors.border,
+              padding: spacing.md, marginBottom: spacing.sm,
+              opacity: pressed ? 0.8 : 1, alignItems: 'center',
+            })}
+          >
+            <Text style={{ color: colors.primary, fontSize: fontSize.body, fontWeight: '600' }}>Add food manually</Text>
+          </Pressable>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+            {mealTemplates.map((t) => (
+              <Pressable
+                key={t.id}
+                onPress={() => {
+                  if (pendingMealId) loadMealTemplate(t.id, pendingMealId)
+                  templateSheetRef.current?.close()
+                  setPendingMealId(null)
+                }}
+                style={({ pressed }) => ({
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: colors.surface, borderRadius: radius.md,
+                  borderWidth: 1, borderColor: colors.border,
+                  padding: spacing.md, marginBottom: spacing.xs, gap: spacing.sm,
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Ionicons name="bookmark" size={18} color={colors.diet} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>{t.name}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                    {t.entryCount} item{t.entryCount !== 1 ? 's' : ''} · {t.totalCalories} kcal
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Alert.alert('Delete Template', `Delete "${t.name}"?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteMealTemplate(t.id) },
+                    ])
+                  }}
+                  hitSlop={8}
+                >
+                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                </Pressable>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       </BottomSheet>
 

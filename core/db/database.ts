@@ -140,6 +140,30 @@ export function initDatabase(): void {
   `)
 
   db.execSync(`
+    CREATE TABLE IF NOT EXISTS meal_templates (
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      meal_type  TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS meal_template_entries (
+      id          TEXT PRIMARY KEY,
+      template_id TEXT NOT NULL REFERENCES meal_templates(id) ON DELETE CASCADE,
+      food_id     TEXT NOT NULL,
+      food_name   TEXT NOT NULL,
+      amount_grams REAL NOT NULL,
+      calories    REAL NOT NULL,
+      protein_g   REAL NOT NULL,
+      carbs_g     REAL NOT NULL,
+      fat_g       REAL NOT NULL,
+      created_at  TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
     CREATE TABLE IF NOT EXISTS water_log (
       id         TEXT PRIMARY KEY,
       date       TEXT NOT NULL UNIQUE,
@@ -242,6 +266,148 @@ export function initDatabase(): void {
       expense_id  TEXT,
       total       REAL NOT NULL,
       used_at     TEXT NOT NULL
+    );
+  `)
+
+  // ── Organizer ────────────────────────────────────────────────────────────────
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_tiers (
+      id                         TEXT PRIMARY KEY,
+      name                       TEXT NOT NULL,
+      color                      TEXT NOT NULL,
+      emoji                      TEXT NOT NULL,
+      daily_countdown            INTEGER NOT NULL DEFAULT 0,
+      daily_countdown_start_days INTEGER NOT NULL DEFAULT 7,
+      order_index                INTEGER NOT NULL DEFAULT 0,
+      is_system                  INTEGER NOT NULL DEFAULT 0,
+      created_at                 TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_tier_rules (
+      id                TEXT PRIMARY KEY,
+      tier_id           TEXT NOT NULL REFERENCES organizer_tiers(id) ON DELETE CASCADE,
+      days_before       INTEGER NOT NULL,
+      notification_time TEXT NOT NULL DEFAULT '09:00',
+      message_template  TEXT NOT NULL,
+      is_enabled        INTEGER NOT NULL DEFAULT 1,
+      created_at        TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_people (
+      id                     TEXT PRIMARY KEY,
+      name                   TEXT NOT NULL,
+      birthday_day           INTEGER,
+      birthday_month         INTEGER,
+      birthday_year          INTEGER,
+      photo_uri              TEXT,
+      tier_id                TEXT NOT NULL REFERENCES organizer_tiers(id),
+      relationship           TEXT,
+      phone                  TEXT,
+      notes                  TEXT,
+      override_notifications INTEGER NOT NULL DEFAULT 0,
+      created_at             TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_person_rules (
+      id                TEXT PRIMARY KEY,
+      person_id         TEXT NOT NULL REFERENCES organizer_people(id) ON DELETE CASCADE,
+      days_before       INTEGER NOT NULL,
+      notification_time TEXT NOT NULL DEFAULT '09:00',
+      message_template  TEXT NOT NULL,
+      is_enabled        INTEGER NOT NULL DEFAULT 1,
+      created_at        TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_gift_ideas (
+      id             TEXT PRIMARY KEY,
+      person_id      TEXT NOT NULL REFERENCES organizer_people(id) ON DELETE CASCADE,
+      idea           TEXT NOT NULL,
+      price_estimate REAL,
+      is_purchased   INTEGER NOT NULL DEFAULT 0,
+      created_at     TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_reminders (
+      id            TEXT PRIMARY KEY,
+      title         TEXT NOT NULL,
+      due_date      TEXT NOT NULL,
+      due_time      TEXT,
+      repeat        TEXT CHECK(repeat IN ('none','daily','weekly','monthly','yearly')),
+      priority      TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low','medium','high','urgent')),
+      person_id     TEXT REFERENCES organizer_people(id) ON DELETE SET NULL,
+      note_id       TEXT,
+      is_completed  INTEGER NOT NULL DEFAULT 0,
+      completed_at  TEXT,
+      snoozed_until TEXT,
+      created_at    TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_events (
+      id         TEXT PRIMARY KEY,
+      title      TEXT NOT NULL,
+      date       TEXT NOT NULL,
+      start_time TEXT,
+      end_time   TEXT,
+      is_all_day INTEGER NOT NULL DEFAULT 0,
+      location   TEXT,
+      repeat     TEXT CHECK(repeat IN ('none','daily','weekly','monthly','yearly')),
+      color      TEXT,
+      notes      TEXT,
+      person_id  TEXT REFERENCES organizer_people(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_event_reminders (
+      id             TEXT PRIMARY KEY,
+      event_id       TEXT NOT NULL REFERENCES organizer_events(id) ON DELETE CASCADE,
+      minutes_before INTEGER NOT NULL,
+      created_at     TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_notes (
+      id          TEXT PRIMARY KEY,
+      title       TEXT,
+      body        TEXT NOT NULL DEFAULT '',
+      is_pinned   INTEGER NOT NULL DEFAULT 0,
+      is_archived INTEGER NOT NULL DEFAULT 0,
+      person_id   TEXT REFERENCES organizer_people(id) ON DELETE SET NULL,
+      event_id    TEXT REFERENCES organizer_events(id) ON DELETE SET NULL,
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_tags (
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL UNIQUE,
+      color      TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_note_tags (
+      note_id TEXT NOT NULL REFERENCES organizer_notes(id) ON DELETE CASCADE,
+      tag_id  TEXT NOT NULL REFERENCES organizer_tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (note_id, tag_id)
     );
   `)
 }
