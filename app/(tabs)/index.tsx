@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert } from 'react-native'
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -113,8 +114,10 @@ function CaloriesCard({
 
 // ─── Water card ───────────────────────────────────────────────────────────────
 
+const WATER_QUICK = [150, 250, 330, 500]
+
 function WaterCard({ waterMl, goalMl, onAdd, onPress }: {
-  waterMl: number; goalMl: number; onAdd: () => void; onPress: () => void
+  waterMl: number; goalMl: number; onAdd: (ml: number) => void; onPress: () => void
 }) {
   const SIZE = 60
   const STROKE = 7
@@ -125,41 +128,115 @@ function WaterCard({ waterMl, goalMl, onAdd, onPress }: {
   const liters = (waterMl / 1000).toFixed(1)
   const goalL  = (goalMl / 1000).toFixed(1)
 
+  const sheetRef = useRef<BottomSheet>(null)
+  const [custom, setCustom] = useState('')
+
+  function handleCustom() {
+    const ml = parseInt(custom)
+    if (!ml || ml <= 0) { Alert.alert('Enter a valid amount'); return }
+    onAdd(ml)
+    setCustom('')
+    sheetRef.current?.close()
+  }
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-        alignItems: 'center', opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, alignSelf: 'flex-start' }}>
-        <Ionicons name="water-outline" size={14} color={colors.water} />
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Water</Text>
-      </View>
-
-      <View style={{ alignItems: 'center', justifyContent: 'center', width: SIZE, height: SIZE, marginVertical: spacing.xs }}>
-        <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
-          <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.surface2} strokeWidth={STROKE} fill="none" />
-          <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.water} strokeWidth={STROKE} fill="none"
-            strokeDasharray={`${CIRC}`} strokeDashoffset={offset}
-            strokeLinecap="round" rotation="-90" origin={`${SIZE / 2}, ${SIZE / 2}`} />
-        </Svg>
-        <Text style={{ color: colors.text, fontSize: fontSize.micro, fontWeight: '700' }}>{liters}L</Text>
-        <Text style={{ color: colors.textMuted, fontSize: 8 }}>/{goalL}</Text>
-      </View>
-
+    <>
       <Pressable
-        onPress={onAdd}
+        onPress={() => sheetRef.current?.expand()}
         style={({ pressed }) => ({
-          backgroundColor: `${colors.water}22`, borderRadius: radius.full,
-          paddingHorizontal: spacing.sm, paddingVertical: 2, opacity: pressed ? 0.7 : 1,
+          flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
+          borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+          alignItems: 'center', opacity: pressed ? 0.85 : 1,
         })}
       >
-        <Text style={{ color: colors.water, fontSize: fontSize.micro, fontWeight: '600' }}>+250ml</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, alignSelf: 'flex-start' }}>
+          <Ionicons name="water-outline" size={14} color={colors.water} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Water</Text>
+        </View>
+
+        <View style={{ alignItems: 'center', justifyContent: 'center', width: SIZE, height: SIZE, marginVertical: spacing.xs }}>
+          <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
+            <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.surface2} strokeWidth={STROKE} fill="none" />
+            <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.water} strokeWidth={STROKE} fill="none"
+              strokeDasharray={`${CIRC}`} strokeDashoffset={offset}
+              strokeLinecap="round" rotation="-90" origin={`${SIZE / 2}, ${SIZE / 2}`} />
+          </Svg>
+          <Text style={{ color: colors.text, fontSize: fontSize.micro, fontWeight: '700' }}>{liters}L</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 8 }}>/{goalL}</Text>
+        </View>
+
+        <View style={{
+          backgroundColor: `${colors.water}22`, borderRadius: radius.full,
+          paddingHorizontal: spacing.sm, paddingVertical: 2,
+        }}>
+          <Text style={{ color: colors.water, fontSize: fontSize.micro, fontWeight: '600' }}>+ Add</Text>
+        </View>
       </Pressable>
-    </Pressable>
+
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={['45%']}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: colors.surface }}
+        handleIndicatorStyle={{ backgroundColor: colors.textMuted }}
+      >
+        <BottomSheetView style={{ padding: spacing.md, gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+            <Ionicons name="water-outline" size={16} color={colors.water} style={{ marginRight: spacing.xs }} />
+            <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '700', flex: 1 }}>Add Water</Text>
+            <Pressable onPress={onPress} hitSlop={8}>
+              <Text style={{ color: colors.water, fontSize: fontSize.label }}>Full view</Text>
+            </Pressable>
+          </View>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {WATER_QUICK.map(ml => (
+              <Pressable
+                key={ml}
+                onPress={() => { onAdd(ml); sheetRef.current?.close() }}
+                style={({ pressed }) => ({
+                  backgroundColor: pressed ? colors.water : `${colors.water}22`,
+                  borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
+                  minWidth: 70, alignItems: 'center',
+                })}
+              >
+                {({ pressed }) => (
+                  <Text style={{ color: pressed ? '#000' : colors.water, fontSize: fontSize.body, fontWeight: '600' }}>
+                    +{ml}ml
+                  </Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+            backgroundColor: colors.surface2, borderRadius: radius.md, paddingHorizontal: spacing.sm,
+          }}>
+            <TextInput
+              value={custom}
+              onChangeText={setCustom}
+              placeholder="Custom amount"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
+            />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>ml</Text>
+          </View>
+
+          <Pressable
+            onPress={handleCustom}
+            style={({ pressed }) => ({
+              backgroundColor: colors.water, borderRadius: radius.md,
+              paddingVertical: spacing.sm + 2, alignItems: 'center', opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ color: '#000', fontSize: fontSize.body, fontWeight: '700' }}>Add</Text>
+          </Pressable>
+        </BottomSheetView>
+      </BottomSheet>
+    </>
   )
 }
 
@@ -624,8 +701,8 @@ export default function HomeScreen() {
           <WaterCard
             waterMl={waterMl}
             goalMl={waterGoalMl}
-            onAdd={() => addWater(250)}
-            onPress={() => router.push('/health/diet')}
+            onAdd={(ml) => addWater(ml)}
+            onPress={() => router.push('/health/water')}
           />
         </View>
 

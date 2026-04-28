@@ -57,7 +57,7 @@ export default function HealthScreen() {
       icon: 'water-outline',
       color: colors.water,
       route: '/health/water',
-      available: false,
+      available: true,
     },
   ]
 
