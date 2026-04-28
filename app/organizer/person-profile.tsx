@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, Pressable, TextInput, Image, Alert, Linking } from 'react-native'
+import { View, Text, ScrollView, Pressable, TextInput, Image, Alert, Linking, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -14,8 +14,7 @@ import {
 } from '@core/db/organizerQueries'
 import type { OrganizerGiftIdea, OrganizerNote, OrganizerEvent } from '@core/types'
 import SwipeableRow from '@core/components/SwipeableRow'
-
-let _giftCounter = 0
+import * as Crypto from 'expo-crypto'
 
 export default function PersonProfileScreen() {
   const router = useRouter()
@@ -47,7 +46,7 @@ export default function PersonProfileScreen() {
   function addGiftIdea() {
     if (!newIdea.trim()) return
     const price = newPrice.trim() ? parseFloat(newPrice.trim()) : null
-    const giftId = `gift_${++_giftCounter}_${Date.now()}`
+    const giftId = Crypto.randomUUID()
     dbInsertGiftIdea(giftId, id!, newIdea.trim(), price)
     setGiftIdeas(dbGetGiftIdeas(id!))
     setNewIdea('')
@@ -89,6 +88,7 @@ export default function PersonProfileScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
@@ -315,6 +315,7 @@ export default function PersonProfileScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

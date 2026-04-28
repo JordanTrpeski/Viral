@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createStorage } from '@core/utils/storage'
 import * as Crypto from 'expo-crypto'
+import { localDateStr } from '@core/utils/units'
 import {
   dbSearchFoods, dbInsertMeal, dbDeleteMeal,
   dbGetMealsForDate, dbGetEntriesForDate,
@@ -29,7 +30,7 @@ const mmkv = createStorage('diet-store')
 const DEFAULT_WATER_GOAL_ML = 2500
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 function buildMeals(date: string): MealWithEntries[] {

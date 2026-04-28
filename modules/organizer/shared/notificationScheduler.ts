@@ -4,6 +4,7 @@ import { dbGetPeople, dbGetTiers, dbGetTierRules, dbGetPersonRules } from '@core
 import {
   daysUntilBirthday, nextBirthdayDate, ageTheyAreTurning, resolveTemplate,
 } from './organizerUtils'
+import { localDateStr } from '@core/utils/units'
 
 const ID_PREFIX = 'organizer_birthday_'
 
@@ -16,7 +17,7 @@ export async function runBirthdayScheduler(): Promise<void> {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = localDateStr(today)
 
   // Cancel previously scheduled organizer birthday notifications
   const scheduled = await Notifications.getAllScheduledNotificationsAsync()
@@ -47,7 +48,7 @@ export async function runBirthdayScheduler(): Promise<void> {
 
       const notifyDate = new Date(bdayDateStr + 'T12:00:00')
       notifyDate.setDate(notifyDate.getDate() - rule.daysBefore)
-      const notifyDateStr = notifyDate.toISOString().slice(0, 10)
+      const notifyDateStr = localDateStr(notifyDate)
 
       if (notifyDateStr !== todayStr) continue
 

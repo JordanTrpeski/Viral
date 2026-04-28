@@ -1,5 +1,7 @@
 import { create } from 'zustand'
+import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
+import { localDateStr } from '@core/utils/units'
 import {
   BudgetCategory,
   BudgetTemplate,
@@ -123,25 +125,28 @@ function currentMonth(): MonthKey {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 // ── Store ──────────────────────────────────────────────────────────────────────
 
 // Request notification permission once at startup
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  })
+}
 
 async function maybeNotifyLimitBreach(
   categoryId: string,
   categories: BudgetCategory[],
   spending: Record<string, number>,
 ) {
+  if (Platform.OS === 'web') return
   const cat = categories.find((c) => c.id === categoryId)
   if (!cat?.monthlyLimit) return
   const spent = spending[categoryId] ?? 0

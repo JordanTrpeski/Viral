@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { localDateStr } from '@core/utils/units'
 
 type Mode = 'quick' | 'full'
 type PaymentMethod = 'cash' | 'card' | 'online'
@@ -16,11 +17,11 @@ type PaymentMethod = 'cash' | 'card' | 'online'
 // ── Date picker ───────────────────────────────────────────────────────────────
 
 function DatePicker({ value, onChange }: { value: string; onChange: (d: string) => void }) {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   function shift(days: number) {
     const d = new Date(value + 'T12:00:00')
     d.setDate(d.getDate() + days)
-    const next = d.toISOString().slice(0, 10)
+    const next = localDateStr(d)
     if (next <= today) onChange(next)
   }
   const label = value === today ? 'Today' : value.slice(5).replace('-', '/')
@@ -149,7 +150,7 @@ export default function AddExpenseScreen() {
   const router = useRouter()
   const { templateId, date: dateParam } = useLocalSearchParams<{ templateId?: string; date?: string }>()
   const { expenseCategories, addExpense, saveAsTemplate, recordUse, getTemplateItems, templates, loadTemplates } = useBudgetStore()
-  const today      = new Date().toISOString().slice(0, 10)
+  const today      = localDateStr()
   const firstCatId = expenseCategories[0]?.id ?? ''
 
   const [mode, setMode]                 = useState<Mode>(templateId ? 'full' : 'quick')

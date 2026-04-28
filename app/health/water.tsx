@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   View, Text, ScrollView, Pressable, TextInput, Alert, Dimensions,
+  KeyboardAvoidingView, Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -65,6 +66,7 @@ export default function WaterScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
@@ -300,6 +302,7 @@ export default function WaterScreen() {
         )}
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

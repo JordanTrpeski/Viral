@@ -15,6 +15,7 @@ import {
   IncomeEntryWithCategory,
   ExpenseWithItems,
 } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Date nav helpers ───────────────────────────────────────────────────────────
 
@@ -23,18 +24,18 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 function formatDate(d: string): string {
   const dt    = new Date(d + 'T12:00:00')
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   if (d === today) return 'Today'
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
-  if (d === yesterday.toISOString().slice(0, 10)) return 'Yesterday'
+  if (d === localDateStr(yesterday)) return 'Yesterday'
   return `${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`
 }
 
 function shiftDate(date: string, days: number): string {
   const d = new Date(date + 'T12:00:00')
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(d)
 }
 
 // ── Swipe-to-delete wrapper ───────────────────────────────────────────────────
@@ -204,7 +205,7 @@ export default function DailyScreen() {
   const params = useLocalSearchParams<{ date?: string }>()
   const { removeIncome, removeExpense } = useBudgetStore()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
   const [date, setDate]         = useState(params.date ?? today)
   const [income, setIncome]     = useState<IncomeEntryWithCategory[]>([])
   const [expenses, setExpenses] = useState<ExpenseWithItems[]>([])

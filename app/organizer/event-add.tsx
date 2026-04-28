@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { localDateStr } from '@core/utils/units'
 
 // ── Color options ──────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ export default function EventAddScreen() {
   const { people, loadPeople, addEvent } = useOrganizerStore()
 
   const [title,     setTitle]     = useState('')
-  const [date,      setDate]      = useState(dateParam ?? new Date().toISOString().slice(0, 10))
+  const [date,      setDate]      = useState(dateParam ?? localDateStr())
   const [startTime, setStartTime] = useState('')
   const [endTime,   setEndTime]   = useState('')
   const [isAllDay,  setIsAllDay]  = useState(false)

@@ -11,12 +11,13 @@ import {
   dbGetCategoryMonthlyTrend,
   ExpenseEntryWithCategory,
 } from '@core/db/budgetQueries'
+import { localDateStr } from '@core/utils/units'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
-function toISO(d: Date): string { return d.toISOString().slice(0, 10) }
+function toISO(d: Date): string { return localDateStr(d) }
 
 function monthStart(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}-01`

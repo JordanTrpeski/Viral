@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useDietStore } from '@modules/health/diet/dietStore'
+import { localDateStr } from '@core/utils/units'
 
 // ─── Bar chart ────────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ function CalorieBarChart({ data, goal }: {
   const innerW = chartW - PAD.l - PAD.r
   const innerH = CHART_H - PAD.t - PAD.b
   const maxCal = Math.max(goal, ...data.map((d) => d.calories)) * 1.1
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateStr()
 
   const barW = Math.max(6, (innerW / data.length) * 0.6)
   const gap  = innerW / data.length

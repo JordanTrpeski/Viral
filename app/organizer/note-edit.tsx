@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { localDateStr } from '@core/utils/units'
 
 const TAG_PRESET_COLORS = [
   '#FF453A', '#FF9F0A', '#FFD60A', '#30D158',
@@ -251,7 +252,7 @@ export default function NoteEditScreen() {
           {isEditing && (
             <View style={{ marginTop: spacing.lg, gap: spacing.xs }}>
               {linkedReminders.map((r) => {
-                const today = new Date().toISOString().slice(0, 10)
+                const today = localDateStr()
                 const overdue = r.dueDate < today
                 return (
                   <View key={r.id} style={{

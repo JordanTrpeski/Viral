@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Pressable, ScrollView, TextInput } from 'react-native'
+import { View, Text, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -8,7 +8,7 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
 import { useBodyWeightStore, type WeightRange } from '@modules/health/shared/bodyWeightStore'
-import { kgToLbs } from '@core/utils/units'
+import { kgToLbs, localDateStr } from '@core/utils/units'
 
 // ─── BMI helpers ────────────────────────────────────────────────────────────
 
@@ -132,13 +132,13 @@ function WeightChart({
 const RANGES: WeightRange[] = ['7d', '30d', '90d', 'all']
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr()
 }
 
 function offsetDate(base: string, days: number): string {
-  const d = new Date(base)
+  const d = new Date(base + 'T00:00:00')
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(d)
 }
 
 export default function BodyWeightScreen() {
@@ -197,6 +197,7 @@ export default function BodyWeightScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
 
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
@@ -329,6 +330,7 @@ export default function BodyWeightScreen() {
         </View>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

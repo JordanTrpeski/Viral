@@ -7,6 +7,7 @@ import BottomSheet, { BottomSheetView, BottomSheetFlatList } from '@gorhom/botto
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import type { ReminderRepeat, ReminderPriority, OrganizerPerson } from '@core/types'
+import { localDateStr } from '@core/utils/units'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -27,13 +28,9 @@ const REPEAT_OPTIONS: { value: ReminderRepeat; label: string }[] = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function todayStr()    { return new Date().toISOString().slice(0, 10) }
-function tomorrowStr() {
-  const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10)
-}
-function weekLaterStr() {
-  const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10)
-}
+function todayStr()    { return localDateStr() }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return localDateStr(d) }
+function weekLaterStr() { const d = new Date(); d.setDate(d.getDate() + 7); return localDateStr(d) }
 
 function isValidDate(str: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false

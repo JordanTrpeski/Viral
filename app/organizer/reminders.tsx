@@ -10,6 +10,7 @@ import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import SwipeableRow from '@core/components/SwipeableRow'
 import type { OrganizerReminder, OrganizerPerson } from '@core/types'
 import { dbInsertReminder } from '@core/db/organizerQueries'
+import { localDateStr } from '@core/utils/units'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -30,13 +31,9 @@ const REPEAT_LABELS: Record<string, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function todayStr()    { return new Date().toISOString().slice(0, 10) }
-function tomorrowStr() {
-  const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10)
-}
-function weekLaterStr() {
-  const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10)
-}
+function todayStr()    { return localDateStr() }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return localDateStr(d) }
+function weekLaterStr() { const d = new Date(); d.setDate(d.getDate() + 7); return localDateStr(d) }
 
 function nextOccurrence(dueDate: string, repeat: string): string {
   const d = new Date(dueDate + 'T12:00:00')
@@ -44,11 +41,8 @@ function nextOccurrence(dueDate: string, repeat: string): string {
   if (repeat === 'weekly')  d.setDate(d.getDate() + 7)
   if (repeat === 'monthly') d.setMonth(d.getMonth() + 1)
   if (repeat === 'yearly')  d.setFullYear(d.getFullYear() + 1)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(d)
 }
-
-let _idCounter = 0
-function genId() { return `reminder_${Date.now()}_${++_idCounter}` }
 
 // ── Reminder row ───────────────────────────────────────────────────────────────
 

@@ -9,6 +9,7 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { runBirthdayScheduler, requestNotificationPermission } from '@modules/organizer/shared/notificationScheduler'
 import { createStorage } from '@core/utils/storage'
+import { localDateStr } from '@core/utils/units'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -66,7 +67,7 @@ export default function OrganizerScreen() {
     if (granted) runBirthdayScheduler()
   }
 
-  const today         = new Date().toISOString().slice(0, 10)
+  const today         = localDateStr()
   const overdueCount  = reminders.filter((r) => !r.isCompleted && r.dueDate < today).length
   const pinnedCount   = notes.filter((n) => n.isPinned && !n.isArchived).length
 
