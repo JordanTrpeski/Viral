@@ -13,6 +13,8 @@ import { useDietStore } from '@modules/health/diet/dietStore'
 import { useChecklistStore } from '@modules/checklist/checklistStore'
 import { dbGetChecklistItems, type ChecklistItem } from '@core/db/checklistQueries'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { formatVolume, formatDuration, todayStr } from '@modules/health/workout/workoutUtils'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
 
@@ -410,6 +412,85 @@ function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today 
   )
 }
 
+// ─── Organizer card ───────────────────────────────────────────────────────────
+
+function OrganizerCard({ onPress }: { onPress: () => void }) {
+  const reminders = useOrganizerStore((s) => s.reminders)
+  const people    = useOrganizerStore((s) => s.people)
+  const notes     = useOrganizerStore((s) => s.notes)
+
+  const today     = todayStr()
+  const overdue   = reminders.filter((r) => !r.isCompleted && r.dueDate < today).length
+  const todayDue  = reminders.filter((r) => !r.isCompleted && r.dueDate === today).length
+
+  const upcomingBirthdays = people
+    .map((p) => ({ person: p, days: getPersonDaysUntilBirthday(p) }))
+    .filter(({ days }) => days !== null && days <= 7)
+    .sort((a, b) => (a.days ?? 99) - (b.days ?? 99))
+    .slice(0, 3)
+
+  const pinnedNotes = notes.filter((n) => n.isPinned && !n.isArchived)
+
+  const hasAnything = overdue > 0 || todayDue > 0 || upcomingBirthdays.length > 0 || pinnedNotes.length > 0
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+        <Ionicons name="calendar-outline" size={14} color={colors.organizer} />
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Organizer</Text>
+        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+      </View>
+
+      {!hasAnything ? (
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>All clear ✓</Text>
+      ) : (
+        <View style={{ gap: spacing.xs }}>
+          {overdue > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }} />
+              <Text style={{ color: colors.danger, fontSize: fontSize.body, fontWeight: '600' }}>
+                {overdue} overdue reminder{overdue > 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
+          {todayDue > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.reminders }} />
+              <Text style={{ color: colors.text, fontSize: fontSize.body }}>
+                {todayDue} due today
+              </Text>
+            </View>
+          )}
+          {upcomingBirthdays.map(({ person, days }) => (
+            <View key={person.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Text style={{ fontSize: 12 }}>🎂</Text>
+              <Text style={{ color: colors.text, fontSize: fontSize.body }}>
+                {person.name.split(' ')[0]}
+                {days === 0 ? ' — Today!' : ` in ${days}d`}
+              </Text>
+            </View>
+          ))}
+          {pinnedNotes.length > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Ionicons name="bookmark" size={12} color={colors.organizer} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>
+                {pinnedNotes.length} pinned note{pinnedNotes.length > 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+    </Pressable>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -424,6 +505,7 @@ export default function HomeScreen() {
   } = useDietStore()
   const { checklists, loadChecklists, toggleItem } = useChecklistStore()
   const { totalIncome, totalSpending, viewMonth, viewYear, loadMonth: loadBudgetMonth, loadCategories: loadBudgetCategories } = useBudgetStore()
+  const { loadReminders: loadOrgReminders, loadPeople: loadOrgPeople, loadNotes: loadOrgNotes } = useOrganizerStore()
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
@@ -443,6 +525,9 @@ export default function HomeScreen() {
     loadChecklists()
     loadBudgetCategories()
     loadBudgetMonth()
+    loadOrgReminders()
+    loadOrgPeople()
+    loadOrgNotes()
   }
 
   useEffect(() => { loadAll() }, [])
@@ -588,6 +673,9 @@ export default function HomeScreen() {
           month={budgetMonthLabel}
           onPress={() => router.push('/(tabs)/budget' as never)}
         />
+
+        {/* Organizer card */}
+        <OrganizerCard onPress={() => router.push('/(tabs)/organizer' as never)} />
 
       </ScrollView>
     </SafeAreaView>

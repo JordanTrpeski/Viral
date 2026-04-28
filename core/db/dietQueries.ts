@@ -190,3 +190,79 @@ export function dbGetWaterHistory(days: number): { date: string; amountMl: numbe
     [days],
   ).reverse().map((r) => ({ date: r.date, amountMl: r.amount_ml }))
 }
+
+// ─── Meal Templates ───────────────────────────────────────────────────────────
+
+export interface MealTemplateEntry {
+  id: string
+  templateId: string
+  foodId: string
+  foodName: string
+  amountGrams: number
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  createdAt: string
+}
+
+export interface MealTemplateRow {
+  id: string
+  name: string
+  mealType: string
+  entryCount: number
+  totalCalories: number
+  createdAt: string
+}
+
+export function dbGetMealTemplates(): MealTemplateRow[] {
+  const rows = db.getAllSync<{ id: string; name: string; meal_type: string; created_at: string }>(
+    'SELECT * FROM meal_templates ORDER BY created_at DESC',
+  )
+  return rows.map((r) => {
+    const entries = db.getAllSync<{ calories: number }>(
+      'SELECT calories FROM meal_template_entries WHERE template_id=?', [r.id],
+    )
+    return {
+      id: r.id, name: r.name, mealType: r.meal_type,
+      entryCount: entries.length,
+      totalCalories: Math.round(entries.reduce((s, e) => s + e.calories, 0)),
+      createdAt: r.created_at,
+    }
+  })
+}
+
+export function dbGetMealTemplateEntries(templateId: string): MealTemplateEntry[] {
+  const rows = db.getAllSync<{
+    id: string; template_id: string; food_id: string; food_name: string
+    amount_grams: number; calories: number; protein_g: number; carbs_g: number; fat_g: number; created_at: string
+  }>('SELECT * FROM meal_template_entries WHERE template_id=? ORDER BY created_at ASC', [templateId])
+  return rows.map((r) => ({
+    id: r.id, templateId: r.template_id, foodId: r.food_id, foodName: r.food_name,
+    amountGrams: r.amount_grams, calories: r.calories,
+    proteinG: r.protein_g, carbsG: r.carbs_g, fatG: r.fat_g, createdAt: r.created_at,
+  }))
+}
+
+export function dbInsertMealTemplate(id: string, name: string, mealType: string): void {
+  db.runSync(
+    'INSERT INTO meal_templates (id, name, meal_type, created_at) VALUES (?, ?, ?, ?)',
+    [id, name, mealType, new Date().toISOString()],
+  )
+}
+
+export function dbInsertMealTemplateEntry(
+  id: string, templateId: string, foodId: string, foodName: string,
+  amountGrams: number, calories: number, proteinG: number, carbsG: number, fatG: number,
+): void {
+  db.runSync(
+    `INSERT INTO meal_template_entries
+     (id, template_id, food_id, food_name, amount_grams, calories, protein_g, carbs_g, fat_g, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, templateId, foodId, foodName, amountGrams, calories, proteinG, carbsG, fatG, new Date().toISOString()],
+  )
+}
+
+export function dbDeleteMealTemplate(id: string): void {
+  db.runSync('DELETE FROM meal_templates WHERE id=?', [id])
+}

@@ -6,7 +6,9 @@ import {
   dbGetMealsForDate, dbGetEntriesForDate,
   dbInsertMealEntry, dbUpdateMealEntryGrams, dbDeleteMealEntry,
   dbGetCalorieHistory, dbGetWaterForDate, dbAddWater,
-  type EntryWithFood,
+  dbGetMealTemplates, dbGetMealTemplateEntries,
+  dbInsertMealTemplate, dbInsertMealTemplateEntry, dbDeleteMealTemplate,
+  type EntryWithFood, type MealTemplateRow,
 } from '@core/db/dietQueries'
 import { useUserStore } from '@core/store/userStore'
 import { getMacroGoals, MEAL_TYPE_ORDER, type MacroGoals } from './dietUtils'
@@ -76,6 +78,9 @@ interface DietState {
   historyRange: 7 | 30
   calorieHistory: { date: string; calories: number }[]
 
+  // Templates
+  mealTemplates: MealTemplateRow[]
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   loadToday: () => void
@@ -91,6 +96,11 @@ interface DietState {
   setWaterGoal: (ml: number) => void
 
   loadHistory: (range: 7 | 30) => void
+
+  loadMealTemplates: () => void
+  saveMealAsTemplate: (mealId: string, name: string) => void
+  loadMealTemplate: (templateId: string, targetMealId: string) => void
+  deleteMealTemplate: (templateId: string) => void
 }
 
 export const useDietStore = create<DietState>((set, get) => ({
@@ -106,6 +116,7 @@ export const useDietStore = create<DietState>((set, get) => ({
   searchResults: [],
   historyRange: 7,
   calorieHistory: [],
+  mealTemplates: [],
 
   // ── Today ──────────────────────────────────────────────────────────────────
 
@@ -196,5 +207,48 @@ export const useDietStore = create<DietState>((set, get) => ({
       historyRange: range,
       calorieHistory: dbGetCalorieHistory(range),
     })
+  },
+
+  // ── Meal templates ─────────────────────────────────────────────────────────
+
+  loadMealTemplates: () => {
+    set({ mealTemplates: dbGetMealTemplates() })
+  },
+
+  saveMealAsTemplate: (mealId, name) => {
+    const { meals } = get()
+    const mealWithEntries = meals.find((m) => m.meal.id === mealId)
+    if (!mealWithEntries || mealWithEntries.entries.length === 0) return
+
+    const templateId = Crypto.randomUUID()
+    dbInsertMealTemplate(templateId, name, mealWithEntries.meal.mealType)
+    for (const entry of mealWithEntries.entries) {
+      dbInsertMealTemplateEntry(
+        Crypto.randomUUID(), templateId,
+        entry.foodId, entry.foodName,
+        entry.amountGrams, entry.calories,
+        entry.proteinG, entry.carbsG, entry.fatG,
+      )
+    }
+    get().loadMealTemplates()
+  },
+
+  loadMealTemplate: (templateId, targetMealId) => {
+    const entries = dbGetMealTemplateEntries(templateId)
+    for (const te of entries) {
+      dbInsertMealEntry({
+        id: Crypto.randomUUID(),
+        mealId: targetMealId,
+        foodId: te.foodId,
+        amountGrams: te.amountGrams,
+        createdAt: new Date().toISOString(),
+      })
+    }
+    get().loadToday()
+  },
+
+  deleteMealTemplate: (templateId) => {
+    dbDeleteMealTemplate(templateId)
+    get().loadMealTemplates()
   },
 }))

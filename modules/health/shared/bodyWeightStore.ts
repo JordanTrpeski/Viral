@@ -6,6 +6,7 @@ import {
   dbGetWeightHistory,
   dbGetAllWeightDates,
 } from '@core/db/bodyWeightQueries'
+import { useUserStore } from '@core/store/userStore'
 import type { WeightEntry } from './types'
 
 export type WeightRange = '7d' | '30d' | '90d' | 'all'
@@ -73,6 +74,8 @@ export const useBodyWeightStore = create<BodyWeightState>((set, get) => ({
     dbUpsertWeight(entry)
     set({ todayEntry: entry })
     get().loadHistory(get().range)
+    // Recalculate calorie goal with new weight
+    useUserStore.getState().recalcCaloriesFromWeight(weightKg)
   },
 
   setRange: (range) => {

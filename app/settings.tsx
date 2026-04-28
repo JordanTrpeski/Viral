@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
+import * as Notifications from 'expo-notifications'
+import { sendTestBirthdayNotification } from '@modules/organizer/shared/notificationScheduler'
 import {
   View,
   Text,
@@ -482,6 +484,24 @@ export default function SettingsScreen() {
               </View>
             </>
           )}
+        </Card>
+
+        {/* ── Organizer ── */}
+        <SectionTitle title="Organizer" />
+        <Card>
+          <Row
+            icon="notifications-outline"
+            label="Test birthday notification"
+            onPress={async () => {
+              const { status } = await Notifications.getPermissionsAsync()
+              if (status !== 'granted') {
+                Alert.alert('No Permission', 'Enable notifications first in the Organizer tab.')
+                return
+              }
+              await sendTestBirthdayNotification()
+              Alert.alert('Sent!', 'Check your notifications — a test birthday reminder was just fired.')
+            }}
+          />
         </Card>
 
         {/* ── Data ── */}

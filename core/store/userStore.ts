@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createStorage } from '@core/utils/storage'
 import { dbGetUserProfile, dbInsertUserProfile, dbUpdateUserProfile } from '@core/db/userQueries'
+import { calculateTDEE, goalAdjustedCalories } from '@core/utils/tdee'
 import type { UserProfile } from '@core/types'
 
 export type Units = 'metric' | 'imperial'
@@ -15,6 +16,7 @@ interface UserState {
   loadProfile: () => void
   saveProfile: (profile: UserProfile) => void
   updateProfile: (partial: Partial<UserProfile>) => void
+  recalcCaloriesFromWeight: (newWeightKg: number) => void
   setUnits: (units: Units) => void
   completeOnboarding: () => void
 }
@@ -45,6 +47,15 @@ export const useUserStore = create<UserState>((set, get) => ({
     const updated: UserProfile = { ...current, ...partial, updatedAt: new Date().toISOString() }
     dbUpdateUserProfile(updated)
     set({ profile: updated })
+  },
+
+  recalcCaloriesFromWeight: (newWeightKg) => {
+    const profile = get().profile
+    if (!profile?.heightCm || !profile?.dateOfBirth) return
+    const goal = (profile.goals?.[0] ?? 'general_health') as Parameters<typeof goalAdjustedCalories>[1]
+    const tdee = calculateTDEE(newWeightKg, profile.heightCm, profile.dateOfBirth)
+    const newGoal = goalAdjustedCalories(tdee, goal)
+    get().updateProfile({ calorieGoalKcal: newGoal })
   },
 
   setUnits: (units) => {
