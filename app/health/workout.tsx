@@ -12,7 +12,7 @@ import { todayStr } from '@modules/health/workout/workoutUtils'
 
 export default function WorkoutHomeScreen() {
   const router = useRouter()
-  const { activeSession, recentSessions, loadRecentSessions, resumeTodaySession } = useWorkoutStore()
+  const { activeSession, recentSessions, loadRecentSessions, resumeTodaySession, loadExercises } = useWorkoutStore()
 
   const today = todayStr()
   const todaySession = recentSessions.find((s) => s.date === today && s.ended_at)
@@ -21,6 +21,7 @@ export default function WorkoutHomeScreen() {
   useEffect(() => {
     loadRecentSessions()
     resumeTodaySession()
+    loadExercises()
   }, [])
 
   function handleStart() {
