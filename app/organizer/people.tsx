@@ -234,140 +234,149 @@ export default function PeopleScreen() {
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {/* Search */}
-        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>
-          <View style={{
-            flexDirection: 'row', alignItems: 'center',
-            backgroundColor: colors.surface, borderRadius: radius.md,
-            borderWidth: 1, borderColor: colors.border,
-            paddingHorizontal: spacing.sm, gap: spacing.xs,
-          }}>
-            <Ionicons name="search" size={16} color={colors.textMuted} />
-            <TextInput
-              value={search} onChangeText={setSearch}
-              placeholder="Search people…" placeholderTextColor={colors.textMuted}
-              style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
+      <FlatList
+        data={sorted}
+        keyExtractor={(p) => p.id}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.xs }} />}
+        renderItem={({ item: person }) => (
+          <View style={{ paddingHorizontal: spacing.md }}>
+            <PersonCard
+              person={person}
+              tier={tierMap[person.tierId]}
+              onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
+              onEdit={() => router.push(`/organizer/person-add?id=${person.id}` as never)}
+              onDelete={() => handleDelete(person)}
             />
-            {search.length > 0 && (
-              <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-              </Pressable>
-            )}
           </View>
-        </View>
-
-        {/* Sort pills */}
-        <View style={{ flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-          {(['birthday', 'name', 'tier'] as SortMode[]).map((s) => (
-            <Pressable
-              key={s}
-              onPress={() => setSort(s)}
-              style={{
-                paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
-                borderRadius: radius.full,
-                backgroundColor: sort === s ? `${colors.people}22` : colors.surface,
-                borderWidth: 1, borderColor: sort === s ? `${colors.people}66` : colors.border,
-              }}
-            >
-              <Text style={{ color: sort === s ? colors.people : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>
-                {s === 'birthday' ? '🎂 Birthday' : s === 'name' ? 'A–Z' : '🏅 Tier'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Tier filter chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, gap: spacing.xs }}>
-          <Pressable
-            onPress={() => setFilter(null)}
-            style={{
-              paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
-              borderRadius: radius.full,
-              backgroundColor: filterTier === null ? `${colors.people}22` : colors.surface,
-              borderWidth: 1, borderColor: filterTier === null ? `${colors.people}66` : colors.border,
-            }}
-          >
-            <Text style={{ color: filterTier === null ? colors.people : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>All</Text>
-          </Pressable>
-          {sortedTiers.map((t) => (
-            <Pressable
-              key={t.id}
-              onPress={() => setFilter(filterTier === t.id ? null : t.id)}
-              style={{
-                paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
-                borderRadius: radius.full,
-                backgroundColor: filterTier === t.id ? `${t.color}22` : colors.surface,
-                borderWidth: 1, borderColor: filterTier === t.id ? `${t.color}66` : colors.border,
-              }}
-            >
-              <Text style={{ color: filterTier === t.id ? t.color : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>
-                {t.emoji} {t.name}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {/* Upcoming birthdays strip */}
-        {upcoming.length > 0 && (
-          <View style={{ paddingTop: spacing.md }}>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', paddingHorizontal: spacing.lg, marginBottom: spacing.xs }}>
-              UPCOMING — NEXT 30 DAYS
+        )}
+        ListEmptyComponent={
+          <View style={{ paddingHorizontal: spacing.md, alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.md }}>
+            <Ionicons name="people-outline" size={44} color={colors.textMuted} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>
+              {search.trim() ? 'No people match your search' : 'No people yet — add someone!'}
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.xs }}>
-              {upcoming.map(({ person }) => (
-                <UpcomingCard
-                  key={person.id} person={person}
-                  tier={tierMap[person.tierId]}
-                  onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
+          </View>
+        }
+        ListHeaderComponent={
+          <View>
+            {/* Search */}
+            <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border,
+                paddingHorizontal: spacing.sm, gap: spacing.xs,
+              }}>
+                <Ionicons name="search" size={16} color={colors.textMuted} />
+                <TextInput
+                  value={search} onChangeText={setSearch}
+                  placeholder="Search people…" placeholderTextColor={colors.textMuted}
+                  style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
                 />
+                {search.length > 0 && (
+                  <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                    <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {/* Sort pills */}
+            <View style={{ flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+              {(['birthday', 'name', 'tier'] as SortMode[]).map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => setSort(s)}
+                  style={{
+                    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+                    borderRadius: radius.full,
+                    backgroundColor: sort === s ? `${colors.people}22` : colors.surface,
+                    borderWidth: 1, borderColor: sort === s ? `${colors.people}66` : colors.border,
+                  }}
+                >
+                  <Text style={{ color: sort === s ? colors.people : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>
+                    {s === 'birthday' ? '🎂 Birthday' : s === 'name' ? 'A–Z' : '🏅 Tier'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Tier filter chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, gap: spacing.xs }}>
+              <Pressable
+                onPress={() => setFilter(null)}
+                style={{
+                  paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+                  borderRadius: radius.full,
+                  backgroundColor: filterTier === null ? `${colors.people}22` : colors.surface,
+                  borderWidth: 1, borderColor: filterTier === null ? `${colors.people}66` : colors.border,
+                }}
+              >
+                <Text style={{ color: filterTier === null ? colors.people : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>All</Text>
+              </Pressable>
+              {sortedTiers.map((t) => (
+                <Pressable
+                  key={t.id}
+                  onPress={() => setFilter(filterTier === t.id ? null : t.id)}
+                  style={{
+                    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+                    borderRadius: radius.full,
+                    backgroundColor: filterTier === t.id ? `${t.color}22` : colors.surface,
+                    borderWidth: 1, borderColor: filterTier === t.id ? `${t.color}66` : colors.border,
+                  }}
+                >
+                  <Text style={{ color: filterTier === t.id ? t.color : colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>
+                    {t.emoji} {t.name}
+                  </Text>
+                </Pressable>
               ))}
             </ScrollView>
-          </View>
-        )}
 
-        {/* Recent birthdays section */}
-        {recentBirthdays.length > 0 && (
-          <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>
-            <Text style={{ color: colors.success, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
-              🎉 RECENT BIRTHDAYS
-            </Text>
-            <View style={{ gap: spacing.xs }}>
-              {recentBirthdays.map((person) => (
-                <PersonCard
-                  key={person.id} person={person}
-                  tier={tierMap[person.tierId]}
-                  onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
-                  onEdit={() => router.push(`/organizer/person-add?id=${person.id}` as never)}
-                  onDelete={() => handleDelete(person)}
-                />
-              ))}
-            </View>
-          </View>
-        )}
+            {/* Upcoming birthdays strip */}
+            {upcoming.length > 0 && (
+              <View style={{ paddingTop: spacing.md }}>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', paddingHorizontal: spacing.lg, marginBottom: spacing.xs }}>
+                  UPCOMING — NEXT 30 DAYS
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.xs }}>
+                  {upcoming.map(({ person }) => (
+                    <UpcomingCard
+                      key={person.id} person={person}
+                      tier={tierMap[person.tierId]}
+                      onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-        {/* Main list */}
-        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.xl, gap: spacing.xs }}>
-          {sorted.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.md }}>
-              <Ionicons name="people-outline" size={44} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>
-                {search.trim() ? 'No people match your search' : 'No people yet — add someone!'}
-              </Text>
-            </View>
-          ) : (
-            sorted.map((person) => (
-              <PersonCard
-                key={person.id} person={person}
-                tier={tierMap[person.tierId]}
-                onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
-                onEdit={() => router.push(`/organizer/person-add?id=${person.id}` as never)}
-                onDelete={() => handleDelete(person)}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+            {/* Recent birthdays section */}
+            {recentBirthdays.length > 0 && (
+              <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>
+                <Text style={{ color: colors.success, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
+                  🎉 RECENT BIRTHDAYS
+                </Text>
+                <View style={{ gap: spacing.xs }}>
+                  {recentBirthdays.map((person) => (
+                    <PersonCard
+                      key={person.id} person={person}
+                      tier={tierMap[person.tierId]}
+                      onPress={() => router.push(`/organizer/person-profile?id=${person.id}` as never)}
+                      onEdit={() => router.push(`/organizer/person-add?id=${person.id}` as never)}
+                      onDelete={() => handleDelete(person)}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={{ paddingTop: spacing.md }} />
+          </View>
+        }
+      />
     </SafeAreaView>
   )
 }

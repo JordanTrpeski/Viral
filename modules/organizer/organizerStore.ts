@@ -217,6 +217,7 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
   },
 
   addEvent(title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return
     const [y, m] = date.split('-').map(Number)
     dbInsertEvent(genId('event'), title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId)
     get().loadEvents(y, m)
