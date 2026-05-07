@@ -12,7 +12,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_PROJECT_ID",
+      "url": "https://u.expo.dev/681cf8d2-74c0-4243-abf3-afc555d609dd",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
@@ -47,6 +47,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "681cf8d2-74c0-4243-abf3-afc555d609dd"
+      }
+    },
+    "owner": "viralargos"
   }
 }
