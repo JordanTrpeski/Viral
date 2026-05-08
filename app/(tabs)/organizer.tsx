@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { useChecklistStore } from '@modules/checklist/checklistStore'
 import { runBirthdayScheduler, requestNotificationPermission } from '@modules/organizer/shared/notificationScheduler'
 import { createStorage } from '@core/utils/storage'
 import { localDateStr } from '@core/utils/units'
@@ -34,6 +35,7 @@ Notifications.setNotificationHandler({
 export default function OrganizerScreen() {
   const router = useRouter()
   const { people, reminders, notes, loadPeople, loadReminders, loadNotes } = useOrganizerStore()
+  const { checklists, loadChecklists } = useChecklistStore()
   const [permissionGranted, setPermissionGranted] = useState(true)
   const permSheetRef = useRef<BottomSheet>(null)
 
@@ -41,6 +43,7 @@ export default function OrganizerScreen() {
     loadPeople()
     loadReminders()
     loadNotes()
+    loadChecklists()
 
     checkPermissionAndSchedule()
   }, [])
@@ -119,6 +122,15 @@ export default function OrganizerScreen() {
       icon: 'document-text-outline',
       color: colors.notes,
       route: '/organizer/notes',
+    },
+    {
+      title: 'Checklists',
+      subtitle: checklists.length > 0
+        ? `${checklists.length} ${checklists.length === 1 ? 'checklist' : 'checklists'}`
+        : 'Tasks & to-dos',
+      icon: 'checkmark-circle-outline',
+      color: colors.checklist,
+      route: '/organizer/checklists',
     },
   ]
 

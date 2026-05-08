@@ -28,6 +28,7 @@ export const colors = {
   calendar:   '#60A5FA',
   people:     '#FF6B9D',
   reminders:  '#FF453A',
+  checklist:  '#A78BFA',
 } as const
 
 // Importance tier colors (Organizer module)
