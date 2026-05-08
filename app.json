@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "viral",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "appVersion"
     },
