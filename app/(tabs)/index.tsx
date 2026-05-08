@@ -236,8 +236,8 @@ function WaterCard({ waterMl, goalMl, onAdd, onPress }: {
 
 // ─── Steps card ───────────────────────────────────────────────────────────────
 
-function StepsCard({ stepCount, goal, kcal, marginPct, onPress }: {
-  stepCount: number; goal: number; kcal: number; marginPct: number; onPress: () => void
+function StepsCard({ stepCount, goal, low, high, onPress }: {
+  stepCount: number; goal: number; low: number; high: number; onPress: () => void
 }) {
   const SIZE = 60
   const STROKE = 7
@@ -278,9 +278,9 @@ function StepsCard({ stepCount, goal, kcal, marginPct, onPress }: {
           <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
             / {formatSteps(goal)} goal
           </Text>
-          {kcal > 0 && (
+          {high > 0 && (
             <Text style={{ color: colors.steps, fontSize: fontSize.micro, fontWeight: '600' }}>
-              ~{kcal} kcal ±{marginPct}%
+              {low === high ? `~${low}` : `${low}–${high}`} kcal
             </Text>
           )}
         </View>
@@ -693,7 +693,7 @@ export default function HomeScreen() {
   const stepCount = stepsEntry?.stepCount ?? 0
   const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
   const stepsProgress = stepGoal > 0 ? stepCount / stepGoal : 0
-  const { kcal: stepsKcal, marginPct: stepsMargin } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
+  const { low: stepsLow, high: stepsHigh } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
 
   // Weight delta from 7-day history (sorted desc: [0]=most recent, [1]=second most recent)
   const weightDelta = weightHistory.length >= 2
@@ -772,8 +772,8 @@ export default function HomeScreen() {
         <StepsCard
           stepCount={stepCount}
           goal={stepGoal}
-          kcal={stepsKcal}
-          marginPct={stepsMargin}
+          low={stepsLow}
+          high={stepsHigh}
           onPress={() => router.push('/health/steps')}
         />
 

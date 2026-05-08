@@ -208,6 +208,8 @@ export function initDatabase(): void {
   `)
 
   try { db.execSync(`ALTER TABLE steps_log ADD COLUMN goal INTEGER NOT NULL DEFAULT 8000`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE user_profile ADD COLUMN sex TEXT`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE user_profile ADD COLUMN activity_level TEXT`) } catch { /* already exists */ }
 
   // ── Budget ──────────────────────────────────────────────────────────────────
 

@@ -22,6 +22,8 @@ import { useUserStore } from '@core/store/userStore'
 import { db } from '@core/db/database'
 import { kgToLbs, lbsToKg, cmToFtIn, ftInToCm, formatHeight, formatWeight } from '@core/utils/units'
 import type { OnboardingGoal } from '@core/store/onboardingStore'
+import type { Sex, ActivityLevel } from '@core/types'
+import { calculateTDEE, ACTIVITY_LABELS, ACTIVITY_DESCRIPTIONS } from '@core/utils/tdee'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -143,13 +145,16 @@ function Card({ children }: { children: React.ReactNode }) {
 export default function SettingsScreen() {
   const router = useRouter()
   const { profile, units, updateProfile, setUnits } = useUserStore()
-  const goalSheetRef = useRef<GorhomBottomSheet>(null)
+  const goalSheetRef     = useRef<GorhomBottomSheet>(null)
+  const activitySheetRef = useRef<GorhomBottomSheet>(null)
 
   // ── Edit profile state ──
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(profile?.name ?? '')
   const [dob,  setDob]        = useState(profile?.dateOfBirth ?? '')
   const [calGoal, setCalGoal] = useState(String(profile?.calorieGoalKcal ?? ''))
+  const [sex, setSex]         = useState<Sex | undefined>(profile?.sex)
+  const [activityLevel, setActivityLevelVal] = useState<ActivityLevel | undefined>(profile?.activityLevel)
 
   // Weight / height in current units
   const [weightVal, setWeightVal] = useState(() =>
@@ -181,6 +186,8 @@ export default function SettingsScreen() {
     setName(profile?.name ?? '')
     setDob(profile?.dateOfBirth ?? '')
     setCalGoal(String(profile?.calorieGoalKcal ?? ''))
+    setSex(profile?.sex)
+    setActivityLevelVal(profile?.activityLevel)
     setWeightVal(
       profile
         ? units === 'metric'
@@ -208,6 +215,8 @@ export default function SettingsScreen() {
       dateOfBirth: dob,
       weightKg,
       heightCm: heightCmVal,
+      sex,
+      activityLevel,
       calorieGoalKcal: Number(calGoal) || profile.calorieGoalKcal,
     })
     setEditing(false)
@@ -265,6 +274,16 @@ export default function SettingsScreen() {
   const currentGoal = (profile?.goals?.[0] ?? 'general_health') as OnboardingGoal
   const goalConfig  = GOALS.find((g) => g.id === currentGoal) ?? GOALS[3]
   const appVersion  = Constants.expoConfig?.version ?? '—'
+
+  const tdee = profile
+    ? calculateTDEE(profile.weightKg, profile.heightCm, profile.dateOfBirth, profile.sex, profile.activityLevel)
+    : null
+  const maintenanceKcal = tdee
+  const ACTIVITY_LEVEL_LIST: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'very_active']
+  const SEX_OPTIONS: { id: Sex; label: string }[] = [
+    { id: 'male', label: 'Male' },
+    { id: 'female', label: 'Female' },
+  ]
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -336,6 +355,45 @@ export default function SettingsScreen() {
 
               <EditField label="Calorie goal (kcal)" value={calGoal} onChange={setCalGoal} numeric />
 
+              {/* Sex selector */}
+              <View>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.xs }}>Biological sex</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {SEX_OPTIONS.map((opt) => (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => setSex(opt.id)}
+                      style={{
+                        flex: 1, paddingVertical: spacing.sm, alignItems: 'center',
+                        borderRadius: radius.md,
+                        backgroundColor: sex === opt.id ? colors.primary : colors.surface2,
+                        borderWidth: 1, borderColor: sex === opt.id ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ color: sex === opt.id ? '#fff' : colors.textMuted, fontSize: fontSize.body, fontWeight: '600' }}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Activity level picker */}
+              <Pressable
+                onPress={() => activitySheetRef.current?.expand()}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: colors.surface2, borderRadius: radius.md,
+                  borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+                }}
+              >
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Activity level</Text>
+                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>
+                  {activityLevel ? ACTIVITY_LABELS[activityLevel] : 'Not set'}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginLeft: spacing.xs }} />
+              </Pressable>
+
               <Pressable
                 onPress={() => goalSheetRef.current?.expand()}
                 style={{
@@ -374,6 +432,18 @@ export default function SettingsScreen() {
               <Row icon="calendar-outline" label="Date of Birth" value={profile?.dateOfBirth ?? '—'} />
               <Divider />
               <Row
+                icon="male-female-outline"
+                label="Biological sex"
+                value={profile?.sex ? (profile.sex === 'male' ? 'Male' : 'Female') : 'Not set'}
+              />
+              <Divider />
+              <Row
+                icon="walk-outline"
+                label="Activity level"
+                value={profile?.activityLevel ? ACTIVITY_LABELS[profile.activityLevel] : 'Not set'}
+              />
+              <Divider />
+              <Row
                 icon={goalConfig.icon}
                 label="Goal"
                 value={goalConfig.label}
@@ -398,6 +468,16 @@ export default function SettingsScreen() {
             value={profile?.calorieGoalKcal ? `${profile.calorieGoalKcal} kcal` : '—'}
             onPress={startEdit}
           />
+          {maintenanceKcal && (
+            <>
+              <Divider />
+              <Row
+                icon="calculator-outline"
+                label="Maintenance calories"
+                value={`${maintenanceKcal.toLocaleString()} kcal`}
+              />
+            </>
+          )}
         </Card>
 
         {/* ── Notifications ── */}
@@ -521,6 +601,43 @@ export default function SettingsScreen() {
         </Card>
 
       </ScrollView>
+
+      {/* Activity level picker sheet */}
+      <BottomSheet ref={activitySheetRef} snapPoints={['65%']}>
+        <View style={{ padding: spacing.lg }}>
+          <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginBottom: spacing.lg }}>
+            Activity Level
+          </Text>
+          <View style={{ gap: spacing.sm }}>
+            {ACTIVITY_LEVEL_LIST.map((lvl) => {
+              const selected = activityLevel === lvl
+              return (
+                <Pressable
+                  key={lvl}
+                  onPress={() => { setActivityLevelVal(lvl); activitySheetRef.current?.close() }}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row', alignItems: 'center',
+                    backgroundColor: selected ? colors.surface2 : 'transparent',
+                    borderRadius: radius.md, borderWidth: 1,
+                    borderColor: selected ? colors.primary : colors.border,
+                    padding: spacing.md, gap: spacing.md, opacity: pressed ? 0.85 : 1,
+                  })}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: selected ? '600' : '400' }}>
+                      {ACTIVITY_LABELS[lvl]}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }}>
+                      {ACTIVITY_DESCRIPTIONS[lvl]}
+                    </Text>
+                  </View>
+                  {selected && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                </Pressable>
+              )
+            })}
+          </View>
+        </View>
+      </BottomSheet>
 
       {/* Goal picker sheet */}
       <BottomSheet ref={goalSheetRef} snapPoints={['55%']}>

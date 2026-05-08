@@ -49,6 +49,8 @@ export default function CompleteScreen() {
       dateOfBirth:     draft.dateOfBirth,
       weightKg:        draft.weightKg,
       heightCm:        draft.heightCm,
+      sex:             draft.sex,
+      activityLevel:   draft.activityLevel,
       goals:           [draft.goal],
       calorieGoalKcal: draft.calorieGoal,
       createdAt:       now,

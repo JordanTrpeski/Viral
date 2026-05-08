@@ -1,5 +1,5 @@
 import { db } from './database'
-import type { UserProfile } from '@core/types'
+import type { UserProfile, Sex, ActivityLevel } from '@core/types'
 
 interface RawProfileRow {
   id: string
@@ -7,6 +7,8 @@ interface RawProfileRow {
   date_of_birth: string
   weight_kg: number
   height_cm: number
+  sex: string | null
+  activity_level: string | null
   goals: string
   calorie_goal_kcal: number | null
   created_at: string
@@ -20,6 +22,8 @@ function rowToProfile(row: RawProfileRow): UserProfile {
     dateOfBirth: row.date_of_birth,
     weightKg: row.weight_kg,
     heightCm: row.height_cm,
+    sex: (row.sex as Sex | null) ?? undefined,
+    activityLevel: (row.activity_level as ActivityLevel | null) ?? undefined,
     goals: JSON.parse(row.goals) as string[],
     calorieGoalKcal: row.calorie_goal_kcal ?? undefined,
     createdAt: row.created_at,
@@ -35,14 +39,16 @@ export function dbGetUserProfile(): UserProfile | null {
 export function dbInsertUserProfile(profile: UserProfile): void {
   db.runSync(
     `INSERT INTO user_profile
-       (id, name, date_of_birth, weight_kg, height_cm, goals, calorie_goal_kcal, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, date_of_birth, weight_kg, height_cm, sex, activity_level, goals, calorie_goal_kcal, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       profile.id,
       profile.name,
       profile.dateOfBirth,
       profile.weightKg,
       profile.heightCm,
+      profile.sex ?? null,
+      profile.activityLevel ?? null,
       JSON.stringify(profile.goals),
       profile.calorieGoalKcal ?? null,
       profile.createdAt,
@@ -54,13 +60,15 @@ export function dbInsertUserProfile(profile: UserProfile): void {
 export function dbUpdateUserProfile(profile: UserProfile): void {
   db.runSync(
     `UPDATE user_profile
-     SET name=?, date_of_birth=?, weight_kg=?, height_cm=?, goals=?, calorie_goal_kcal=?, updated_at=?
+     SET name=?, date_of_birth=?, weight_kg=?, height_cm=?, sex=?, activity_level=?, goals=?, calorie_goal_kcal=?, updated_at=?
      WHERE id=?`,
     [
       profile.name,
       profile.dateOfBirth,
       profile.weightKg,
       profile.heightCm,
+      profile.sex ?? null,
+      profile.activityLevel ?? null,
       JSON.stringify(profile.goals),
       profile.calorieGoalKcal ?? null,
       profile.updatedAt,

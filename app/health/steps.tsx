@@ -74,7 +74,7 @@ export default function StepsScreen() {
   const pct = Math.round(progress * 100)
   const remaining = Math.max(0, goal - stepCount)
   const ringColor = progress >= 1 ? colors.success : progress >= 0.5 ? colors.steps : colors.primary
-  const { kcal, marginPct } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
+  const { low: calLow, high: calHigh } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
 
   function handleSaveGoal() {
     const g = parseInt(goalInput)
@@ -240,9 +240,9 @@ export default function StepsScreen() {
               </View>
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ color: colors.steps, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
-                  ~{kcal}
+                  {calLow === calHigh ? calLow : `${calLow}–${calHigh}`}
                 </Text>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>±{marginPct}% kcal</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>kcal</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ color: colors.textMuted, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
@@ -333,7 +333,7 @@ export default function StepsScreen() {
               </Text>
             ) : (
               todaySessions.map(s => {
-                const sKcal = estimateCalories(s.stepCount, weightKg, heightCm, [s])
+                const { low: sLow, high: sHigh } = estimateCalories(s.stepCount, weightKg, heightCm, [s])
                 return (
                   <SwipeableRow
                     key={s.id}
@@ -358,7 +358,7 @@ export default function StepsScreen() {
                           </Text>
                         )}
                         <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, flex: 1, textAlign: 'right' }}>
-                          ~{sKcal.kcal} kcal
+                          {sLow === sHigh ? sLow : `${sLow}–${sHigh}`} kcal
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: spacing.md }}>

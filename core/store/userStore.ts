@@ -53,7 +53,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const profile = get().profile
     if (!profile?.heightCm || !profile?.dateOfBirth) return
     const goal = (profile.goals?.[0] ?? 'general_health') as Parameters<typeof goalAdjustedCalories>[1]
-    const tdee = calculateTDEE(newWeightKg, profile.heightCm, profile.dateOfBirth)
+    const tdee = calculateTDEE(newWeightKg, profile.heightCm, profile.dateOfBirth, profile.sex, profile.activityLevel)
     const newGoal = goalAdjustedCalories(tdee, goal)
     get().updateProfile({ calorieGoalKcal: newGoal })
   },

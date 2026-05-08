@@ -9,9 +9,9 @@ import { calculateTDEE, goalAdjustedCalories } from '@core/utils/tdee'
 
 export default function CaloriesScreen() {
   const router = useRouter()
-  const { weightKg, heightCm, dateOfBirth, goal, calorieGoal, setCalorieGoal } = useOnboardingStore()
+  const { weightKg, heightCm, dateOfBirth, sex, activityLevel, goal, calorieGoal, setCalorieGoal } = useOnboardingStore()
 
-  const [tdee] = useState(() => calculateTDEE(weightKg, heightCm, dateOfBirth))
+  const [tdee] = useState(() => calculateTDEE(weightKg, heightCm, dateOfBirth, sex, activityLevel))
 
   useEffect(() => {
     if (calorieGoal === 0) {

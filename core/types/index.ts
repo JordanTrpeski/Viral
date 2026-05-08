@@ -1,9 +1,14 @@
+export type Sex = 'male' | 'female'
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+
 export interface UserProfile {
   id: string
   name: string
   dateOfBirth: string
   weightKg: number
   heightCm: number
+  sex?: Sex
+  activityLevel?: ActivityLevel
   goals: string[]
   calorieGoalKcal?: number
   createdAt: string

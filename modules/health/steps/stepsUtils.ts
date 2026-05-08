@@ -39,24 +39,28 @@ export function estimateCalories(
   weightKg: number,
   heightCm: number,
   sessions: StepSession[],
-): { kcal: number; marginPct: number } {
-  if (stepCount <= 0) return { kcal: 0, marginPct: 10 }
+): { low: number; high: number } {
+  if (stepCount <= 0) return { low: 0, high: 0 }
 
   if (sessions.length > 0) {
-    // Sum calories from each logged session
     const sessionTotal = sessions.reduce((sum, s) => sum + sessionCalories(s, weightKg), 0)
-    // Steps not covered by sessions get walking estimate
     const sessionSteps = sessions.reduce((sum, s) => sum + s.stepCount, 0)
     const residualSteps = Math.max(0, stepCount - sessionSteps)
     const residualMin = residualSteps / CADENCE.walk
-    const residualKcal = MET_BASE.walk * weightKg * (residualMin / 60)
-    return { kcal: Math.round(sessionTotal + residualKcal), marginPct: 10 }
+    // Residual range: slow walk (MET 2.5) → brisk walk (MET 4.3)
+    const residualLow  = 2.5 * weightKg * (residualMin / 60)
+    const residualHigh = 4.3 * weightKg * (residualMin / 60)
+    return {
+      low:  Math.round(sessionTotal + residualLow),
+      high: Math.round(sessionTotal + residualHigh),
+    }
   }
 
-  // No sessions — use simple walking estimate with wider margin
+  // No sessions — range from slow walk to brisk walk (pace unknown)
   const durationMin = stepCount / CADENCE.walk
-  const kcal = MET_BASE.walk * weightKg * (durationMin / 60)
-  return { kcal: Math.round(kcal), marginPct: 20 }
+  const low  = Math.round(2.5 * weightKg * (durationMin / 60))
+  const high = Math.round(4.3 * weightKg * (durationMin / 60))
+  return { low, high }
 }
 
 export function strideMetres(heightCm: number, running = false): number {
