@@ -183,6 +183,32 @@ export function initDatabase(): void {
     );
   `)
 
+  // ── Steps ───────────────────────────────────────────────────────────────────
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS steps_log (
+      id         TEXT PRIMARY KEY,
+      date       TEXT NOT NULL UNIQUE,
+      step_count INTEGER NOT NULL DEFAULT 0,
+      goal       INTEGER NOT NULL DEFAULT 8000,
+      created_at TEXT NOT NULL
+    );
+  `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS step_sessions (
+      id               TEXT PRIMARY KEY,
+      date             TEXT NOT NULL,
+      activity_type    TEXT NOT NULL DEFAULT 'walk',
+      step_count       INTEGER NOT NULL,
+      duration_minutes REAL,
+      incline          INTEGER NOT NULL DEFAULT 0,
+      created_at       TEXT NOT NULL
+    );
+  `)
+
+  try { db.execSync(`ALTER TABLE steps_log ADD COLUMN goal INTEGER NOT NULL DEFAULT 8000`) } catch { /* already exists */ }
+
   // ── Budget ──────────────────────────────────────────────────────────────────
 
   db.execSync(`

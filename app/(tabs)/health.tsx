@@ -4,8 +4,10 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
+import { useStepsStore } from '@modules/health/steps/stepsStore'
 import { useUserStore } from '@core/store/userStore'
-import { formatWeight } from '@core/utils/units'
+import { formatWeight, localDateStr } from '@core/utils/units'
+import { formatSteps, defaultGoal } from '@modules/health/steps/stepsUtils'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -21,8 +23,14 @@ interface HubCard {
 
 export default function HealthScreen() {
   const router  = useRouter()
-  const { units } = useUserStore()
+  const { units, profile } = useUserStore()
   const { todayEntry, streak } = useBodyWeightStore()
+  const { todayEntry: stepsEntry } = useStepsStore()
+
+  const today = localDateStr()
+  const dob = profile?.dateOfBirth ?? '1990-01-01'
+  const stepCount = stepsEntry?.stepCount ?? 0
+  const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
 
   const cards: HubCard[] = [
     {
@@ -49,6 +57,16 @@ export default function HealthScreen() {
       icon: 'nutrition-outline',
       color: colors.diet,
       route: '/health/diet',
+      available: true,
+    },
+    {
+      title: 'Steps',
+      subtitle: stepCount > 0
+        ? `${formatSteps(stepCount)} / ${formatSteps(stepGoal)} steps`
+        : 'Track daily steps',
+      icon: 'footsteps-outline',
+      color: colors.steps,
+      route: '/health/steps',
       available: true,
     },
     {

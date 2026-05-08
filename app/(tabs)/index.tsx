@@ -10,6 +10,8 @@ import { useUserStore } from '@core/store/userStore'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
 import { useWorkoutStore } from '@modules/health/workout/workoutStore'
 import { useDietStore } from '@modules/health/diet/dietStore'
+import { useStepsStore } from '@modules/health/steps/stepsStore'
+import { formatSteps, estimateCalories, defaultGoal } from '@modules/health/steps/stepsUtils'
 import { useChecklistStore } from '@modules/checklist/checklistStore'
 import { dbGetChecklistItems, type ChecklistItem } from '@core/db/checklistQueries'
 import { useBudgetStore } from '@modules/budget/budgetStore'
@@ -22,17 +24,18 @@ import type { SessionSummaryRow } from '@core/db/workoutQueries'
 // ─── Day Score rings ──────────────────────────────────────────────────────────
 
 function DayScoreCard({
-  calProgress, workoutProgress, waterProgress,
-}: { calProgress: number; workoutProgress: number; waterProgress: number }) {
+  calProgress, workoutProgress, waterProgress, stepsProgress,
+}: { calProgress: number; workoutProgress: number; waterProgress: number; stepsProgress: number }) {
   const SIZE = 138
   const cx = SIZE / 2
   const cy = SIZE / 2
-  const STROKE = 11
+  const STROKE = 9
 
   const rings = [
     { r: 52, progress: calProgress,     color: colors.primary, label: 'Calories' },
-    { r: 37, progress: workoutProgress, color: colors.success,  label: 'Workout'  },
-    { r: 22, progress: waterProgress,   color: colors.water,    label: 'Water'    },
+    { r: 38, progress: workoutProgress, color: colors.success,  label: 'Workout'  },
+    { r: 24, progress: waterProgress,   color: colors.water,    label: 'Water'    },
+    { r: 10, progress: stepsProgress,   color: colors.steps,    label: 'Steps'    },
   ]
 
   return (
@@ -228,6 +231,62 @@ function WaterCard({ waterMl, goalMl, onAdd, onPress }: {
         </View>
       )}
     </View>
+  )
+}
+
+// ─── Steps card ───────────────────────────────────────────────────────────────
+
+function StepsCard({ stepCount, goal, kcal, marginPct, onPress }: {
+  stepCount: number; goal: number; kcal: number; marginPct: number; onPress: () => void
+}) {
+  const SIZE = 60
+  const STROKE = 7
+  const R = (SIZE - STROKE) / 2
+  const CIRC = 2 * Math.PI * R
+  const progress = goal > 0 ? Math.min(1, stepCount / goal) : 0
+  const offset = CIRC * (1 - progress)
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+        <Ionicons name="footsteps-outline" size={14} color={colors.steps} />
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Steps</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={{ alignItems: 'center', justifyContent: 'center', width: SIZE, height: SIZE }}>
+          <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
+            <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.surface2} strokeWidth={STROKE} fill="none" />
+            <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.steps} strokeWidth={STROKE} fill="none"
+              strokeDasharray={`${CIRC}`} strokeDashoffset={offset}
+              strokeLinecap="round" rotation="-90" origin={`${SIZE / 2},${SIZE / 2}`} />
+          </Svg>
+          <Text style={{ color: colors.text, fontSize: 10, fontWeight: '700' }}>
+            {Math.round(progress * 100)}%
+          </Text>
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>
+            {formatSteps(stepCount)}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+            / {formatSteps(goal)} goal
+          </Text>
+          {kcal > 0 && (
+            <Text style={{ color: colors.steps, fontSize: fontSize.micro, fontWeight: '600' }}>
+              ~{kcal} kcal ±{marginPct}%
+            </Text>
+          )}
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      </View>
+    </Pressable>
   )
 }
 
@@ -574,6 +633,7 @@ export default function HomeScreen() {
   const { checklists, loadChecklists, toggleItem } = useChecklistStore()
   const { totalIncome, totalSpending, viewMonth, viewYear, loadMonth: loadBudgetMonth, loadCategories: loadBudgetCategories } = useBudgetStore()
   const { loadReminders: loadOrgReminders, loadPeople: loadOrgPeople, loadNotes: loadOrgNotes } = useOrganizerStore()
+  const { todayEntry: stepsEntry, todaySessions, loadToday: loadSteps, loadSessions: loadStepSessions } = useStepsStore()
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
@@ -584,12 +644,18 @@ export default function HomeScreen() {
 
   const firstChecklist = checklists[0] ?? null
 
+  const dob = profile?.dateOfBirth ?? '1990-01-01'
+  const weightKg = profile?.weightKg ?? 75
+  const heightCm = profile?.heightCm ?? 175
+
   function loadAll() {
     loadWeight(today)
     loadWeightHistory('7d')
     loadRecentSessions()
     loadDiet()
     loadDietHistory(7)
+    loadSteps(today, dob)
+    loadStepSessions(today)
     loadChecklists()
     loadBudgetCategories()
     loadBudgetMonth()
@@ -624,6 +690,10 @@ export default function HomeScreen() {
   const workoutProgress = activeSession ? 0.5 : todaySession ? 1 : 0
   const calProgress = macroGoals.calorieGoal > 0 ? totalCalories / macroGoals.calorieGoal : 0
   const waterProgress = waterGoalMl > 0 ? waterMl / waterGoalMl : 0
+  const stepCount = stepsEntry?.stepCount ?? 0
+  const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
+  const stepsProgress = stepGoal > 0 ? stepCount / stepGoal : 0
+  const { kcal: stepsKcal, marginPct: stepsMargin } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
 
   // Weight delta from 7-day history (sorted desc: [0]=most recent, [1]=second most recent)
   const weightDelta = weightHistory.length >= 2
@@ -677,6 +747,7 @@ export default function HomeScreen() {
           calProgress={calProgress}
           workoutProgress={workoutProgress}
           waterProgress={waterProgress}
+          stepsProgress={stepsProgress}
         />
 
         {/* Calories + Water */}
@@ -696,6 +767,15 @@ export default function HomeScreen() {
             onPress={() => router.push('/health/water')}
           />
         </View>
+
+        {/* Steps */}
+        <StepsCard
+          stepCount={stepCount}
+          goal={stepGoal}
+          kcal={stepsKcal}
+          marginPct={stepsMargin}
+          onPress={() => router.push('/health/steps')}
+        />
 
         {/* Workout */}
         <WorkoutCard

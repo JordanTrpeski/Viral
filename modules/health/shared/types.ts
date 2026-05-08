@@ -90,6 +90,28 @@ export interface TemplateExercise {
   createdAt: string
 }
 
+// Steps
+export interface StepEntry {
+  id: string
+  date: string       // YYYY-MM-DD
+  stepCount: number
+  goal: number
+  createdAt: string
+}
+
+export type ActivityType = 'walk' | 'jog' | 'run' | 'hike'
+export type InclineLevel = 0 | 1 | 2 | 3
+
+export interface StepSession {
+  id: string
+  date: string
+  activityType: ActivityType
+  stepCount: number
+  durationMinutes: number | null
+  incline: InclineLevel
+  createdAt: string
+}
+
 // Computed / derived
 export interface DailyNutritionSummary {
   date: string
