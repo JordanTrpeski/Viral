@@ -281,60 +281,62 @@ export default function BudgetScreen() {
         )}
 
         {/* Quick actions */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
-          <Pressable
-            onPress={() => router.push('/budget/add-expense' as never)}
-            style={({ pressed }) => ({
-              flex: 1, backgroundColor: colors.budget, borderRadius: radius.md,
-              paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
-              justifyContent: 'center', gap: spacing.xs,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Ionicons name="remove-circle-outline" size={18} color="#000" />
-            <Text style={{ color: '#000', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/budget/add-income' as never)}
-            style={({ pressed }) => ({
-              flex: 1, backgroundColor: colors.surface, borderRadius: radius.md,
-              paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
-              justifyContent: 'center', gap: spacing.xs,
-              borderWidth: 1, borderColor: colors.border,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Ionicons name="add-circle-outline" size={18} color={colors.success} />
-            <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/budget/templates' as never)}
-            style={({ pressed }) => ({
-              backgroundColor: colors.surface, borderRadius: radius.md,
-              paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md,
-              alignItems: 'center', flexDirection: 'row',
-              justifyContent: 'center', gap: spacing.xs,
-              borderWidth: 1, borderColor: colors.border,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/budget/balance' as never)}
-            style={({ pressed }) => ({
-              backgroundColor: colors.surface, borderRadius: radius.md,
-              paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md,
-              alignItems: 'center', flexDirection: 'row',
-              justifyContent: 'center', gap: spacing.xs,
-              borderWidth: 1, borderColor: colors.border,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Ionicons name="stats-chart-outline" size={18} color={colors.textMuted} />
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
-          </Pressable>
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable
+              onPress={() => router.push('/budget/add-expense' as never)}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.budget, borderRadius: radius.md,
+                paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
+                justifyContent: 'center', gap: spacing.xs,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Ionicons name="remove-outline" size={18} color="#000" />
+              <Text style={{ color: '#000', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/budget/add-income' as never)}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.surface, borderRadius: radius.md,
+                paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
+                justifyContent: 'center', gap: spacing.xs,
+                borderWidth: 1, borderColor: colors.border,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Ionicons name="add-outline" size={18} color={colors.success} />
+              <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
+            </Pressable>
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable
+              onPress={() => router.push('/budget/templates' as never)}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.surface, borderRadius: radius.md,
+                paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
+                justifyContent: 'center', gap: spacing.xs,
+                borderWidth: 1, borderColor: colors.border,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/budget/balance' as never)}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.surface, borderRadius: radius.md,
+                paddingVertical: spacing.sm + 2, alignItems: 'center', flexDirection: 'row',
+                justifyContent: 'center', gap: spacing.xs,
+                borderWidth: 1, borderColor: colors.border,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Ionicons name="stats-chart-outline" size={18} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* This Week card */}
