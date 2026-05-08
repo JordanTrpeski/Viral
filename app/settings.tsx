@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import * as Notifications from 'expo-notifications'
 import { sendTestBirthdayNotification } from '@modules/organizer/shared/notificationScheduler'
 import {
@@ -7,9 +7,9 @@ import {
   ScrollView,
   Pressable,
   Alert,
-  Share,
   TextInput,
 } from 'react-native'
+import { exportBackup, importBackup, backupFileName } from '@core/utils/backup'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -238,9 +238,13 @@ export default function SettingsScreen() {
   }
 
   async function handleExport() {
-    if (!profile) return
-    const payload = JSON.stringify({ profile, exportedAt: new Date().toISOString() }, null, 2)
-    await Share.share({ message: payload, title: 'MyOS Data Export' })
+    await exportBackup()
+  }
+
+  async function handleImport() {
+    await importBackup(() => {
+      useUserStore.getState().loadProfile()
+    })
   }
 
   function handleClearData() {
@@ -587,7 +591,19 @@ export default function SettingsScreen() {
         {/* ── Data ── */}
         <SectionTitle title="Data" />
         <Card>
-          <Row icon="download-outline" label="Export all data" onPress={handleExport} />
+          <Row
+            icon="save-outline"
+            label="Export backup"
+            value={backupFileName()}
+            onPress={handleExport}
+          />
+          <Divider />
+          <Row
+            icon="cloud-upload-outline"
+            label="Restore backup"
+            value="seed-viral-*.json"
+            onPress={handleImport}
+          />
           <Divider />
           <Row icon="trash-outline" label="Clear all data" onPress={handleClearData} danger />
         </Card>
