@@ -28,10 +28,12 @@ export default function WelcomeScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
       >
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.lg }}>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
 
-          <View style={{ marginBottom: spacing.xxl }}>
+          {/* Title floats in the center of the remaining space */}
+          <View style={{ flex: 1, justifyContent: 'center' }}>
             <Text style={{
               color: colors.primary,
               fontSize: fontSize.label,
@@ -47,6 +49,7 @@ export default function WelcomeScreen() {
             </Text>
           </View>
 
+          {/* Input + button always above keyboard */}
           <Input
             value={value}
             onChangeText={setValue}
@@ -55,7 +58,7 @@ export default function WelcomeScreen() {
             autoCapitalize="words"
             returnKeyType="done"
             onSubmitEditing={canContinue ? handleContinue : undefined}
-            containerStyle={{ marginBottom: spacing.lg }}
+            containerStyle={{ marginBottom: spacing.md }}
           />
 
           <Button
@@ -64,24 +67,24 @@ export default function WelcomeScreen() {
             disabled={!canContinue}
             fullWidth
           />
-        </View>
 
-        {/* Progress */}
-        <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm }}>
-          <View style={{ flexDirection: 'row', gap: 3 }}>
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  flex: 1, height: 3, borderRadius: radius.full,
-                  backgroundColor: i === 0 ? colors.primary : colors.surface2,
-                }}
-              />
-            ))}
+          {/* Progress */}
+          <View style={{ paddingTop: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1, height: 3, borderRadius: radius.full,
+                    backgroundColor: i === 0 ? colors.primary : colors.surface2,
+                  }}
+                />
+              ))}
+            </View>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
+              Step 1 of {TOTAL_STEPS}
+            </Text>
           </View>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-            Step 1 of {TOTAL_STEPS}
-          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

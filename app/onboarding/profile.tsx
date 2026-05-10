@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, forwardRef } from 'react'
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -75,6 +75,7 @@ export default function ProfileScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -106,13 +107,30 @@ export default function ProfileScreen() {
 
           {step === 2 && (
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <DOBField value={day} onChange={(v) => { setDay(v); if (v.length === 2) monthRef.current?.focus() }}
-                placeholder="DD" maxLength={2} autoFocus />
-              <DOBField ref={monthRef} value={month}
-                onChange={(v) => { setMonth(v); if (v.length === 2) yearRef.current?.focus() }}
-                placeholder="MM" maxLength={2} />
-              <DOBField ref={yearRef} value={year} onChange={setYear}
-                placeholder="YYYY" maxLength={4} flex={2} />
+              <DOBField
+                value={day}
+                onChange={(v) => {
+                  setDay(v)
+                  // advance once both digits are in
+                  if (v.length === 2) monthRef.current?.focus()
+                }}
+                placeholder="DD" maxLength={2} autoFocus
+              />
+              <DOBField
+                ref={monthRef}
+                value={month}
+                onChange={(v) => {
+                  setMonth(v)
+                  if (v.length === 2) yearRef.current?.focus()
+                }}
+                placeholder="MM" maxLength={2}
+              />
+              <DOBField
+                ref={yearRef}
+                value={year}
+                onChange={setYear}
+                placeholder="YYYY" maxLength={4} flex={2}
+              />
             </View>
           )}
 
@@ -183,7 +201,7 @@ export default function ProfileScreen() {
           )}
 
           {/* Button */}
-          <View style={{ marginTop: spacing.xl }}>
+          <View style={{ marginTop: spacing.lg }}>
             <Button
               label={step < 4 ? 'Next' : 'Continue'}
               onPress={handleNext}
@@ -193,7 +211,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Progress */}
-          <View style={{ paddingVertical: spacing.lg, gap: spacing.sm }}>
+          <View style={{ paddingTop: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', gap: 3 }}>
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                 <View
@@ -240,25 +258,24 @@ function NumberField({
   )
 }
 
-const DOBField = ({
-  ref, value, onChange, placeholder, maxLength, autoFocus, flex = 1,
-}: {
-  ref?: React.RefObject<TextInput | null>
+const DOBField = forwardRef<TextInput, {
   value: string; onChange: (v: string) => void
   placeholder: string; maxLength: number; autoFocus?: boolean; flex?: number
-}) => (
-  <View style={{
-    flex, backgroundColor: colors.surface2, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center', minHeight: 64,
-  }}>
-    <TextInput
-      ref={ref} value={value}
-      onChangeText={(v) => onChange(v.replace(/\D/g, ''))}
-      keyboardType="number-pad" maxLength={maxLength} autoFocus={autoFocus}
-      placeholder={placeholder} placeholderTextColor={colors.textMuted}
-      selectionColor={colors.primary}
-      style={{ color: colors.text, fontSize: 24, fontWeight: '600', textAlign: 'center', width: '100%', paddingVertical: spacing.sm }}
-    />
-  </View>
-)
+}>(function DOBField({ value, onChange, placeholder, maxLength, autoFocus, flex = 1 }, ref) {
+  return (
+    <View style={{
+      flex, backgroundColor: colors.surface2, borderRadius: radius.md,
+      borderWidth: 1, borderColor: colors.border,
+      alignItems: 'center', justifyContent: 'center', minHeight: 64,
+    }}>
+      <TextInput
+        ref={ref} value={value}
+        onChangeText={(v) => onChange(v.replace(/\D/g, ''))}
+        keyboardType="number-pad" maxLength={maxLength} autoFocus={autoFocus}
+        placeholder={placeholder} placeholderTextColor={colors.textMuted}
+        selectionColor={colors.primary}
+        style={{ color: colors.text, fontSize: 24, fontWeight: '600', textAlign: 'center', width: '100%', paddingVertical: spacing.sm }}
+      />
+    </View>
+  )
+})
