@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { View, Text, ScrollView, Pressable, TextInput, Switch, Alert } from 'react-native'
+import { View, Text, ScrollView, FlatList, Pressable, TextInput, Switch, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet'
+import BottomSheet from '@gorhom/bottom-sheet'
+const BottomSheetFlatList = FlatList
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { localDateStr } from '@core/utils/units'

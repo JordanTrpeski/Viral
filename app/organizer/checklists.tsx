@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import GorhomBottomSheet, { BottomSheetTextInput } from '@gorhom/bottom-sheet'
+import GorhomBottomSheet from '@gorhom/bottom-sheet'
+const BottomSheetTextInput = TextInput
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { BottomSheet, ProgressBar, SwipeableRow } from '@core/components'
 import { useChecklistStore } from '@modules/checklist/checklistStore'

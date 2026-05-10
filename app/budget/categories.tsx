@@ -3,7 +3,8 @@ import { View, Text, ScrollView, Pressable, TextInput, Alert } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+const BottomSheetTextInput = TextInput
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
 import type { BudgetCategory } from '@core/db/budgetQueries'

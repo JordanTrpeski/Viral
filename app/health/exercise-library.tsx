@@ -5,7 +5,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import GorhomBottomSheet, { BottomSheetTextInput } from '@gorhom/bottom-sheet'
+import GorhomBottomSheet from '@gorhom/bottom-sheet'
+const BottomSheetTextInput = TextInput
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { BottomSheet, Button } from '@core/components'
 import { useWorkoutStore } from '@modules/health/workout/workoutStore'
