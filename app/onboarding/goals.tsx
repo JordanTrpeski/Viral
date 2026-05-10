@@ -3,11 +3,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
-import { Button } from '@core/components'
 import { useOnboardingStore, type OnboardingGoal } from '@core/store/onboardingStore'
 
 const TOTAL_STEPS = 10
-const CURRENT_STEP = 6  // 0-indexed → step 7 of 10
+const CURRENT_STEP = 6
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -34,6 +33,7 @@ export default function GoalsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
 
+        {/* Header */}
         <View style={{ paddingTop: spacing.xl, marginBottom: spacing.xl }}>
           <Text style={{
             color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
@@ -46,6 +46,7 @@ export default function GoalsScreen() {
           </Text>
         </View>
 
+        {/* Goal cards */}
         <View style={{ gap: spacing.sm, flex: 1 }}>
           {GOALS.map((g) => {
             const selected = goal === g.id
@@ -54,72 +55,95 @@ export default function GoalsScreen() {
                 key={g.id}
                 onPress={() => setGoal(g.id)}
                 style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: selected ? colors.surface2 : colors.surface,
+                  backgroundColor: selected ? `${g.color}18` : colors.surface,
                   borderRadius: radius.lg,
                   borderWidth: 1.5,
                   borderColor: selected ? g.color : colors.border,
                   padding: spacing.md,
-                  gap: spacing.md,
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: radius.md,
-                    backgroundColor: selected ? `${g.color}22` : colors.surface2,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name={g.icon} size={24} color={selected ? g.color : colors.textMuted} />
+                {/* Row: icon + text + checkmark */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{
+                    width: 44, height: 44, borderRadius: radius.md,
+                    backgroundColor: selected ? `${g.color}25` : colors.surface2,
+                    alignItems: 'center', justifyContent: 'center',
+                    marginRight: spacing.md,
+                  }}>
+                    <Ionicons name={g.icon} size={22} color={selected ? g.color : colors.textMuted} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600' }}>
+                      {g.label}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: fontSize.body, marginTop: 2 }}>
+                      {g.sublabel}
+                    </Text>
+                  </View>
+                  <View style={{
+                    width: 24, height: 24, borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: selected ? g.color : colors.border,
+                    backgroundColor: selected ? g.color : 'transparent',
+                    alignItems: 'center', justifyContent: 'center',
+                    marginLeft: spacing.sm,
+                  }}>
+                    {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: selected ? colors.text : colors.text,
-                      fontSize: fontSize.cardTitle,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {g.label}
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: fontSize.body, marginTop: 2 }}>
-                    {g.sublabel}
-                  </Text>
-                </View>
-                {selected && (
-                  <Ionicons name="checkmark-circle" size={22} color={g.color} />
-                )}
               </Pressable>
             )
           })}
         </View>
 
-        <View style={{ paddingVertical: spacing.lg, gap: spacing.sm }}>
-          <Button
-            label="Continue"
-            onPress={() => router.push('/onboarding/units')}
-            disabled={!goal}
-            fullWidth
-          />
-          <View style={{ flexDirection: 'row', gap: 3 }}>
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  flex: 1, height: 3, borderRadius: radius.full,
-                  backgroundColor: i <= CURRENT_STEP ? colors.primary : colors.surface2,
-                }}
-              />
-            ))}
+        {/* Bottom: progress + Continue button */}
+        <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
+          {/* Progress bar */}
+          <View style={{ gap: spacing.xs }}>
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1, height: 3, borderRadius: radius.full,
+                    backgroundColor: i <= CURRENT_STEP ? colors.primary : colors.surface2,
+                  }}
+                />
+              ))}
+            </View>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
+              Step {CURRENT_STEP + 1} of {TOTAL_STEPS}
+            </Text>
           </View>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-            Step {CURRENT_STEP + 1} of {TOTAL_STEPS}
-          </Text>
+
+          {/* Continue button — prominent, full width */}
+          <Pressable
+            onPress={() => goal && router.push('/onboarding/units')}
+            disabled={!goal}
+            style={({ pressed }) => ({
+              backgroundColor: goal ? colors.primary : colors.surface2,
+              borderRadius: radius.lg,
+              borderWidth: goal ? 0 : 1,
+              borderColor: colors.border,
+              height: 56,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{
+              color: goal ? '#fff' : colors.textMuted,
+              fontSize: 17,
+              fontWeight: '700',
+              letterSpacing: 0.3,
+            }}>
+              Continue
+            </Text>
+            {goal && <Ionicons name="arrow-forward" size={18} color="#fff" />}
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

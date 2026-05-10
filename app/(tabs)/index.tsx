@@ -21,29 +21,58 @@ import { formatVolume, formatDuration, todayStr } from '@modules/health/workout/
 import { localDateStr } from '@core/utils/units'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
 
-// ─── Day Score rings ──────────────────────────────────────────────────────────
+// ─── Day Overview card (rings + actual values) ───────────────────────────────
 
-function DayScoreCard({
+function DayOverviewCard({
   calProgress, workoutProgress, waterProgress, stepsProgress,
-}: { calProgress: number; workoutProgress: number; waterProgress: number; stepsProgress: number }) {
-  const SIZE = 138
+  totalCalories, calorieGoal, proteinG, carbsG, fatG,
+  waterMl, waterGoalMl,
+  stepCount, stepGoal,
+  workoutDone, workoutInProgress,
+  onPress,
+}: {
+  calProgress: number; workoutProgress: number; waterProgress: number; stepsProgress: number
+  totalCalories: number; calorieGoal: number; proteinG: number; carbsG: number; fatG: number
+  waterMl: number; waterGoalMl: number
+  stepCount: number; stepGoal: number
+  workoutDone: boolean; workoutInProgress: boolean
+  onPress: () => void
+}) {
+  const SIZE = 130
   const cx = SIZE / 2
   const cy = SIZE / 2
   const STROKE = 9
 
   const rings = [
-    { r: 52, progress: calProgress,     color: colors.primary, label: 'Calories' },
-    { r: 38, progress: workoutProgress, color: colors.success,  label: 'Workout'  },
-    { r: 24, progress: waterProgress,   color: colors.water,    label: 'Water'    },
-    { r: 10, progress: stepsProgress,   color: colors.steps,    label: 'Steps'    },
+    { r: 50, progress: calProgress,     color: colors.primary },
+    { r: 36, progress: workoutProgress, color: colors.success  },
+    { r: 22, progress: waterProgress,   color: colors.water    },
+    { r: 8,  progress: stepsProgress,   color: colors.steps    },
   ]
 
+  const pct = calorieGoal > 0 ? totalCalories / calorieGoal : 0
+  const calDotColor = pct >= 1 ? colors.danger : pct >= 0.8 ? colors.warning : colors.primary
+  const workoutLabel = workoutInProgress ? 'In Progress' : workoutDone ? 'Done ✓' : '—'
+  const workoutColor = workoutInProgress ? colors.warning : workoutDone ? colors.success : colors.textMuted
+
   return (
-    <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md }}>
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
-        Day Score
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Text style={{
+        color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600',
+        textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md,
+      }}>
+        Today
       </Text>
+
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+        {/* Activity rings */}
         <Svg width={SIZE} height={SIZE}>
           {rings.map(({ r, progress, color }, i) => {
             const circ = 2 * Math.PI * r
@@ -63,53 +92,63 @@ function DayScoreCard({
           })}
         </Svg>
 
-        <View style={{ gap: spacing.md, flex: 1 }}>
-          {rings.map(({ label, progress, color }) => (
-            <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>{label}</Text>
-              <Text style={{ color: colors.text, fontSize: fontSize.label, fontWeight: '700' }}>
-                {Math.round(Math.min(1, progress) * 100)}%
+        {/* Metrics */}
+        <View style={{ flex: 1, gap: spacing.sm }}>
+          {/* Calories */}
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: calDotColor }} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Calories</Text>
+            </View>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', lineHeight: 24 }}>
+              {totalCalories.toLocaleString()}
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '400' }}>
+                {' '}/ {calorieGoal.toLocaleString()} kcal
               </Text>
+            </Text>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: 3, flexWrap: 'wrap' }}>
+              {[
+                { l: 'P', v: proteinG, c: '#64D2FF' },
+                { l: 'C', v: carbsG,   c: '#FFD60A' },
+                { l: 'F', v: fatG,     c: '#FF6B9D' },
+              ].map(({ l, v, c }) => (
+                <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: c }} />
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>{l} {v.toFixed(0)}g</Text>
+                </View>
+              ))}
             </View>
-          ))}
+          </View>
+
+          {/* Workout */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Workout</Text>
+            <Text style={{ color: workoutColor, fontSize: fontSize.micro, fontWeight: '600' }}>
+              {workoutLabel}
+            </Text>
+          </View>
+
+          {/* Water */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.water }} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Water</Text>
+            <Text style={{ color: colors.text, fontSize: fontSize.micro, fontWeight: '600' }}>
+              {(waterMl / 1000).toFixed(1)}
+              <Text style={{ color: colors.textMuted, fontWeight: '400' }}> / {(waterGoalMl / 1000).toFixed(1)}L</Text>
+            </Text>
+          </View>
+
+          {/* Steps */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.steps }} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Steps</Text>
+            <Text style={{ color: colors.text, fontSize: fontSize.micro, fontWeight: '600' }}>
+              {formatSteps(stepCount)}
+              <Text style={{ color: colors.textMuted, fontWeight: '400' }}> / {formatSteps(stepGoal)}</Text>
+            </Text>
+          </View>
         </View>
-      </View>
-    </View>
-  )
-}
-
-// ─── Calories card ────────────────────────────────────────────────────────────
-
-function CaloriesCard({
-  totalCalories, goal, proteinG, carbsG, fatG, onPress,
-}: { totalCalories: number; goal: number; proteinG: number; carbsG: number; fatG: number; onPress: () => void }) {
-  const pct = goal > 0 ? totalCalories / goal : 0
-  const barColor = pct >= 1 ? colors.danger : pct >= 0.8 ? colors.warning : colors.success
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md, opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
-        <Ionicons name="nutrition-outline" size={14} color={colors.diet} />
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Calories</Text>
-      </View>
-      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{totalCalories}</Text>
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginBottom: spacing.sm }}>/ {goal} kcal</Text>
-      <ProgressBar progress={Math.min(1, pct)} color={barColor} height={4} />
-      <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, flexWrap: 'wrap' }}>
-        {[{ l: 'P', v: proteinG, c: '#64D2FF' }, { l: 'C', v: carbsG, c: '#FFD60A' }, { l: 'F', v: fatG, c: '#FF6B9D' }]
-          .map(({ l, v, c }) => (
-            <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c }} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>{l} {v.toFixed(0)}g</Text>
-            </View>
-          ))}
       </View>
     </Pressable>
   )
@@ -742,31 +781,33 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Day Score */}
-        <DayScoreCard
+        {/* Day Overview — rings + actual values */}
+        <DayOverviewCard
           calProgress={calProgress}
           workoutProgress={workoutProgress}
           waterProgress={waterProgress}
           stepsProgress={stepsProgress}
+          totalCalories={totalCalories}
+          calorieGoal={macroGoals.calorieGoal}
+          proteinG={totalProteinG}
+          carbsG={totalCarbsG}
+          fatG={totalFatG}
+          waterMl={waterMl}
+          waterGoalMl={waterGoalMl}
+          stepCount={stepCount}
+          stepGoal={stepGoal}
+          workoutDone={!!todaySession && !activeSession}
+          workoutInProgress={!!activeSession}
+          onPress={() => router.push('/health/diet')}
         />
 
-        {/* Calories + Water */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <CaloriesCard
-            totalCalories={totalCalories}
-            goal={macroGoals.calorieGoal}
-            proteinG={totalProteinG}
-            carbsG={totalCarbsG}
-            fatG={totalFatG}
-            onPress={() => router.push('/health/diet')}
-          />
-          <WaterCard
-            waterMl={waterMl}
-            goalMl={waterGoalMl}
-            onAdd={(ml) => addWater(ml)}
-            onPress={() => router.push('/health/water')}
-          />
-        </View>
+        {/* Water */}
+        <WaterCard
+          waterMl={waterMl}
+          goalMl={waterGoalMl}
+          onAdd={(ml) => addWater(ml)}
+          onPress={() => router.push('/health/water')}
+        />
 
         {/* Steps */}
         <StepsCard

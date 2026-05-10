@@ -100,35 +100,47 @@ export default function HealthScreen() {
               borderRadius: radius.lg,
               borderWidth: 1,
               borderColor: colors.border,
-              padding: spacing.md,
-              gap: spacing.md,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
               opacity: pressed && card.available ? 0.85 : card.available ? 1 : 0.5,
             })}
           >
+            {/* Icon */}
             <View
               style={{
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 borderRadius: radius.md,
                 backgroundColor: `${card.color}22`,
                 alignItems: 'center',
                 justifyContent: 'center',
+                marginRight: spacing.md,
+                flexShrink: 0,
               }}
             >
-              <Ionicons name={card.icon} size={24} color={card.color} />
+              <Ionicons name={card.icon} size={22} color={card.color} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600' }}>
-                {card.title}
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.body, marginTop: 2 }}>
+
+            {/* Title */}
+            <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', flex: 1 }}>
+              {card.title}
+            </Text>
+
+            {/* Value / status */}
+            {card.subtitle ? (
+              <Text
+                style={{ color: colors.textMuted, fontSize: fontSize.label, marginRight: spacing.xs, flexShrink: 1 }}
+                numberOfLines={1}
+              >
                 {card.subtitle}
               </Text>
-            </View>
+            ) : null}
+
+            {/* Action indicator */}
             {card.available ? (
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ flexShrink: 0 }} />
             ) : (
-              <View style={{ backgroundColor: colors.surface2, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+              <View style={{ backgroundColor: colors.surface2, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, flexShrink: 0 }}>
                 <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>SOON</Text>
               </View>
             )}
