@@ -14,7 +14,6 @@ export default function OrganizerLayout() {
       <Stack.Screen name="tier-edit" />
       <Stack.Screen name="people" />
       <Stack.Screen name="person-add" />
-      <Stack.Screen name="person-edit" />
       <Stack.Screen name="person-profile" />
       <Stack.Screen name="birthdays" />
       <Stack.Screen name="reminders" />

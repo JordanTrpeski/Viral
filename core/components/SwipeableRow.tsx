@@ -1,6 +1,7 @@
 import { useRef } from 'react'
-import { Animated, Pressable, Text, View, ViewStyle } from 'react-native'
-import { Swipeable } from 'react-native-gesture-handler'
+import { Pressable, Text, View, ViewStyle } from 'react-native'
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
+import Reanimated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@core/theme'
 
@@ -18,27 +19,17 @@ interface SwipeableRowProps {
 }
 
 export default function SwipeableRow({ children, rightActions = [], style }: SwipeableRowProps) {
-  const swipeableRef = useRef<Swipeable>(null)
+  const swipeableRef = useRef<SwipeableMethods>(null)
 
-  const renderRightActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
-  ) => {
+  const RightActions = ({ drag }: { drag: SharedValue<number> }) => {
     const totalWidth = rightActions.length * 72
 
-    const translateX = dragX.interpolate({
-      inputRange: [-totalWidth, 0],
-      outputRange: [0, totalWidth],
-      extrapolate: 'clamp',
-    })
+    const animStyle = useAnimatedStyle(() => ({
+      transform: [{ translateX: Math.max(drag.value + totalWidth, 0) }],
+    }))
 
     return (
-      <Animated.View
-        style={{
-          flexDirection: 'row',
-          transform: [{ translateX }],
-        }}
-      >
+      <Reanimated.View style={[{ flexDirection: 'row' }, animStyle]}>
         {rightActions.map((action, i) => (
           <Pressable
             key={i}
@@ -60,17 +51,21 @@ export default function SwipeableRow({ children, rightActions = [], style }: Swi
             </Text>
           </Pressable>
         ))}
-      </Animated.View>
+      </Reanimated.View>
     )
   }
 
   return (
-    <Swipeable
+    <ReanimatedSwipeable
       ref={swipeableRef}
-      renderRightActions={rightActions.length > 0 ? renderRightActions : undefined}
+      renderRightActions={
+        rightActions.length > 0
+          ? (_prog: SharedValue<number>, drag: SharedValue<number>) => <RightActions drag={drag} />
+          : undefined
+      }
       overshootRight={false}
     >
       <View style={style}>{children}</View>
-    </Swipeable>
+    </ReanimatedSwipeable>
   )
 }
