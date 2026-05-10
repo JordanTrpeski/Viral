@@ -1,44 +1,48 @@
 // Design tokens — single source of truth for all colors, spacing, and type
-// Dark mode primary. All modules must read from here, never hardcode values.
+// Rustic-futuristic dark theme. All modules must read from here, never hardcode values.
 
 export const colors = {
-  // Backgrounds
-  bg:       '#0F0F0F',
-  surface:  '#1C1C1E',
-  surface2: '#2A2A2A',
-  border:   'rgba(255,255,255,0.07)',
+  // Backgrounds — forge charcoal family
+  bg:       '#14110d',
+  surface:  '#1d1812',
+  surface2: '#251f17',
+  border:   '#2e2619',
+
+  // Border accents
+  borderAccent: '#6e5a3d',
+  borderHero:   '#b08a55',
 
   // Semantic
-  primary:  '#6C63FF',
-  success:  '#30D158',
-  warning:  '#FFD60A',
-  danger:   '#FF453A',
+  primary:  '#b08a55',   // worn brass — primary actions
+  success:  '#8fa860',   // moss copper
+  warning:  '#d4a574',   // raw brass
+  danger:   '#c4452a',   // oxidized iron
 
-  // Text
-  text:      '#F5F5F5',
-  textMuted: '#636366',
+  // Text — parchment family
+  text:      '#ede0c8',
+  textMuted: '#b09e7d',
 
   // Module accents
-  workout:    '#6C63FF',
-  diet:       '#30D158',
-  water:      '#64D2FF',
-  budget:     '#FFD60A',
-  organizer:  '#2DD4BF',
-  notes:      '#FB923C',
-  calendar:   '#60A5FA',
-  people:     '#FF6B9D',
-  reminders:  '#FF453A',
-  checklist:  '#A78BFA',
-  steps:      '#FF9F0A',
+  workout:    '#d97a4a',   // forge orange
+  diet:       '#8fa860',   // moss copper
+  water:      '#6ba0aa',   // verdigris
+  budget:     '#d4a574',   // raw brass
+  organizer:  '#9b8ab8',   // faded violet
+  notes:      '#d49a4a',   // amber
+  calendar:   '#6ba0aa',   // verdigris (reuse water)
+  people:     '#c46a6a',   // rust red
+  reminders:  '#c4452a',   // oxidized iron (reuse danger)
+  checklist:  '#9b8ab8',   // faded violet (reuse organizer)
+  steps:      '#d4a574',   // raw brass (reuse warning)
 } as const
 
-// Importance tier colors (Organizer module)
+// Importance tier colors (Organizer module) — mapped to rustic palette
 export const tierColors = {
-  veryImportant:  '#A855F7',
-  family:         '#EF4444',
-  closeFriends:   '#EAB308',
-  friends:        '#22C55E',
-  acquaintances:  '#6B7280',
+  veryImportant:  '#9b8ab8',   // faded violet
+  family:         '#c46a6a',   // rust red
+  closeFriends:   '#d4a574',   // raw brass
+  friends:        '#8fa860',   // moss copper
+  acquaintances:  '#6b5a47',   // dark brass/brown
 } as const
 
 // Typography scale
@@ -70,13 +74,19 @@ export const spacing = {
   xxl: 48,
 } as const
 
-// Border radius
+// Border radius — sharper, industrial feel
 export const radius = {
-  sm:   8,
-  md:   12,
-  lg:   16,
+  sm:   4,
+  md:   8,
+  lg:   8,
   full: 9999,
 } as const
 
 // Minimum tap target (48px per UI principles)
 export const minTapTarget = 48
+
+// Font families — Space Grotesk (UI) + JetBrains Mono (data/numbers)
+export const fonts = {
+  ui:   'SpaceGrotesk',
+  mono: 'JetBrainsMono',
+} as const

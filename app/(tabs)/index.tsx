@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Circle } from 'react-native-svg'
-import { colors, fontSize, spacing, radius } from '@core/theme'
+import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { Button, SparklineGraph, ProgressBar } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
@@ -60,12 +60,13 @@ function DayOverviewCard({
       onPress={onPress}
       style={({ pressed }) => ({
         backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+        borderWidth: 1, borderColor: colors.borderAccent, padding: spacing.md,
         opacity: pressed ? 0.85 : 1,
       })}
     >
       <Text style={{
         color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600',
+        fontFamily: `${fonts.ui}_600SemiBold`,
         textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md,
       }}>
         Today
@@ -100,9 +101,9 @@ function DayOverviewCard({
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: calDotColor }} />
               <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Calories</Text>
             </View>
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', lineHeight: 24 }}>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', lineHeight: 24, fontFamily: `${fonts.mono}_700Bold` }}>
               {totalCalories.toLocaleString()}
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '400' }}>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '400', fontFamily: `${fonts.mono}_400Regular` }}>
                 {' '}/ {calorieGoal.toLocaleString()} kcal
               </Text>
             </Text>
@@ -311,14 +312,14 @@ function StepsCard({ stepCount, goal, low, high, onPress }: {
           </Text>
         </View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>
             {formatSteps(stepCount)}
           </Text>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontFamily: `${fonts.mono}_400Regular` }}>
             / {formatSteps(goal)} goal
           </Text>
           {high > 0 && (
-            <Text style={{ color: colors.steps, fontSize: fontSize.micro, fontWeight: '600' }}>
+            <Text style={{ color: colors.steps, fontSize: fontSize.micro, fontWeight: '600', fontFamily: `${fonts.mono}_500Medium` }}>
               {low === high ? `~${low}` : `${low}–${high}`} kcal
             </Text>
           )}
@@ -357,7 +358,7 @@ function WorkoutCard({ activeSession, todaySession, onPress, onStart }: {
         </Text>
       </View>
 
-      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: spacing.sm }}>
+      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: spacing.sm, fontFamily: `${fonts.ui}_700Bold` }}>
         {inProgress ? (activeSession?.name ?? 'Active Workout')
           : done ? (todaySession?.name ?? 'Today\'s Session')
           : 'Ready to train?'}
@@ -416,9 +417,9 @@ function WeightCard({ weightKg, delta, sparklineData, onPress }: {
           <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Body Weight</Text>
         </View>
         {weightKg != null ? (
-          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{weightKg} kg</Text>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>{weightKg} kg</Text>
         ) : (
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>Log today's weight</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontFamily: `${fonts.ui}_400Regular` }}>Log today's weight</Text>
         )}
         {delta !== null && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
@@ -515,8 +516,8 @@ function BudgetCard({ spent, income, month, onPress }: {
         <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{month}</Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginBottom: spacing.sm }}>
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>€{spent.toFixed(0)}</Text>
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>/ €{income.toFixed(0)} income</Text>
+        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>€{spent.toFixed(0)}</Text>
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.mono}_400Regular` }}>/ €{income.toFixed(0)} income</Text>
       </View>
       <ProgressBar progress={pct} color={barColor} height={4} />
       <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs }}>
@@ -539,7 +540,7 @@ function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today 
 
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md }}>
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
+      <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold`, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
         This Week
       </Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -763,11 +764,11 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{greeting}</Text>
-            <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '700' }}>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.ui}_400Regular` }}>{greeting}</Text>
+            <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '700', fontFamily: `${fonts.ui}_700Bold` }}>
               {profile?.name ?? 'Welcome'}
             </Text>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: 2 }}>{dateLabel}</Text>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: 2, fontFamily: `${fonts.ui}_400Regular` }}>{dateLabel}</Text>
           </View>
           <Pressable
             onPress={() => router.push('/settings')}

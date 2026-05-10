@@ -1,5 +1,5 @@
 import { Pressable, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native'
-import { colors, radius, minTapTarget } from '@core/theme'
+import { colors, radius, minTapTarget, fonts } from '@core/theme'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -15,11 +15,19 @@ interface ButtonProps {
 
 const variantStyles: Record<Variant, { container: ViewStyle; text: TextStyle }> = {
   primary: {
-    container: { backgroundColor: colors.primary },
-    text: { color: '#FFFFFF' },
+    container: {
+      backgroundColor: colors.primary,
+      borderWidth: 1,
+      borderColor: colors.borderHero,
+    },
+    text: { color: '#14110d' },
   },
   secondary: {
-    container: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border },
+    container: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.borderAccent,
+    },
     text: { color: colors.text },
   },
   ghost: {
@@ -27,8 +35,12 @@ const variantStyles: Record<Variant, { container: ViewStyle; text: TextStyle }> 
     text: { color: colors.primary },
   },
   danger: {
-    container: { backgroundColor: colors.danger },
-    text: { color: '#FFFFFF' },
+    container: {
+      backgroundColor: colors.danger,
+      borderWidth: 1,
+      borderColor: colors.danger,
+    },
+    text: { color: colors.text },
   },
 }
 
@@ -74,7 +86,16 @@ export default function Button({
       {loading ? (
         <ActivityIndicator size="small" color={colors.textMuted} />
       ) : (
-        <Text style={[{ fontSize: 16, fontWeight: '600' }, isDisabled ? disabledText : text]}>
+        <Text style={[
+          {
+            fontSize: 14,
+            fontWeight: '600',
+            fontFamily: `${fonts.ui}_600SemiBold`,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+          },
+          isDisabled ? disabledText : text,
+        ]}>
           {label}
         </Text>
       )}

@@ -6,6 +6,18 @@ import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import * as Sentry from '@sentry/react-native'
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk'
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_700Bold,
+} from '@expo-google-fonts/jetbrains-mono'
 import { colors } from '@core/theme'
 import { initDatabase } from '@core/db/database'
 import { useUserStore } from '@core/store/userStore'
@@ -42,6 +54,16 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false)
   const { onboardingComplete, loadProfile } = useUserStore()
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
+  })
+
   useEffect(() => {
     initDatabase()
     seedExercisesIfNeeded()
@@ -51,8 +73,13 @@ export default function RootLayout() {
     seedOrganizerTiersIfNeeded()
     loadProfile()
     setReady(true)
-    SplashScreen.hideAsync()
   }, [])
+
+  useEffect(() => {
+    if (ready && fontsLoaded) {
+      SplashScreen.hideAsync()
+    }
+  }, [ready, fontsLoaded])
 
   useEffect(() => {
     if (!ready) return
@@ -60,6 +87,8 @@ export default function RootLayout() {
       router.replace('/onboarding')
     }
   }, [ready, onboardingComplete])
+
+  if (!fontsLoaded) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>

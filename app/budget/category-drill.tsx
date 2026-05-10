@@ -203,7 +203,7 @@ export default function CategoryDrillScreen() {
                 <View style={{
                   height: 4,
                   width: `${Math.min(100, (totalSpent / limit) * 100)}%`,
-                  backgroundColor: totalSpent >= limit ? colors.error : catColor,
+                  backgroundColor: totalSpent >= limit ? colors.danger : catColor,
                   borderRadius: 2,
                 }} />
               </View>

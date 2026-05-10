@@ -2,7 +2,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, fontSize, spacing, radius } from '@core/theme'
+import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
 import { useStepsStore } from '@modules/health/steps/stepsStore'
 import { useUserStore } from '@core/store/userStore'
@@ -82,7 +82,7 @@ export default function HealthScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}>
-        <Text style={{ color: colors.text, fontSize: fontSize.screenTitle, fontWeight: '700' }}>
+        <Text style={{ color: colors.text, fontSize: fontSize.screenTitle, fontWeight: '700', fontFamily: `${fonts.ui}_700Bold` }}>
           Health
         </Text>
       </View>
@@ -122,7 +122,7 @@ export default function HealthScreen() {
             </View>
 
             {/* Title */}
-            <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', flex: 1 }}>
+            <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', flex: 1, fontFamily: `${fonts.ui}_600SemiBold` }}>
               {card.title}
             </Text>
 
