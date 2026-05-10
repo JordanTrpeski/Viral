@@ -88,8 +88,6 @@ export default function RootLayout() {
     }
   }, [ready, onboardingComplete])
 
-  if (!fontsLoaded) return null
-
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <StatusBar style="light" />
