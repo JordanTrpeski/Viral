@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import * as Sentry from '@sentry/react-native'
 import { colors } from '@core/theme'
 import { initDatabase } from '@core/db/database'
 import { useUserStore } from '@core/store/userStore'
@@ -13,6 +14,12 @@ import { seedChecklistIfNeeded } from '@modules/checklist/checklistSeed'
 import { seedFoodsIfNeeded } from '@modules/health/diet/foodSeed'
 import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
 import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
+
+Sentry.init({
+  dsn: 'https://377853c6d1f84fafc119393db68e7648@o4511366080757760.ingest.de.sentry.io/4511366093209680',
+  debug: false,
+  enabled: !__DEV__,
+})
 
 SplashScreen.preventAutoHideAsync()
 
