@@ -43,7 +43,9 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-updates"
+      "expo-updates",
+      "expo-web-browser",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
