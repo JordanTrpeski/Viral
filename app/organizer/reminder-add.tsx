@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
-const BottomSheetFlatList = FlatList
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import type { ReminderRepeat, ReminderPriority, OrganizerPerson } from '@core/types'
 import { localDateStr } from '@core/utils/units'
+
+const BottomSheetFlatList = FlatList
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 

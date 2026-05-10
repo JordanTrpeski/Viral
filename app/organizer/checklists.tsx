@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
-const BottomSheetTextInput = TextInput
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { BottomSheet, ProgressBar, SwipeableRow } from '@core/components'
 import { useChecklistStore } from '@modules/checklist/checklistStore'
 import type { ChecklistWithProgress } from '@core/db/checklistQueries'
+
+const BottomSheetTextInput = TextInput
 
 function ChecklistCard({ item, onPress, onRename, onDelete, onUseTemplate }: {
   item: ChecklistWithProgress

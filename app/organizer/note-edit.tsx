@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
-const BottomSheetFlatList = FlatList
-const BottomSheetScrollView = ScrollView
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { localDateStr } from '@core/utils/units'
+
+const BottomSheetFlatList = FlatList
+const BottomSheetScrollView = ScrollView
 
 const TAG_PRESET_COLORS = [
   '#FF453A', '#FF9F0A', '#FFD60A', '#30D158',

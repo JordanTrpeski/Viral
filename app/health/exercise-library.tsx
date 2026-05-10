@@ -6,12 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
-const BottomSheetTextInput = TextInput
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { BottomSheet, Button } from '@core/components'
 import { useWorkoutStore } from '@modules/health/workout/workoutStore'
 import MuscleGroupBadge from '@modules/health/workout/components/MuscleGroupBadge'
 import type { MuscleGroup, Equipment, Exercise } from '@modules/health/shared/types'
+
+const BottomSheetTextInput = TextInput
 
 const MUSCLE_GROUPS: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio']
 const EQUIPMENT_OPTIONS: Equipment[] = ['barbell', 'dumbbell', 'machine', 'bodyweight', 'cable', 'other']

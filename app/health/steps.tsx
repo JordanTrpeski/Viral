@@ -18,8 +18,9 @@ import {
 import { localDateStr } from '@core/utils/units'
 import type { ActivityType, InclineLevel } from '@modules/health/shared/types'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
-const BottomSheetTextInput = TextInput
 import { useRef } from 'react'
+
+const BottomSheetTextInput = TextInput
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const QUICK_STEPS = [500, 1000, 2000, 3000, 5000, 10000]

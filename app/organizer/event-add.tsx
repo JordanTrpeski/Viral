@@ -4,10 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
-const BottomSheetFlatList = FlatList
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { localDateStr } from '@core/utils/units'
+
+const BottomSheetFlatList = FlatList
 
 // ── Color options ──────────────────────────────────────────────────────────────
 

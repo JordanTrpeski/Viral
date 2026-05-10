@@ -5,11 +5,12 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
-const BottomSheetScrollView = ScrollView
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import type { OrganizerEvent, OrganizerPerson } from '@core/types'
 import { localDateStr } from '@core/utils/units'
+
+const BottomSheetScrollView = ScrollView
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
