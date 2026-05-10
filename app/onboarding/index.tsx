@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { colors, fontSize, spacing, radius } from '@core/theme'
+import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { Button } from '@core/components'
 import { Input } from '@core/components'
 import { useOnboardingStore } from '@core/store/onboardingStore'
@@ -25,31 +25,42 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/*
+        behavior="padding" on both platforms:
+        adds paddingBottom = keyboard height so children shift up
+        without the view shrinking — button stays visible on every re-render
+      */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
       >
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+        {/* Title area — fills all space not taken by footer */}
+        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.lg }}>
+          <Text style={{
+            color: colors.primary,
+            fontSize: fontSize.label,
+            fontWeight: '600',
+            fontFamily: `${fonts.ui}_600SemiBold`,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            marginBottom: spacing.sm,
+          }}>
+            Welcome
+          </Text>
+          <Text style={{
+            color: colors.text,
+            fontSize: titleSize,
+            fontWeight: '700',
+            fontFamily: `${fonts.ui}_700Bold`,
+            lineHeight: titleSize * 1.25,
+          }}>
+            What's your{'\n'}name?
+          </Text>
+        </View>
 
-          {/* Title floats in the center of the remaining space */}
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <Text style={{
-              color: colors.primary,
-              fontSize: fontSize.label,
-              fontWeight: '600',
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              marginBottom: spacing.sm,
-            }}>
-              Welcome
-            </Text>
-            <Text style={{ color: colors.text, fontSize: titleSize, fontWeight: '700', lineHeight: titleSize * 1.25 }}>
-              What's your{'\n'}name?
-            </Text>
-          </View>
-
-          {/* Input + button always above keyboard */}
+        {/* Footer — anchored at bottom, rises above keyboard */}
+        <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md }}>
           <Input
             value={value}
             onChangeText={setValue}
@@ -58,7 +69,6 @@ export default function WelcomeScreen() {
             autoCapitalize="words"
             returnKeyType="done"
             onSubmitEditing={canContinue ? handleContinue : undefined}
-            containerStyle={{ marginBottom: spacing.md }}
           />
 
           <Button
@@ -69,7 +79,7 @@ export default function WelcomeScreen() {
           />
 
           {/* Progress */}
-          <View style={{ paddingTop: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm }}>
+          <View style={{ gap: spacing.xs }}>
             <View style={{ flexDirection: 'row', gap: 3 }}>
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                 <View
@@ -81,7 +91,12 @@ export default function WelcomeScreen() {
                 />
               ))}
             </View>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
+            <Text style={{
+              color: colors.textMuted,
+              fontSize: fontSize.label,
+              textAlign: 'center',
+              fontFamily: `${fonts.ui}_400Regular`,
+            }}>
               Step 1 of {TOTAL_STEPS}
             </Text>
           </View>

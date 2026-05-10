@@ -74,12 +74,13 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.lg }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}
+          showsVerticalScrollIndicator={false}
         >
           {/* Header + title */}
           <View style={{ paddingTop: spacing.lg, marginBottom: spacing.xl }}>
@@ -200,18 +201,17 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Button */}
-          <View style={{ marginTop: spacing.lg }}>
-            <Button
-              label={step < 4 ? 'Next' : 'Continue'}
-              onPress={handleNext}
-              disabled={!canAdvance()}
-              fullWidth
-            />
-          </View>
+        </ScrollView>
 
-          {/* Progress */}
-          <View style={{ paddingTop: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm }}>
+        {/* Fixed footer — sits above keyboard, never scrolls away */}
+        <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md }}>
+          <Button
+            label={step < 4 ? 'Next' : 'Continue'}
+            onPress={handleNext}
+            disabled={!canAdvance()}
+            fullWidth
+          />
+          <View style={{ gap: spacing.xs }}>
             <View style={{ flexDirection: 'row', gap: 3 }}>
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                 <View
@@ -227,7 +227,7 @@ export default function ProfileScreen() {
               Step {currentGlobalStep + 1} of {TOTAL_STEPS}
             </Text>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
