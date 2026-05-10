@@ -18,7 +18,7 @@ import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
 Sentry.init({
   dsn: 'https://377853c6d1f84fafc119393db68e7648@o4511366080757760.ingest.de.sentry.io/4511366093209680',
   debug: false,
-  enabled: !__DEV__,
+  enabled: true,
 })
 
 SplashScreen.preventAutoHideAsync()
