@@ -62,18 +62,42 @@ class WebStorage implements KVStore {
   }
 }
 
+// In-memory fallback used when MMKV native module fails to initialize
+class MemoryStorage implements KVStore {
+  private data: Map<string, string> = new Map()
+  getString(key: string): string | undefined { return this.data.get(key) }
+  getBoolean(key: string): boolean | undefined {
+    const v = this.data.get(key)
+    return v === undefined ? undefined : v === 'true'
+  }
+  getNumber(key: string): number | undefined {
+    const v = this.data.get(key)
+    if (v === undefined) return undefined
+    const n = parseFloat(v)
+    return isNaN(n) ? undefined : n
+  }
+  set(key: string, value: string | number | boolean) { this.data.set(key, String(value)) }
+  delete(key: string) { this.data.delete(key) }
+  clearAll() { this.data.clear() }
+}
+
 // Native — thin wrapper so the import is never evaluated on web
 class NativeStorage implements KVStore {
-  private store: import('react-native-mmkv').MMKV
+  private store: KVStore
   constructor(id: string) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { MMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv')
-    this.store = new MMKV({ id })
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { MMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv')
+      this.store = new MMKV({ id })
+    } catch {
+      // Native module not ready (e.g. dev build cold start) — use memory fallback
+      this.store = new MemoryStorage()
+    }
   }
   getString(key: string) { return this.store.getString(key) }
   getBoolean(key: string) { return this.store.getBoolean(key) }
   getNumber(key: string) { return this.store.getNumber(key) }
-  set(key: string, value: string | number | boolean) { this.store.set(key, value as never) }
+  set(key: string, value: string | number | boolean) { this.store.set(key, value) }
   delete(key: string) { this.store.delete(key) }
   clearAll() { this.store.clearAll() }
 }
