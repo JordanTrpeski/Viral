@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { colors, fontSize, spacing, radius } from '@core/theme'
@@ -10,7 +10,9 @@ import type { Sex, ActivityLevel } from '@core/types'
 
 type Step = 0 | 1 | 2 | 3 | 4
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 10
+// Profile sub-steps occupy global steps 2–6
+const PROFILE_STEP_OFFSET = 2
 
 const STEP_QUESTIONS: string[] = [
   'How much do you weigh?',
@@ -29,6 +31,7 @@ const ACTIVITY_LEVELS: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'act
 
 export default function ProfileScreen() {
   const router = useRouter()
+  const { width } = useWindowDimensions()
   const { setWeight, setHeight, setDateOfBirth, setSex, setActivityLevel } = useOnboardingStore()
   const [step, setStep] = useState<Step>(0)
 
@@ -42,6 +45,9 @@ export default function ProfileScreen() {
 
   const monthRef = useRef<TextInput>(null)
   const yearRef  = useRef<TextInput>(null)
+
+  const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
+  const currentGlobalStep = PROFILE_STEP_OFFSET + step  // 2, 3, 4, 5, 6
 
   function canAdvance(): boolean {
     if (step === 0) return Number(weight) > 0
@@ -70,35 +76,24 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Progress bar */}
-        <View style={{ flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <View
-              key={i}
-              style={{
-                height: 3, flex: 1, borderRadius: radius.full,
-                backgroundColor: i <= step ? colors.primary : colors.surface2,
-              }}
-            />
-          ))}
-        </View>
-
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.lg }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.lg }}
         >
-          <Text style={{
-            color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
-            letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing.sm,
-          }}>
-            About You
-          </Text>
-          <Text style={{
-            color: colors.text, fontSize: 32, fontWeight: '700', lineHeight: 40, marginBottom: spacing.xl,
-          }}>
-            {STEP_QUESTIONS[step]}
-          </Text>
+          {/* Header + title */}
+          <View style={{ paddingTop: spacing.lg, marginBottom: spacing.xl }}>
+            <Text style={{
+              color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
+              letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing.sm,
+            }}>
+              About You
+            </Text>
+            <Text style={{ color: colors.text, fontSize: titleSize, fontWeight: '700', lineHeight: titleSize * 1.25 }}>
+              {STEP_QUESTIONS[step]}
+            </Text>
+          </View>
 
+          {/* Fields */}
           {step === 0 && (
             <NumberField value={weight} onChange={setWeightVal} suffix="kg" autoFocus
               onSubmit={canAdvance() ? handleNext : undefined} />
@@ -127,7 +122,7 @@ export default function ProfileScreen() {
                 <Pressable
                   key={opt.id}
                   onPress={() => setSexVal(opt.id)}
-                  style={({pressed}) => ({
+                  style={({ pressed }) => ({
                     flexDirection: 'row', alignItems: 'center',
                     backgroundColor: sex === opt.id ? `${colors.primary}15` : colors.surface,
                     borderRadius: radius.lg, borderWidth: 1.5,
@@ -158,7 +153,7 @@ export default function ProfileScreen() {
                 <Pressable
                   key={lvl}
                   onPress={() => setLevel(lvl)}
-                  style={({pressed}) => ({
+                  style={({ pressed }) => ({
                     flexDirection: 'row', alignItems: 'center',
                     backgroundColor: level === lvl ? `${colors.primary}15` : colors.surface,
                     borderRadius: radius.lg, borderWidth: 1.5,
@@ -187,6 +182,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {/* Button */}
           <View style={{ marginTop: spacing.xl }}>
             <Button
               label={step < 4 ? 'Next' : 'Continue'}
@@ -195,9 +191,24 @@ export default function ProfileScreen() {
               fullWidth
             />
           </View>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center', marginTop: spacing.md }}>
-            Step 2 of 6
-          </Text>
+
+          {/* Progress */}
+          <View style={{ paddingVertical: spacing.lg, gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1, height: 3, borderRadius: radius.full,
+                    backgroundColor: i <= currentGlobalStep ? colors.primary : colors.surface2,
+                  }}
+                />
+              ))}
+            </View>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
+              Step {currentGlobalStep + 1} of {TOTAL_STEPS}
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

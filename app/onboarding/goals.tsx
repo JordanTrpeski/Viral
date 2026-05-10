@@ -1,10 +1,13 @@
-import { View, Text, Pressable } from 'react-native'
+import { View, Text, Pressable, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useOnboardingStore, type OnboardingGoal } from '@core/store/onboardingStore'
+
+const TOTAL_STEPS = 10
+const CURRENT_STEP = 6  // 0-indexed → step 7 of 10
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -23,26 +26,22 @@ const GOALS: {
 
 export default function GoalsScreen() {
   const router = useRouter()
+  const { width } = useWindowDimensions()
   const { goal, setGoal } = useOnboardingStore()
+  const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
 
         <View style={{ paddingTop: spacing.xl, marginBottom: spacing.xl }}>
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: fontSize.label,
-              fontWeight: '600',
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              marginBottom: spacing.sm,
-            }}
-          >
+          <Text style={{
+            color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
+            letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing.sm,
+          }}>
             Your Goal
           </Text>
-          <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700', lineHeight: 40 }}>
+          <Text style={{ color: colors.text, fontSize: titleSize, fontWeight: '700', lineHeight: titleSize * 1.25 }}>
             What are you{'\n'}working towards?
           </Text>
         </View>
@@ -104,10 +103,22 @@ export default function GoalsScreen() {
           <Button
             label="Continue"
             onPress={() => router.push('/onboarding/units')}
+            disabled={!goal}
             fullWidth
           />
+          <View style={{ flexDirection: 'row', gap: 3 }}>
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  flex: 1, height: 3, borderRadius: radius.full,
+                  backgroundColor: i <= CURRENT_STEP ? colors.primary : colors.surface2,
+                }}
+              />
+            ))}
+          </View>
           <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-            Step 3 of 6
+            Step {CURRENT_STEP + 1} of {TOTAL_STEPS}
           </Text>
         </View>
       </View>

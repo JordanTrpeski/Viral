@@ -32,6 +32,14 @@ const variantStyles: Record<Variant, { container: ViewStyle; text: TextStyle }> 
   },
 }
 
+// Disabled state overrides — clearly visible but clearly inactive
+const disabledContainer: ViewStyle = {
+  backgroundColor: colors.surface2,
+  borderWidth: 1,
+  borderColor: colors.border,
+}
+const disabledText: TextStyle = { color: colors.textMuted }
+
 export default function Button({
   label,
   onPress,
@@ -56,17 +64,19 @@ export default function Button({
           minHeight: minTapTarget,
           paddingHorizontal: 20,
           borderRadius: radius.md,
-          opacity: pressed || isDisabled ? 0.6 : 1,
+          opacity: pressed ? 0.7 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
-        container,
+        isDisabled ? disabledContainer : container,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={text.color as string} />
+        <ActivityIndicator size="small" color={colors.textMuted} />
       ) : (
-        <Text style={[{ fontSize: 16, fontWeight: '600' }, text]}>{label}</Text>
+        <Text style={[{ fontSize: 16, fontWeight: '600' }, isDisabled ? disabledText : text]}>
+          {label}
+        </Text>
       )}
     </Pressable>
   )

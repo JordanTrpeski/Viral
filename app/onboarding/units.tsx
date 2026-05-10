@@ -1,10 +1,13 @@
-import { View, Text, Pressable } from 'react-native'
+import { View, Text, Pressable, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useOnboardingStore, type Units } from '@core/store/onboardingStore'
+
+const TOTAL_STEPS = 10
+const CURRENT_STEP = 7  // 0-indexed → step 8 of 10
 
 const OPTIONS: { id: Units; label: string; sublabel: string; icon: string }[] = [
   { id: 'metric',   label: 'Metric',   sublabel: 'Kilograms · Centimetres', icon: '🌍' },
@@ -13,31 +16,27 @@ const OPTIONS: { id: Units; label: string; sublabel: string; icon: string }[] = 
 
 export default function UnitsScreen() {
   const router = useRouter()
+  const { width } = useWindowDimensions()
   const { units, setUnits } = useOnboardingStore()
+  const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
 
         <View style={{ paddingTop: spacing.xl, marginBottom: spacing.xl }}>
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: fontSize.label,
-              fontWeight: '600',
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              marginBottom: spacing.sm,
-            }}
-          >
+          <Text style={{
+            color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
+            letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing.sm,
+          }}>
             Preferences
           </Text>
-          <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700', lineHeight: 40 }}>
+          <Text style={{ color: colors.text, fontSize: titleSize, fontWeight: '700', lineHeight: titleSize * 1.25 }}>
             Which units{'\n'}do you prefer?
           </Text>
         </View>
 
-        <View style={{ gap: spacing.md }}>
+        <View style={{ gap: spacing.md, flex: 1 }}>
           {OPTIONS.map((opt) => {
             const selected = units === opt.id
             return (
@@ -73,14 +72,26 @@ export default function UnitsScreen() {
           })}
         </View>
 
-        <View style={{ position: 'absolute', bottom: spacing.lg, left: spacing.lg, right: spacing.lg, gap: spacing.sm }}>
+        {/* Progress + button — flex layout, no absolute positioning */}
+        <View style={{ paddingVertical: spacing.lg, gap: spacing.sm }}>
           <Button
             label="Continue"
             onPress={() => router.push('/onboarding/calories')}
             fullWidth
           />
+          <View style={{ flexDirection: 'row', gap: 3 }}>
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  flex: 1, height: 3, borderRadius: radius.full,
+                  backgroundColor: i <= CURRENT_STEP ? colors.primary : colors.surface2,
+                }}
+              />
+            ))}
+          </View>
           <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-            Step 4 of 6
+            Step {CURRENT_STEP + 1} of {TOTAL_STEPS}
           </Text>
         </View>
       </View>

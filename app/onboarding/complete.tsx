@@ -118,9 +118,20 @@ export default function CompleteScreen() {
         </Animated.View>
       </View>
 
-      <View style={{ paddingBottom: spacing.lg }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', gap: 3 }}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <View
+              key={i}
+              style={{
+                flex: 1, height: 3, borderRadius: radius.full,
+                backgroundColor: colors.primary,
+              }}
+            />
+          ))}
+        </View>
         <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-          Step 6 of 6
+          Step 10 of 10
         </Text>
       </View>
     </SafeAreaView>
