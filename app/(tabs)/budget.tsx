@@ -288,61 +288,76 @@ export default function BudgetScreen() {
           </View>
         )}
 
-        {/* Quick actions — visual styles on inner View (not Pressable) for new-arch compat */}
+        {/* Quick actions */}
         <View style={{ gap: spacing.sm }}>
+          {/* Row 1: Add Expense (matches Add Income style) + Add Income */}
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Pressable
               onPress={() => router.push('/budget/add-expense' as never)}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+              style={{ flex: 1 }}
             >
-              <View style={{
-                height: 48, backgroundColor: colors.budget, borderRadius: radius.md,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-              }}>
-                <Ionicons name="remove-outline" size={18} color="#14110d" />
-                <Text style={{ color: '#14110d', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
-              </View>
+              {({ pressed }) => (
+                <View style={{
+                  height: 48, backgroundColor: pressed ? colors.budget : colors.surface2,
+                  borderRadius: radius.md, borderWidth: 1,
+                  borderColor: pressed ? colors.budget : colors.borderAccent,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+                }}>
+                  <Ionicons name="remove-outline" size={18} color={pressed ? '#14110d' : colors.success} />
+                  <Text style={{ color: pressed ? '#14110d' : colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Expense</Text>
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => router.push('/budget/add-income' as never)}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+              style={{ flex: 1 }}
             >
-              <View style={{
-                height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
-                borderWidth: 1, borderColor: colors.borderAccent,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-              }}>
-                <Ionicons name="add-outline" size={18} color={colors.success} />
-                <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
-              </View>
+              {({ pressed }) => (
+                <View style={{
+                  height: 48, backgroundColor: pressed ? colors.budget : colors.surface2,
+                  borderRadius: radius.md, borderWidth: 1,
+                  borderColor: pressed ? colors.budget : colors.borderAccent,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+                }}>
+                  <Ionicons name="add-outline" size={18} color={pressed ? '#14110d' : colors.success} />
+                  <Text style={{ color: pressed ? '#14110d' : colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
+                </View>
+              )}
             </Pressable>
           </View>
+          {/* Row 2: Templates + Balance — amber fill on press */}
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Pressable
               onPress={() => router.push('/budget/templates' as never)}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+              style={{ flex: 1 }}
             >
-              <View style={{
-                height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
-                borderWidth: 1, borderColor: colors.borderAccent,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-              }}>
-                <Ionicons name="copy-outline" size={18} color={colors.text} />
-                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
-              </View>
+              {({ pressed }) => (
+                <View style={{
+                  height: 48, backgroundColor: pressed ? colors.budget : colors.surface2,
+                  borderRadius: radius.md, borderWidth: 1,
+                  borderColor: pressed ? colors.budget : colors.borderAccent,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+                }}>
+                  <Ionicons name="copy-outline" size={18} color={pressed ? '#14110d' : colors.text} />
+                  <Text style={{ color: pressed ? '#14110d' : colors.text, fontSize: fontSize.body, fontWeight: pressed ? '700' : '500' }}>Templates</Text>
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => router.push('/budget/balance' as never)}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+              style={{ flex: 1 }}
             >
-              <View style={{
-                height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
-                borderWidth: 1, borderColor: colors.borderAccent,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-              }}>
-                <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
-                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
-              </View>
+              {({ pressed }) => (
+                <View style={{
+                  height: 48, backgroundColor: pressed ? colors.budget : colors.surface2,
+                  borderRadius: radius.md, borderWidth: 1,
+                  borderColor: pressed ? colors.budget : colors.borderAccent,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+                }}>
+                  <Ionicons name="stats-chart-outline" size={18} color={pressed ? '#14110d' : colors.text} />
+                  <Text style={{ color: pressed ? '#14110d' : colors.text, fontSize: fontSize.body, fontWeight: pressed ? '700' : '500' }}>Balance</Text>
+                </View>
+              )}
             </Pressable>
           </View>
         </View>
