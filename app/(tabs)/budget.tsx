@@ -438,7 +438,7 @@ export default function BudgetScreen() {
             </Text>
             <Pressable
               onPress={() => router.push('/budget/add-expense' as never)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: 32 })}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, padding: spacing.sm, marginBottom: 32 })}
             >
               <View style={{
                 backgroundColor: colors.budget,
