@@ -94,20 +94,22 @@ export default function HealthScreen() {
             onPress={() => card.available && router.push(card.route as never)}
             disabled={!card.available}
             style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
               backgroundColor: colors.surface,
               borderRadius: radius.lg,
               borderWidth: 1,
               borderColor: colors.border,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.md,
               opacity: pressed && card.available ? 0.85 : card.available ? 1 : 0.5,
             })}
           >
-            {/* Icon */}
-            <View
-              style={{
+            {/* Row layout lives on a View, not Pressable — fixes new-arch flexDirection bug */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
+            }}>
+              {/* Icon */}
+              <View style={{
                 width: 44,
                 height: 44,
                 borderRadius: radius.md,
@@ -115,35 +117,31 @@ export default function HealthScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: spacing.md,
-                flexShrink: 0,
-              }}
-            >
-              <Ionicons name={card.icon} size={22} color={card.color} />
-            </View>
-
-            {/* Title + Subtitle stacked in middle column */}
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold` }}>
-                {card.title}
-              </Text>
-              {card.subtitle ? (
-                <Text
-                  style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }}
-                  numberOfLines={1}
-                >
-                  {card.subtitle}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* Action indicator */}
-            {card.available ? (
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ flexShrink: 0 }} />
-            ) : (
-              <View style={{ backgroundColor: colors.surface2, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, flexShrink: 0 }}>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>SOON</Text>
+              }}>
+                <Ionicons name={card.icon} size={22} color={card.color} />
               </View>
-            )}
+
+              {/* Title + Subtitle stacked in middle column */}
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold` }}>
+                  {card.title}
+                </Text>
+                {card.subtitle ? (
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }} numberOfLines={1}>
+                    {card.subtitle}
+                  </Text>
+                ) : null}
+              </View>
+
+              {/* Action indicator */}
+              {card.available ? (
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              ) : (
+                <View style={{ backgroundColor: colors.surface2, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>SOON</Text>
+                </View>
+              )}
+            </View>
           </Pressable>
         ))}
       </ScrollView>

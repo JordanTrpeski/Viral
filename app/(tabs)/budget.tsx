@@ -200,7 +200,7 @@ export default function BudgetScreen() {
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: 80 }}>
 
         {/* Month navigation */}
         <View style={{ alignItems: 'center' }}>
@@ -229,16 +229,16 @@ export default function BudgetScreen() {
         <Pressable
           onPress={() => router.push('/budget/income-history' as never)}
           style={({ pressed }) => ({
-            flexDirection: 'row', alignItems: 'center',
             backgroundColor: colors.surface, borderRadius: radius.md,
             borderWidth: 1, borderColor: colors.border,
-            paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income history</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+            <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income history</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </View>
         </Pressable>
 
         {/* Pending recurring banners */}
@@ -247,24 +247,24 @@ export default function BudgetScreen() {
             key={`${p.sourceName}-${p.categoryId}`}
             onPress={() => handleConfirmRecurring(p)}
             style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
               backgroundColor: `${colors.success}18`,
               borderRadius: radius.md,
               borderWidth: 1, borderColor: `${colors.success}44`,
-              padding: spacing.md,
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <Text style={{ fontSize: 20 }}>{p.categoryEmoji}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.success, fontSize: fontSize.label, fontWeight: '700' }}>
-                {p.sourceName} is due today
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
-                €{p.amount.toFixed(2)} · {p.recurrencePeriod} — tap to confirm
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md }}>
+              <Text style={{ fontSize: 20 }}>{p.categoryEmoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.success, fontSize: fontSize.label, fontWeight: '700' }}>
+                  {p.sourceName} is due today
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                  €{p.amount.toFixed(2)} · {p.recurrencePeriod} — tap to confirm
+                </Text>
+              </View>
+              <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
             </View>
-            <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
           </Pressable>
         ))}
 
@@ -287,26 +287,26 @@ export default function BudgetScreen() {
               onPress={() => router.push('/budget/add-expense' as never)}
               style={({ pressed }) => ({
                 flex: 1, backgroundColor: colors.budget, borderRadius: radius.md,
-                height: 48, alignItems: 'center', flexDirection: 'row',
-                justifyContent: 'center', gap: spacing.xs,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Ionicons name="remove-outline" size={18} color="#14110d" />
-              <Text style={{ color: '#14110d', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
+              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+                <Ionicons name="remove-outline" size={18} color="#14110d" />
+                <Text style={{ color: '#14110d', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
+              </View>
             </Pressable>
             <Pressable
               onPress={() => router.push('/budget/add-income' as never)}
               style={({ pressed }) => ({
                 flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
-                height: 48, alignItems: 'center', flexDirection: 'row',
-                justifyContent: 'center', gap: spacing.xs,
                 borderWidth: 1, borderColor: colors.borderAccent,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Ionicons name="add-outline" size={18} color={colors.success} />
-              <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
+              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+                <Ionicons name="add-outline" size={18} color={colors.success} />
+                <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
+              </View>
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -314,27 +314,27 @@ export default function BudgetScreen() {
               onPress={() => router.push('/budget/templates' as never)}
               style={({ pressed }) => ({
                 flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
-                height: 48, alignItems: 'center', flexDirection: 'row',
-                justifyContent: 'center', gap: spacing.xs,
                 borderWidth: 1, borderColor: colors.borderAccent,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Ionicons name="copy-outline" size={18} color={colors.text} />
-              <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
+              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+                <Ionicons name="copy-outline" size={18} color={colors.text} />
+                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
+              </View>
             </Pressable>
             <Pressable
               onPress={() => router.push('/budget/balance' as never)}
               style={({ pressed }) => ({
                 flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
-                height: 48, alignItems: 'center', flexDirection: 'row',
-                justifyContent: 'center', gap: spacing.xs,
                 borderWidth: 1, borderColor: colors.borderAccent,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
-              <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
+              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+                <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
+                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
+              </View>
             </Pressable>
           </View>
         </View>
@@ -344,40 +344,41 @@ export default function BudgetScreen() {
           onPress={() => router.push('/budget/weekly' as never)}
           style={({ pressed }) => ({
             backgroundColor: colors.surface, borderRadius: radius.lg,
-            borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-            flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+            borderWidth: 1, borderColor: colors.border,
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '700', marginBottom: spacing.xs }}>
-              THIS WEEK
-            </Text>
-            <View style={{ flexDirection: 'row', gap: spacing.lg }}>
-              <View>
-                <Text style={{ color: colors.success, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
-                  €{weekIncome.toFixed(2)}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>income</Text>
-              </View>
-              <View>
-                <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
-                  €{weekSpending.toFixed(2)}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>spent</Text>
-              </View>
-              <View>
-                <Text style={{
-                  color: weekIncome - weekSpending >= 0 ? colors.success : colors.danger,
-                  fontSize: fontSize.cardTitle, fontWeight: '700',
-                }}>
-                  {weekIncome - weekSpending >= 0 ? '+' : ''}€{(weekIncome - weekSpending).toFixed(2)}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>net</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '700', marginBottom: spacing.xs }}>
+                THIS WEEK
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing.lg }}>
+                <View>
+                  <Text style={{ color: colors.success, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
+                    €{weekIncome.toFixed(2)}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>income</Text>
+                </View>
+                <View>
+                  <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
+                    €{weekSpending.toFixed(2)}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>spent</Text>
+                </View>
+                <View>
+                  <Text style={{
+                    color: weekIncome - weekSpending >= 0 ? colors.success : colors.danger,
+                    fontSize: fontSize.cardTitle, fontWeight: '700',
+                  }}>
+                    {weekIncome - weekSpending >= 0 ? '+' : ''}€{(weekIncome - weekSpending).toFixed(2)}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>net</Text>
+                </View>
               </View>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
         {/* Category spending */}
