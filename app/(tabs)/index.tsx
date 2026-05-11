@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Circle } from 'react-native-svg'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
@@ -714,7 +714,29 @@ export default function HomeScreen() {
     loadOrgNotes()
   }
 
-  useEffect(() => { loadAll() }, [])
+  // Re-run loadAll every time this screen comes into focus (covers returning
+  // from settings, switching tabs, and the initial mount).
+  useFocusEffect(
+    useCallback(() => { loadAll() }, [])
+  )
+
+  // Secondary guard for the launch race: _layout calls loadProfile() async,
+  // so profile may be null the first time useFocusEffect fires. When profile
+  // arrives (or changes after a settings save), reload diet + steps so the
+  // calorie goal and calorie estimates reflect the new values immediately.
+  useEffect(() => {
+    if (profile) {
+      loadDiet()
+      loadSteps(today, dob)
+      loadStepSessions(today)
+    }
+  }, [
+    profile?.weightKg,
+    profile?.heightCm,
+    profile?.calorieGoalKcal,
+    profile?.activityLevel,
+    profile?.dateOfBirth,
+  ])
 
   useEffect(() => {
     if (firstChecklist) {

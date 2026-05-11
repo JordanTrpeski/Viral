@@ -1,8 +1,8 @@
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as Notifications from 'expo-notifications'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
@@ -39,14 +39,15 @@ export default function OrganizerScreen() {
   const [permissionGranted, setPermissionGranted] = useState(true)
   const permSheetRef = useRef<BottomSheet>(null)
 
-  useEffect(() => {
-    loadPeople()
-    loadReminders()
-    loadNotes()
-    loadChecklists()
-
-    checkPermissionAndSchedule()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      loadPeople()
+      loadReminders()
+      loadNotes()
+      loadChecklists()
+      checkPermissionAndSchedule()
+    }, [])
+  )
 
   async function checkPermissionAndSchedule() {
     const { status } = await Notifications.getPermissionsAsync()

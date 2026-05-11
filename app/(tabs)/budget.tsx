@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
@@ -116,21 +116,23 @@ export default function BudgetScreen() {
   const [weekIncome, setWeekIncome]     = useState(0)
   const [weekSpending, setWeekSpending] = useState(0)
 
-  useEffect(() => {
-    loadCategories()
-    loadPendingRecurring()
-    loadMonth()
-    // Compute this week's range (Mon–today)
-    const now  = new Date()
-    const day  = now.getDay()
-    const diff = day === 0 ? -6 : 1 - day
-    const start = new Date(now)
-    start.setDate(now.getDate() + diff)
-    const startStr = localDateStr(start)
-    const daily = dbGetDailyTotals(startStr, today)
-    setWeekIncome(daily.reduce((s, d) => s + d.income, 0))
-    setWeekSpending(daily.reduce((s, d) => s + d.spending, 0))
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      loadCategories()
+      loadPendingRecurring()
+      loadMonth()
+      // Compute this week's range (Mon–today)
+      const now  = new Date()
+      const day  = now.getDay()
+      const diff = day === 0 ? -6 : 1 - day
+      const start = new Date(now)
+      start.setDate(now.getDate() + diff)
+      const startStr = localDateStr(start)
+      const daily = dbGetDailyTotals(startStr, today)
+      setWeekIncome(daily.reduce((s, d) => s + d.income, 0))
+      setWeekSpending(daily.reduce((s, d) => s + d.spending, 0))
+    }, [])
+  )
 
   function handleConfirmRecurring(summary: RecurringIncomeSummary) {
     Alert.alert(
