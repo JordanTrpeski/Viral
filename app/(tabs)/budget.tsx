@@ -286,11 +286,11 @@ export default function BudgetScreen() {
             <Pressable
               onPress={() => router.push('/budget/add-expense' as never)}
               style={({ pressed }) => ({
-                flex: 1, backgroundColor: colors.budget, borderRadius: radius.md,
-                opacity: pressed ? 0.85 : 1,
+                flex: 1, height: 48, backgroundColor: colors.budget, borderRadius: radius.md,
+                overflow: 'hidden', opacity: pressed ? 0.85 : 1,
               })}
             >
-              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
                 <Ionicons name="remove-outline" size={18} color="#14110d" />
                 <Text style={{ color: '#14110d', fontSize: fontSize.body, fontWeight: '700' }}>Add Expense</Text>
               </View>
@@ -298,12 +298,12 @@ export default function BudgetScreen() {
             <Pressable
               onPress={() => router.push('/budget/add-income' as never)}
               style={({ pressed }) => ({
-                flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
+                flex: 1, height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
                 borderWidth: 1, borderColor: colors.borderAccent,
-                opacity: pressed ? 0.85 : 1,
+                overflow: 'hidden', opacity: pressed ? 0.85 : 1,
               })}
             >
-              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
                 <Ionicons name="add-outline" size={18} color={colors.success} />
                 <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>Add Income</Text>
               </View>
@@ -313,12 +313,12 @@ export default function BudgetScreen() {
             <Pressable
               onPress={() => router.push('/budget/templates' as never)}
               style={({ pressed }) => ({
-                flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
+                flex: 1, height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
                 borderWidth: 1, borderColor: colors.borderAccent,
-                opacity: pressed ? 0.85 : 1,
+                overflow: 'hidden', opacity: pressed ? 0.85 : 1,
               })}
             >
-              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
                 <Ionicons name="copy-outline" size={18} color={colors.text} />
                 <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Templates</Text>
               </View>
@@ -326,12 +326,12 @@ export default function BudgetScreen() {
             <Pressable
               onPress={() => router.push('/budget/balance' as never)}
               style={({ pressed }) => ({
-                flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md,
+                flex: 1, height: 48, backgroundColor: colors.surface2, borderRadius: radius.md,
                 borderWidth: 1, borderColor: colors.borderAccent,
-                opacity: pressed ? 0.85 : 1,
+                overflow: 'hidden', opacity: pressed ? 0.85 : 1,
               })}
             >
-              <View style={{ height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
                 <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
                 <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Balance</Text>
               </View>
