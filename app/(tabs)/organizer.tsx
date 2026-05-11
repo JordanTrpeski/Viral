@@ -173,14 +173,14 @@ export default function OrganizerScreen() {
           <Pressable
             key={card.title}
             onPress={() => router.push(card.route as never)}
-            style={({ pressed }) => ({
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+            <View style={{
               backgroundColor: colors.surface, borderRadius: radius.lg,
               borderWidth: 1, borderColor: colors.border,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            {/* Row layout on View — fixes new-arch flexDirection bug */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.md }}>
+              flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.md,
+            }}>
               <View style={{
                 width: 48, height: 48, borderRadius: radius.md,
                 backgroundColor: `${card.color}22`,

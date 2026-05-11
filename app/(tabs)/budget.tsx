@@ -228,13 +228,13 @@ export default function BudgetScreen() {
         {/* Income history link */}
         <Pressable
           onPress={() => router.push('/budget/income-history' as never)}
-          style={({ pressed }) => ({
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        >
+          <View style={{
             backgroundColor: colors.surface, borderRadius: radius.md,
             borderWidth: 1, borderColor: colors.border,
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+            flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+          }}>
             <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
             <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income history</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
@@ -246,14 +246,14 @@ export default function BudgetScreen() {
           <Pressable
             key={`${p.sourceName}-${p.categoryId}`}
             onPress={() => handleConfirmRecurring(p)}
-            style={({ pressed }) => ({
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            <View style={{
               backgroundColor: `${colors.success}18`,
               borderRadius: radius.md,
               borderWidth: 1, borderColor: `${colors.success}44`,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md }}>
+              flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md,
+            }}>
               <Text style={{ fontSize: 20 }}>{p.categoryEmoji}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.success, fontSize: fontSize.label, fontWeight: '700' }}>
@@ -342,13 +342,13 @@ export default function BudgetScreen() {
         {/* This Week card */}
         <Pressable
           onPress={() => router.push('/budget/weekly' as never)}
-          style={({ pressed }) => ({
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        >
+          <View style={{
             backgroundColor: colors.surface, borderRadius: radius.lg,
             borderWidth: 1, borderColor: colors.border,
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md }}>
+            flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md,
+          }}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '700', marginBottom: spacing.xs }}>
                 THIS WEEK

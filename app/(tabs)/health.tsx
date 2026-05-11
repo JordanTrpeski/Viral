@@ -94,15 +94,15 @@ export default function HealthScreen() {
             onPress={() => card.available && router.push(card.route as never)}
             disabled={!card.available}
             style={({ pressed }) => ({
+              opacity: pressed && card.available ? 0.85 : card.available ? 1 : 0.5,
+            })}
+          >
+            {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+            <View style={{
               backgroundColor: colors.surface,
               borderRadius: radius.lg,
               borderWidth: 1,
               borderColor: colors.border,
-              opacity: pressed && card.available ? 0.85 : card.available ? 1 : 0.5,
-            })}
-          >
-            {/* Row layout lives on a View, not Pressable — fixes new-arch flexDirection bug */}
-            <View style={{
               flexDirection: 'row',
               alignItems: 'center',
               paddingVertical: spacing.md,

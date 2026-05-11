@@ -58,12 +58,12 @@ function DayOverviewCard({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View style={{
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.borderAccent, padding: spacing.md,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
+      }}>
       <Text style={{
         color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600',
         fontFamily: `${fonts.ui}_600SemiBold`,
@@ -150,6 +150,7 @@ function DayOverviewCard({
             </Text>
           </View>
         </View>
+      </View>
       </View>
     </Pressable>
   )
@@ -289,12 +290,12 @@ function StepsCard({ stepCount, goal, low, high, onPress }: {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View style={{
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
+      }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
         <Ionicons name="footsteps-outline" size={14} color={colors.steps} />
         <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4 }}>Steps</Text>
@@ -326,6 +327,7 @@ function StepsCard({ stepCount, goal, low, high, onPress }: {
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
+      </View>
     </Pressable>
   )
 }
@@ -346,11 +348,12 @@ function WorkoutCard({ activeSession, todaySession, onPress, onStart }: {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md, opacity: pressed ? 0.85 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
     >
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+      }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: statusColor, marginRight: spacing.xs }} />
         <Text style={{ color: statusColor, fontSize: fontSize.label, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -382,6 +385,7 @@ function WorkoutCard({ activeSession, todaySession, onPress, onStart }: {
           fullWidth
         />
       )}
+      </View>
     </Pressable>
   )
 }
@@ -405,12 +409,13 @@ function WeightCard({ weightKg, delta, sparklineData, onPress }: {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View style={{
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-        flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.85 : 1,
-      })}
-    >
+        flexDirection: 'row', alignItems: 'center',
+      }}>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
           <Ionicons name="scale-outline" size={14} color={colors.primary} />
@@ -433,6 +438,7 @@ function WeightCard({ weightKg, delta, sparklineData, onPress }: {
       {sparklineData.length >= 2 && (
         <SparklineGraph data={sparklineData} width={88} height={44} color={colors.primary} />
       )}
+      </View>
     </Pressable>
   )
 }
@@ -446,11 +452,12 @@ function ChecklistPreviewCard({ name, checkedCount, totalCount, previewItems, on
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md, opacity: pressed ? 0.85 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
     >
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+      }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
         <Ionicons name="checkmark-circle-outline" size={14} color={colors.organizer} style={{ marginRight: 4 }} />
         <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Checklist</Text>
@@ -488,6 +495,7 @@ function ChecklistPreviewCard({ name, checkedCount, totalCount, previewItems, on
           +{totalCount - previewItems.length} more
         </Text>
       )}
+      </View>
     </Pressable>
   )
 }
@@ -504,25 +512,26 @@ function BudgetCard({ spent, income, month, onPress }: {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View style={{
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
-        <Ionicons name="wallet-outline" size={14} color={colors.budget} />
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Budget</Text>
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{month}</Text>
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+          <Ionicons name="wallet-outline" size={14} color={colors.budget} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Budget</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{month}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginBottom: spacing.sm }}>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>€{spent.toFixed(0)}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.mono}_400Regular` }}>/ €{income.toFixed(0)} income</Text>
+        </View>
+        <ProgressBar progress={pct} color={barColor} height={4} />
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs }}>
+          Left this month: €{Math.max(0, left).toFixed(2)}
+        </Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginBottom: spacing.sm }}>
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>€{spent.toFixed(0)}</Text>
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.mono}_400Regular` }}>/ €{income.toFixed(0)} income</Text>
-      </View>
-      <ProgressBar progress={pct} color={barColor} height={4} />
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs }}>
-        Left this month: €{Math.max(0, left).toFixed(2)}
-      </Text>
     </Pressable>
   )
 }
@@ -603,57 +612,58 @@ function OrganizerCard({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View style={{
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
-        <Ionicons name="calendar-outline" size={14} color={colors.organizer} />
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Organizer</Text>
-        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-      </View>
-
-      {!hasAnything ? (
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>All clear ✓</Text>
-      ) : (
-        <View style={{ gap: spacing.xs }}>
-          {overdue > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }} />
-              <Text style={{ color: colors.danger, fontSize: fontSize.body, fontWeight: '600' }}>
-                {overdue} overdue reminder{overdue > 1 ? 's' : ''}
-              </Text>
-            </View>
-          )}
-          {todayDue > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.reminders }} />
-              <Text style={{ color: colors.text, fontSize: fontSize.body }}>
-                {todayDue} due today
-              </Text>
-            </View>
-          )}
-          {upcomingBirthdays.map(({ person, days }) => (
-            <View key={person.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Text style={{ fontSize: 12 }}>🎂</Text>
-              <Text style={{ color: colors.text, fontSize: fontSize.body }}>
-                {person.name.split(' ')[0]}
-                {days === 0 ? ' — Today!' : ` in ${days}d`}
-              </Text>
-            </View>
-          ))}
-          {pinnedNotes.length > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Ionicons name="bookmark" size={12} color={colors.organizer} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>
-                {pinnedNotes.length} pinned note{pinnedNotes.length > 1 ? 's' : ''}
-              </Text>
-            </View>
-          )}
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Ionicons name="calendar-outline" size={14} color={colors.organizer} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Organizer</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
         </View>
-      )}
+
+        {!hasAnything ? (
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>All clear ✓</Text>
+        ) : (
+          <View style={{ gap: spacing.xs }}>
+            {overdue > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }} />
+                <Text style={{ color: colors.danger, fontSize: fontSize.body, fontWeight: '600' }}>
+                  {overdue} overdue reminder{overdue > 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
+            {todayDue > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.reminders }} />
+                <Text style={{ color: colors.text, fontSize: fontSize.body }}>
+                  {todayDue} due today
+                </Text>
+              </View>
+            )}
+            {upcomingBirthdays.map(({ person, days }) => (
+              <View key={person.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <Text style={{ fontSize: 12 }}>🎂</Text>
+                <Text style={{ color: colors.text, fontSize: fontSize.body }}>
+                  {person.name.split(' ')[0]}
+                  {days === 0 ? ' — Today!' : ` in ${days}d`}
+                </Text>
+              </View>
+            ))}
+            {pinnedNotes.length > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <Ionicons name="bookmark" size={12} color={colors.organizer} />
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>
+                  {pinnedNotes.length} pinned note{pinnedNotes.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
     </Pressable>
   )
 }
@@ -772,13 +782,15 @@ export default function HomeScreen() {
           </View>
           <Pressable
             onPress={() => router.push('/settings')}
-            style={({ pressed }) => ({
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <View style={{
               width: 40, height: 40, borderRadius: 20,
               backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-              alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
-            })}
-          >
-            <Ionicons name="person-outline" size={18} color={colors.text} />
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="person-outline" size={18} color={colors.text} />
+            </View>
           </Pressable>
         </View>
 
