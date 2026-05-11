@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import * as Notifications from 'expo-notifications'
 import { sendTestBirthdayNotification } from '@modules/organizer/shared/notificationScheduler'
 import {
@@ -11,16 +11,16 @@ import {
 } from 'react-native'
 import { exportBackup, importBackup, backupFileName } from '@core/utils/backup'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
 import Constants from 'expo-constants'
 import { createStorage } from '@core/utils/storage'
 import { colors, fontSize, spacing, radius } from '@core/theme'
-import { Button, BottomSheet } from '@core/components'
+import { BottomSheet } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
 import { db } from '@core/db/database'
-import { kgToLbs, lbsToKg, cmToFtIn, ftInToCm, formatHeight, formatWeight } from '@core/utils/units'
+import { kgToLbs, lbsToKg, cmToFtIn, ftInToCm } from '@core/utils/units'
 import type { OnboardingGoal } from '@core/store/onboardingStore'
 import type { Sex, ActivityLevel } from '@core/types'
 import { calculateTDEE, ACTIVITY_LABELS, ACTIVITY_DESCRIPTIONS } from '@core/utils/tdee'
@@ -81,32 +81,32 @@ function Row({
     <Pressable
       onPress={onPress}
       disabled={!onPress && !rightElement}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: pressed && onPress ? colors.surface2 : 'transparent',
-        gap: spacing.md,
-      })}
     >
-      <Ionicons name={icon} size={20} color={danger ? colors.danger : colors.textMuted} />
-      <Text
-        style={{
-          flex: 1,
-          color: danger ? colors.danger : colors.text,
-          fontSize: fontSize.body,
-        }}
-      >
-        {label}
-      </Text>
-      {value ? (
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>{value}</Text>
-      ) : null}
-      {rightElement ?? null}
-      {onPress && !rightElement ? (
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-      ) : null}
+      {/* Render prop so pressed bg works on new-arch without losing flexDirection */}
+      {({ pressed }) => (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            backgroundColor: pressed && onPress ? colors.surface2 : 'transparent',
+            gap: spacing.md,
+          }}
+        >
+          <Ionicons name={icon} size={20} color={danger ? colors.danger : colors.textMuted} />
+          <Text style={{ flex: 1, color: danger ? colors.danger : colors.text, fontSize: fontSize.body }}>
+            {label}
+          </Text>
+          {value ? (
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>{value}</Text>
+          ) : null}
+          {rightElement ?? null}
+          {onPress && !rightElement ? (
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          ) : null}
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -148,8 +148,10 @@ export default function SettingsScreen() {
   const goalSheetRef     = useRef<GorhomBottomSheet>(null)
   const activitySheetRef = useRef<GorhomBottomSheet>(null)
 
+  // Track whether the user has unsaved changes
+  const [dirty, setDirty] = useState(false)
+
   // ── Edit profile state ──
-  const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(profile?.name ?? '')
   const [dob,  setDob]        = useState(profile?.dateOfBirth ?? '')
   const [calGoal, setCalGoal] = useState(String(profile?.calorieGoalKcal ?? ''))
@@ -180,9 +182,8 @@ export default function SettingsScreen() {
   const [waterEnabled,    setWaterEnabled]    = useState(notifStorage.getBoolean('water_enabled') ?? false)
   const [waterInterval,   setWaterInterval]   = useState(notifStorage.getNumber('water_interval') ?? 2)
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  function startEdit() {
+  // Reset fields to saved profile values whenever this screen comes into focus
+  useFocusEffect(useCallback(() => {
     setName(profile?.name ?? '')
     setDob(profile?.dateOfBirth ?? '')
     setCalGoal(String(profile?.calorieGoalKcal ?? ''))
@@ -201,8 +202,15 @@ export default function SettingsScreen() {
       setHeightIn(String(inches))
       setHeightCm(String(profile.heightCm))
     }
-    setEditing(true)
+    setDirty(false)
+  }, [profile, units]))
+
+  // ── Field change helpers that mark dirty ──
+  function d<T>(setter: (v: T) => void) {
+    return (v: T) => { setter(v); setDirty(true) }
   }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   function saveProfile() {
     if (!profile) return
@@ -219,7 +227,7 @@ export default function SettingsScreen() {
       activityLevel,
       calorieGoalKcal: Number(calGoal) || profile.calorieGoalKcal,
     })
-    setEditing(false)
+    setDirty(false)
   }
 
   function selectGoal(g: OnboardingGoal) {
@@ -312,13 +320,7 @@ export default function SettingsScreen() {
         <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', flex: 1 }}>
           Settings
         </Text>
-        {!editing ? (
-          <Pressable onPress={startEdit} style={{ padding: spacing.sm }}>
-            <Text style={{ color: colors.primary, fontSize: fontSize.body, fontWeight: '600' }}>
-              Edit
-            </Text>
-          </Pressable>
-        ) : (
+        {dirty && (
           <Pressable onPress={saveProfile} style={{ padding: spacing.sm }}>
             <Text style={{ color: colors.success, fontSize: fontSize.body, fontWeight: '600' }}>
               Save
@@ -332,128 +334,97 @@ export default function SettingsScreen() {
         {/* ── Profile ── */}
         <SectionTitle title="Profile" />
         <Card>
-          {editing ? (
-            <View style={{ padding: spacing.md, gap: spacing.md }}>
-              <EditField label="Name" value={name} onChange={setName} />
-              <EditField label="Date of Birth" value={dob} onChange={setDob} hint="YYYY-MM-DD" />
+          <View style={{ padding: spacing.md, gap: spacing.md }}>
+            <EditField label="Name" value={name} onChange={d(setName)} />
+            <EditField label="Date of Birth" value={dob} onChange={d(setDob)} hint="YYYY-MM-DD" />
 
-              {units === 'metric' ? (
-                <EditField label="Weight (kg)" value={weightVal} onChange={setWeightVal} numeric />
-              ) : (
-                <EditField label="Weight (lbs)" value={weightVal} onChange={setWeightVal} numeric />
-              )}
+            {units === 'metric' ? (
+              <EditField label="Weight (kg)" value={weightVal} onChange={d(setWeightVal)} numeric />
+            ) : (
+              <EditField label="Weight (lbs)" value={weightVal} onChange={d(setWeightVal)} numeric />
+            )}
 
-              {units === 'metric' ? (
-                <EditField label="Height (cm)" value={heightCm} onChange={setHeightCm} numeric />
-              ) : (
-                <View>
-                  <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.xs }}>
-                    Height
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                    <EditField label="ft" value={heightFt} onChange={setHeightFt} numeric containerFlex={1} />
-                    <EditField label="in" value={heightIn} onChange={setHeightIn} numeric containerFlex={1} />
-                  </View>
-                </View>
-              )}
-
-              <EditField label="Calorie goal (kcal)" value={calGoal} onChange={setCalGoal} numeric />
-
-              {/* Sex selector */}
+            {units === 'metric' ? (
+              <EditField label="Height (cm)" value={heightCm} onChange={d(setHeightCm)} numeric />
+            ) : (
               <View>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.xs }}>Biological sex</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.xs }}>
+                  Height
+                </Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  {SEX_OPTIONS.map((opt) => (
-                    <Pressable
-                      key={opt.id}
-                      onPress={() => setSex(opt.id)}
-                      style={{
-                        flex: 1, paddingVertical: spacing.sm, alignItems: 'center',
-                        borderRadius: radius.md,
-                        backgroundColor: sex === opt.id ? colors.primary : colors.surface2,
-                        borderWidth: 1, borderColor: sex === opt.id ? colors.primary : colors.border,
-                      }}
-                    >
+                  <EditField label="ft" value={heightFt} onChange={d(setHeightFt)} numeric containerFlex={1} />
+                  <EditField label="in" value={heightIn} onChange={d(setHeightIn)} numeric containerFlex={1} />
+                </View>
+              </View>
+            )}
+
+            <EditField label="Calorie goal (kcal)" value={calGoal} onChange={d(setCalGoal)} numeric />
+
+            {/* Sex selector */}
+            <View>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginBottom: spacing.xs }}>
+                Biological sex
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                {SEX_OPTIONS.map((opt) => (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => { setSex(opt.id); setDirty(true) }}
+                    style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+                  >
+                    {/* All visual styles on View — fixes new-arch Pressable style-fn bug */}
+                    <View style={{
+                      paddingVertical: spacing.sm, alignItems: 'center',
+                      borderRadius: radius.md,
+                      backgroundColor: sex === opt.id ? colors.primary : colors.surface2,
+                      borderWidth: 1, borderColor: sex === opt.id ? colors.primary : colors.border,
+                    }}>
                       <Text style={{ color: sex === opt.id ? '#fff' : colors.textMuted, fontSize: fontSize.body, fontWeight: '600' }}>
                         {opt.label}
                       </Text>
-                    </Pressable>
-                  ))}
-                </View>
+                    </View>
+                  </Pressable>
+                ))}
               </View>
+            </View>
 
-              {/* Activity level picker */}
-              <Pressable
-                onPress={() => activitySheetRef.current?.expand()}
-                style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: colors.surface2, borderRadius: radius.md,
-                  borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-                }}
-              >
+            {/* Activity level picker */}
+            <Pressable
+              onPress={() => activitySheetRef.current?.expand()}
+            >
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface2, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+              }}>
                 <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Activity level</Text>
                 <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>
                   {activityLevel ? ACTIVITY_LABELS[activityLevel] : 'Not set'}
                 </Text>
                 <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginLeft: spacing.xs }} />
-              </Pressable>
+              </View>
+            </Pressable>
 
-              <Pressable
-                onPress={() => goalSheetRef.current?.expand()}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.surface2,
-                  borderRadius: radius.md,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: spacing.md,
-                }}
-              >
+            {/* Goal picker */}
+            <Pressable
+              onPress={() => goalSheetRef.current?.expand()}
+            >
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface2,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: spacing.md,
+              }}>
                 <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Goal</Text>
                 <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>
                   {goalConfig.label}
                 </Text>
                 <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginLeft: spacing.xs }} />
-              </Pressable>
-            </View>
-          ) : (
-            <>
-              <Row icon="person-outline" label="Name" value={profile?.name ?? '—'} />
-              <Divider />
-              <Row
-                icon="barbell-outline"
-                label="Weight"
-                value={profile ? formatWeight(profile.weightKg, units) : '—'}
-              />
-              <Divider />
-              <Row
-                icon="resize-outline"
-                label="Height"
-                value={profile ? formatHeight(profile.heightCm, units) : '—'}
-              />
-              <Divider />
-              <Row icon="calendar-outline" label="Date of Birth" value={profile?.dateOfBirth ?? '—'} />
-              <Divider />
-              <Row
-                icon="male-female-outline"
-                label="Biological sex"
-                value={profile?.sex ? (profile.sex === 'male' ? 'Male' : 'Female') : 'Not set'}
-              />
-              <Divider />
-              <Row
-                icon="walk-outline"
-                label="Activity level"
-                value={profile?.activityLevel ? ACTIVITY_LABELS[profile.activityLevel] : 'Not set'}
-              />
-              <Divider />
-              <Row
-                icon={goalConfig.icon}
-                label="Goal"
-                value={goalConfig.label}
-              />
-            </>
-          )}
+              </View>
+            </Pressable>
+          </View>
         </Card>
 
         {/* ── Preferences ── */}
@@ -464,13 +435,6 @@ export default function SettingsScreen() {
             label="Units"
             value={units === 'metric' ? 'Metric (kg, cm)' : 'Imperial (lbs, ft)'}
             onPress={toggleUnits}
-          />
-          <Divider />
-          <Row
-            icon="flame-outline"
-            label="Calorie goal"
-            value={profile?.calorieGoalKcal ? `${profile.calorieGoalKcal} kcal` : '—'}
-            onPress={startEdit}
           />
           {maintenanceKcal && (
             <>
@@ -543,25 +507,24 @@ export default function SettingsScreen() {
                     <Pressable
                       key={h}
                       onPress={() => { setWaterInterval(h); saveNotifPref('water_interval', h) }}
-                      style={({ pressed }) => ({
+                      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    >
+                      <View style={{
                         paddingHorizontal: spacing.md,
                         paddingVertical: spacing.xs,
                         borderRadius: radius.full,
                         backgroundColor: waterInterval === h ? colors.water : colors.surface2,
                         borderWidth: 1,
                         borderColor: waterInterval === h ? colors.water : colors.border,
-                        opacity: pressed ? 0.7 : 1,
-                      })}
-                    >
-                      <Text
-                        style={{
+                      }}>
+                        <Text style={{
                           color: waterInterval === h ? colors.bg : colors.textMuted,
                           fontSize: fontSize.label,
                           fontWeight: '600',
-                        }}
-                      >
-                        {h}h
-                      </Text>
+                        }}>
+                          {h}h
+                        </Text>
+                      </View>
                     </Pressable>
                   ))}
                 </View>
@@ -655,24 +618,26 @@ export default function SettingsScreen() {
               return (
                 <Pressable
                   key={lvl}
-                  onPress={() => { setActivityLevelVal(lvl); activitySheetRef.current?.close() }}
-                  style={({ pressed }) => ({
+                  onPress={() => { setActivityLevelVal(lvl); setDirty(true); activitySheetRef.current?.close() }}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                >
+                  <View style={{
                     flexDirection: 'row', alignItems: 'center',
                     backgroundColor: selected ? colors.surface2 : 'transparent',
                     borderRadius: radius.md, borderWidth: 1,
                     borderColor: selected ? colors.primary : colors.border,
-                    padding: spacing.md, gap: spacing.md, opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: selected ? '600' : '400' }}>
-                      {ACTIVITY_LABELS[lvl]}
-                    </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }}>
-                      {ACTIVITY_DESCRIPTIONS[lvl]}
-                    </Text>
+                    padding: spacing.md, gap: spacing.md,
+                  }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: selected ? '600' : '400' }}>
+                        {ACTIVITY_LABELS[lvl]}
+                      </Text>
+                      <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }}>
+                        {ACTIVITY_DESCRIPTIONS[lvl]}
+                      </Text>
+                    </View>
+                    {selected && <Ionicons name="checkmark" size={18} color={colors.primary} />}
                   </View>
-                  {selected && <Ionicons name="checkmark" size={18} color={colors.primary} />}
                 </Pressable>
               )
             })}
@@ -693,23 +658,21 @@ export default function SettingsScreen() {
                 <Pressable
                   key={g.id}
                   onPress={() => selectGoal(g.id)}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: selected ? colors.surface2 : 'transparent',
-                    borderRadius: radius.md,
-                    borderWidth: 1,
-                    borderColor: selected ? g.color : colors.border,
-                    padding: spacing.md,
-                    gap: spacing.md,
-                    opacity: pressed ? 0.85 : 1,
-                  })}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
                 >
-                  <Ionicons name={g.icon} size={20} color={selected ? g.color : colors.textMuted} />
-                  <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.body, fontWeight: selected ? '600' : '400' }}>
-                    {g.label}
-                  </Text>
-                  {selected && <Ionicons name="checkmark" size={18} color={g.color} />}
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    backgroundColor: selected ? colors.surface2 : 'transparent',
+                    borderRadius: radius.md, borderWidth: 1,
+                    borderColor: selected ? g.color : colors.border,
+                    padding: spacing.md, gap: spacing.md,
+                  }}>
+                    <Ionicons name={g.icon} size={20} color={selected ? g.color : colors.textMuted} />
+                    <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.body, fontWeight: selected ? '600' : '400' }}>
+                      {g.label}
+                    </Text>
+                    {selected && <Ionicons name="checkmark" size={18} color={g.color} />}
+                  </View>
                 </Pressable>
               )
             })}
@@ -770,7 +733,10 @@ function NotifToggle({ enabled, onToggle }: { enabled: boolean; onToggle: (v: bo
   return (
     <Pressable
       onPress={() => onToggle(!enabled)}
-      style={{
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      {/* All visual styles on View — fixes new-arch Pressable style-fn bug */}
+      <View style={{
         width: 44,
         height: 26,
         borderRadius: 13,
@@ -779,17 +745,17 @@ function NotifToggle({ enabled, onToggle }: { enabled: boolean; onToggle: (v: bo
         borderColor: enabled ? colors.primary : colors.border,
         justifyContent: 'center',
         paddingHorizontal: 2,
-      }}
-    >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          backgroundColor: colors.text,
-          alignSelf: enabled ? 'flex-end' : 'flex-start',
-        }}
-      />
+      }}>
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            backgroundColor: colors.text,
+            alignSelf: enabled ? 'flex-end' : 'flex-start',
+          }}
+        />
+      </View>
     </Pressable>
   )
 }
