@@ -156,15 +156,15 @@ export default function OrganizerScreen() {
             marginHorizontal: spacing.md, marginBottom: spacing.sm,
             backgroundColor: `${colors.warning}18`, borderRadius: radius.md,
             borderWidth: 1, borderColor: `${colors.warning}44`,
-            flexDirection: 'row', alignItems: 'center',
-            padding: spacing.sm, gap: spacing.sm,
           }}
         >
-          <Ionicons name="notifications-off-outline" size={18} color={colors.warning} />
-          <Text style={{ flex: 1, color: colors.warning, fontSize: fontSize.label }}>
-            Notifications off — birthday reminders won't fire
-          </Text>
-          <Text style={{ color: colors.warning, fontSize: fontSize.micro, fontWeight: '700' }}>FIX</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, gap: spacing.sm }}>
+            <Ionicons name="notifications-off-outline" size={18} color={colors.warning} />
+            <Text style={{ flex: 1, color: colors.warning, fontSize: fontSize.label }}>
+              Notifications off — birthday reminders won't fire
+            </Text>
+            <Text style={{ color: colors.warning, fontSize: fontSize.micro, fontWeight: '700' }}>FIX</Text>
+          </View>
         </Pressable>
       )}
 
@@ -174,32 +174,33 @@ export default function OrganizerScreen() {
             key={card.title}
             onPress={() => router.push(card.route as never)}
             style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'center',
               backgroundColor: colors.surface, borderRadius: radius.lg,
               borderWidth: 1, borderColor: colors.border,
-              padding: spacing.md, gap: spacing.md,
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <View style={{
-              width: 48, height: 48, borderRadius: radius.md,
-              backgroundColor: `${card.color}22`,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Ionicons name={card.icon} size={24} color={card.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600' }}>
-                {card.title}
-              </Text>
-              <Text style={{
-                color: card.title === 'Reminders' && overdueCount > 0 ? colors.danger : colors.textMuted,
-                fontSize: fontSize.body, marginTop: 2,
+            {/* Row layout on View — fixes new-arch flexDirection bug */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.md }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: radius.md,
+                backgroundColor: `${card.color}22`,
+                alignItems: 'center', justifyContent: 'center',
               }}>
-                {card.subtitle}
-              </Text>
+                <Ionicons name={card.icon} size={24} color={card.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600' }}>
+                  {card.title}
+                </Text>
+                <Text style={{
+                  color: card.title === 'Reminders' && overdueCount > 0 ? colors.danger : colors.textMuted,
+                  fontSize: fontSize.body, marginTop: 2,
+                }}>
+                  {card.subtitle}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
         ))}
       </ScrollView>
@@ -235,12 +236,13 @@ export default function OrganizerScreen() {
             onPress={handleGrantPermission}
             style={({ pressed }) => ({
               backgroundColor: colors.organizer, borderRadius: radius.md,
-              paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
-              width: '100%', alignItems: 'center',
+              width: '100%',
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <Text style={{ color: '#fff', fontSize: fontSize.body, fontWeight: '700' }}>Allow Notifications</Text>
+            <View style={{ paddingVertical: spacing.md, paddingHorizontal: spacing.xl, alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: fontSize.body, fontWeight: '700' }}>Allow Notifications</Text>
+            </View>
           </Pressable>
 
           <Pressable onPress={() => permSheetRef.current?.close()}>
