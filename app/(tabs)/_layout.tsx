@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { View, Text } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { localDateStr } from '@core/utils/units'
@@ -62,6 +63,8 @@ function OrganizerTabIcon({ color, focused }: { color: string; focused: boolean 
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets()
+
   return (
     <Tabs
       screenOptions={{
@@ -70,8 +73,8 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderAccent,
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
