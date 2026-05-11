@@ -1,5 +1,5 @@
 import '../global.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Platform, TextInput } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -54,6 +54,14 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false)
   const { onboardingComplete, loadProfile, profile } = useUserStore()
 
+  // Run initDatabase() synchronously on first render so all tables exist
+  // before any child screen's useFocusEffect fires and queries them.
+  const dbInitialized = useRef(false)
+  if (!dbInitialized.current) {
+    initDatabase()
+    dbInitialized.current = true
+  }
+
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -65,7 +73,6 @@ export default function RootLayout() {
   })
 
   useEffect(() => {
-    initDatabase()
     seedExercisesIfNeeded()
     seedChecklistIfNeeded()
     seedFoodsIfNeeded()
