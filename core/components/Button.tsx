@@ -1,4 +1,4 @@
-import { Pressable, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native'
+import { Pressable, View, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native'
 import { colors, radius, minTapTarget, fonts } from '@core/theme'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -68,7 +68,13 @@ export default function Button({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.7 : 1,
+        alignSelf: fullWidth ? 'stretch' : 'flex-start',
+      })}
+    >
+      {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+      <View style={[
         {
           flexDirection: 'row',
           alignItems: 'center',
@@ -76,29 +82,27 @@ export default function Button({
           minHeight: minTapTarget,
           paddingHorizontal: 20,
           borderRadius: radius.md,
-          opacity: pressed ? 0.7 : 1,
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
         isDisabled ? disabledContainer : container,
         style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.textMuted} />
-      ) : (
-        <Text style={[
-          {
-            fontSize: 14,
-            fontWeight: '600',
-            fontFamily: `${fonts.ui}_600SemiBold`,
-            letterSpacing: 1,
-            textTransform: 'uppercase',
-          },
-          isDisabled ? disabledText : text,
-        ]}>
-          {label}
-        </Text>
-      )}
+      ]}>
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.textMuted} />
+        ) : (
+          <Text style={[
+            {
+              fontSize: 14,
+              fontWeight: '600',
+              fontFamily: `${fonts.ui}_600SemiBold`,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+            },
+            isDisabled ? disabledText : text,
+          ]}>
+            {label}
+          </Text>
+        )}
+      </View>
     </Pressable>
   )
 }

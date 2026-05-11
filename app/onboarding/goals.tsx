@@ -54,15 +54,16 @@ export default function GoalsScreen() {
               <Pressable
                 key={g.id}
                 onPress={() => setGoal(g.id)}
-                style={({ pressed }) => ({
+                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+              >
+                {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+                <View style={{
                   backgroundColor: selected ? `${g.color}18` : colors.surface,
                   borderRadius: radius.lg,
                   borderWidth: 1.5,
                   borderColor: selected ? g.color : colors.border,
                   padding: spacing.md,
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
+                }}>
                 {/* Row: icon + text + checkmark */}
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{
@@ -92,6 +93,7 @@ export default function GoalsScreen() {
                     {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
                   </View>
                 </View>
+                </View>
               </Pressable>
             )
           })}
@@ -120,7 +122,10 @@ export default function GoalsScreen() {
           {/* Continue button — prominent, full width */}
           <Pressable
             onPress={() => { if (!goal) return; router.push('/onboarding/units') }}
-            style={({ pressed }) => ({
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : goal ? 1 : 0.5 })}
+          >
+            {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+            <View style={{
               backgroundColor: colors.primary,
               borderRadius: radius.lg,
               borderWidth: 1,
@@ -130,18 +135,17 @@ export default function GoalsScreen() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: spacing.sm,
-              opacity: pressed ? 0.8 : 1,
-            })}
-          >
-            <Text style={{
-              color: '#fff',
-              fontSize: 17,
-              fontWeight: '700',
-              letterSpacing: 0.3,
             }}>
-              Continue
-            </Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
+              <Text style={{
+                color: '#fff',
+                fontSize: 17,
+                fontWeight: '700',
+                letterSpacing: 0.3,
+              }}>
+                Continue
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            </View>
           </Pressable>
         </View>
       </View>

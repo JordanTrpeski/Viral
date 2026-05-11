@@ -142,25 +142,27 @@ export default function ProfileScreen() {
                 <Pressable
                   key={opt.id}
                   onPress={() => setSexVal(opt.id)}
-                  style={({ pressed }) => ({
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                >
+                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+                  <View style={{
                     flexDirection: 'row', alignItems: 'center',
                     backgroundColor: sex === opt.id ? `${colors.primary}15` : colors.surface,
                     borderRadius: radius.lg, borderWidth: 1.5,
                     borderColor: sex === opt.id ? colors.primary : colors.border,
                     padding: spacing.md, gap: spacing.md,
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <View style={{
-                    width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-                    borderColor: sex === opt.id ? colors.primary : colors.border,
-                    alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {sex === opt.id && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>{opt.label}</Text>
-                    <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{opt.description}</Text>
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+                      borderColor: sex === opt.id ? colors.primary : colors.border,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {sex === opt.id && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>{opt.label}</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{opt.description}</Text>
+                    </View>
                   </View>
                 </Pressable>
               ))}
@@ -173,29 +175,31 @@ export default function ProfileScreen() {
                 <Pressable
                   key={lvl}
                   onPress={() => setLevel(lvl)}
-                  style={({ pressed }) => ({
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                >
+                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+                  <View style={{
                     flexDirection: 'row', alignItems: 'center',
                     backgroundColor: level === lvl ? `${colors.primary}15` : colors.surface,
                     borderRadius: radius.lg, borderWidth: 1.5,
                     borderColor: level === lvl ? colors.primary : colors.border,
                     padding: spacing.md, gap: spacing.md,
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <View style={{
-                    width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-                    borderColor: level === lvl ? colors.primary : colors.border,
-                    alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {level === lvl && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>
-                      {ACTIVITY_LABELS[lvl]}
-                    </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>
-                      {ACTIVITY_DESCRIPTIONS[lvl]}
-                    </Text>
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+                      borderColor: level === lvl ? colors.primary : colors.border,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {level === lvl && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>
+                        {ACTIVITY_LABELS[lvl]}
+                      </Text>
+                      <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>
+                        {ACTIVITY_DESCRIPTIONS[lvl]}
+                      </Text>
+                    </View>
                   </View>
                 </Pressable>
               ))}

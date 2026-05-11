@@ -108,7 +108,10 @@ export default function CaloriesScreen() {
                 <Pressable
                   key={delta}
                   onPress={() => adjust(delta)}
-                  style={({ pressed }) => ({
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                >
+                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+                  <View style={{
                     backgroundColor: colors.surface2,
                     borderRadius: radius.sm,
                     borderWidth: 1,
@@ -117,12 +120,11 @@ export default function CaloriesScreen() {
                     paddingHorizontal: spacing.sm,
                     minWidth: 52,
                     alignItems: 'center',
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ color: delta > 0 ? colors.success : colors.danger, fontWeight: '600', fontSize: fontSize.body }}>
-                    {delta > 0 ? '+' : ''}{delta}
-                  </Text>
+                  }}>
+                    <Text style={{ color: delta > 0 ? colors.success : colors.danger, fontWeight: '600', fontSize: fontSize.body }}>
+                      {delta > 0 ? '+' : ''}{delta}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
             </View>

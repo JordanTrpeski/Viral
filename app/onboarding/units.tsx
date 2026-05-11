@@ -87,8 +87,10 @@ export default function UnitsScreen() {
                 <Pressable
                   key={opt.id}
                   onPress={() => setUnits(opt.id)}
-                  style={({ pressed }) => ({
-                    flex: 1,
+                  style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.85 : 1 })}
+                >
+                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+                  <View style={{
                     paddingVertical: spacing.md,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -96,26 +98,25 @@ export default function UnitsScreen() {
                     backgroundColor: selected ? colors.primary : colors.surface2,
                     borderWidth: 1,
                     borderColor: selected ? colors.borderHero : colors.border,
-                    opacity: pressed ? 0.85 : 1,
                     gap: spacing.xs,
-                  })}
-                >
-                  <Text style={{
-                    color: selected ? '#fff' : colors.text,
-                    fontSize: fontSize.cardTitle,
-                    fontWeight: '700',
-                    fontFamily: `${fonts.ui}_700Bold`,
-                    letterSpacing: 0.5,
                   }}>
-                    {opt.label}
-                  </Text>
-                  <Text style={{
-                    color: selected ? 'rgba(255,255,255,0.75)' : colors.textMuted,
-                    fontSize: fontSize.micro,
-                    fontFamily: `${fonts.ui}_400Regular`,
-                  }}>
-                    {opt.sublabel}
-                  </Text>
+                    <Text style={{
+                      color: selected ? '#fff' : colors.text,
+                      fontSize: fontSize.cardTitle,
+                      fontWeight: '700',
+                      fontFamily: `${fonts.ui}_700Bold`,
+                      letterSpacing: 0.5,
+                    }}>
+                      {opt.label}
+                    </Text>
+                    <Text style={{
+                      color: selected ? 'rgba(255,255,255,0.75)' : colors.textMuted,
+                      fontSize: fontSize.micro,
+                      fontFamily: `${fonts.ui}_400Regular`,
+                    }}>
+                      {opt.sublabel}
+                    </Text>
+                  </View>
                 </Pressable>
               )
             })}
@@ -171,7 +172,10 @@ export default function UnitsScreen() {
         <View style={{ paddingBottom: spacing.md, gap: spacing.md }}>
           <Pressable
             onPress={() => router.push('/onboarding/calories')}
-            style={({ pressed }) => ({
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+            <View style={{
               backgroundColor: colors.primary,
               borderRadius: radius.md,
               borderWidth: 1,
@@ -179,20 +183,19 @@ export default function UnitsScreen() {
               paddingVertical: spacing.md,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
               minHeight: 52,
-            })}
-          >
-            <Text style={{
-              color: colors.bg,
-              fontSize: 14,
-              fontWeight: '600',
-              fontFamily: `${fonts.ui}_600SemiBold`,
-              letterSpacing: 1,
-              textTransform: 'uppercase',
             }}>
-              Continue
-            </Text>
+              <Text style={{
+                color: colors.bg,
+                fontSize: 14,
+                fontWeight: '600',
+                fontFamily: `${fonts.ui}_600SemiBold`,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}>
+                Continue
+              </Text>
+            </View>
           </Pressable>
 
           <View style={{ gap: spacing.xs }}>
