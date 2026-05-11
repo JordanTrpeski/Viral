@@ -11,8 +11,8 @@ import type { Sex, ActivityLevel } from '@core/types'
 type Step = 0 | 1 | 2 | 3 | 4
 
 const TOTAL_STEPS = 10
-// Profile sub-steps occupy global steps 2–6
-const PROFILE_STEP_OFFSET = 2
+// Profile sub-steps occupy global steps 1–5 (shown as Step 2–6 of 10)
+const PROFILE_STEP_OFFSET = 1
 
 const STEP_QUESTIONS: string[] = [
   'How much do you weigh?',
@@ -47,7 +47,7 @@ export default function ProfileScreen() {
   const yearRef  = useRef<TextInput>(null)
 
   const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
-  const currentGlobalStep = PROFILE_STEP_OFFSET + step  // 2, 3, 4, 5, 6
+  const currentGlobalStep = PROFILE_STEP_OFFSET + step  // 1, 2, 3, 4, 5
 
   function canAdvance(): boolean {
     if (step === 0) return Number(weight) > 0
