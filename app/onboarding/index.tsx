@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { View, Text, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -12,14 +11,14 @@ const TOTAL_STEPS = 10
 export default function WelcomeScreen() {
   const router = useRouter()
   const { width } = useWindowDimensions()
+  // Bind directly to the store so text persists through any re-render
+  const name = useOnboardingStore((s) => s.name)
   const setName = useOnboardingStore((s) => s.setName)
-  const [value, setValue] = useState('')
 
-  const canContinue = value.trim().length >= 2
+  const canContinue = name.trim().length >= 2
   const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
 
   function handleContinue() {
-    setName(value.trim())
     router.push('/onboarding/profile')
   }
 
@@ -62,8 +61,8 @@ export default function WelcomeScreen() {
         {/* Footer — anchored at bottom, rises above keyboard */}
         <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md }}>
           <Input
-            value={value}
-            onChangeText={setValue}
+            value={name}
+            onChangeText={setName}
             placeholder="Your name"
             autoFocus
             autoCapitalize="words"

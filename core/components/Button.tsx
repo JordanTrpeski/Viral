@@ -20,7 +20,7 @@ const variantStyles: Record<Variant, { container: ViewStyle; text: TextStyle }> 
       borderWidth: 1,
       borderColor: colors.borderHero,
     },
-    text: { color: '#14110d' },
+    text: { color: '#fff' },
   },
   secondary: {
     container: {
@@ -48,7 +48,7 @@ const variantStyles: Record<Variant, { container: ViewStyle; text: TextStyle }> 
 const disabledContainer: ViewStyle = {
   backgroundColor: colors.surface2,
   borderWidth: 1,
-  borderColor: colors.border,
+  borderColor: colors.borderAccent,
 }
 const disabledText: TextStyle = { color: colors.textMuted }
 

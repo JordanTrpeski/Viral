@@ -93,15 +93,15 @@ export default function UnitsScreen() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: radius.sm,
-                    backgroundColor: selected ? colors.primary : 'transparent',
-                    borderWidth: selected ? 1 : 0,
-                    borderColor: selected ? colors.borderHero : 'transparent',
+                    backgroundColor: selected ? colors.primary : colors.surface2,
+                    borderWidth: 1,
+                    borderColor: selected ? colors.borderHero : colors.border,
                     opacity: pressed ? 0.85 : 1,
                     gap: spacing.xs,
                   })}
                 >
                   <Text style={{
-                    color: selected ? colors.bg : colors.text,
+                    color: selected ? '#fff' : colors.text,
                     fontSize: fontSize.cardTitle,
                     fontWeight: '700',
                     fontFamily: `${fonts.ui}_700Bold`,
@@ -110,7 +110,7 @@ export default function UnitsScreen() {
                     {opt.label}
                   </Text>
                   <Text style={{
-                    color: selected ? `${colors.bg}cc` : colors.textMuted,
+                    color: selected ? 'rgba(255,255,255,0.75)' : colors.textMuted,
                     fontSize: fontSize.micro,
                     fontFamily: `${fonts.ui}_400Regular`,
                   }}>

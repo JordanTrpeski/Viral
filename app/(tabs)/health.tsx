@@ -121,20 +121,20 @@ export default function HealthScreen() {
               <Ionicons name={card.icon} size={22} color={card.color} />
             </View>
 
-            {/* Title */}
-            <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', flex: 1, fontFamily: `${fonts.ui}_600SemiBold` }}>
-              {card.title}
-            </Text>
-
-            {/* Value / status */}
-            {card.subtitle ? (
-              <Text
-                style={{ color: colors.textMuted, fontSize: fontSize.label, marginRight: spacing.xs, flexShrink: 1 }}
-                numberOfLines={1}
-              >
-                {card.subtitle}
+            {/* Title + Subtitle stacked in middle column */}
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold` }}>
+                {card.title}
               </Text>
-            ) : null}
+              {card.subtitle ? (
+                <Text
+                  style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }}
+                  numberOfLines={1}
+                >
+                  {card.subtitle}
+                </Text>
+              ) : null}
+            </View>
 
             {/* Action indicator */}
             {card.available ? (
