@@ -608,6 +608,31 @@ export default function SettingsScreen() {
           <Row icon="trash-outline" label="Clear all data" onPress={handleClearData} danger />
         </Card>
 
+        {/* ── Developer (remove before release) ── */}
+        <SectionTitle title="Developer" />
+        <Card>
+          <Row
+            icon="refresh-outline"
+            label="Re-enter setup"
+            onPress={() => {
+              Alert.alert(
+                'Re-enter Setup',
+                'This will restart the onboarding flow. Your existing data won\'t be deleted.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Restart',
+                    onPress: () => {
+                      useUserStore.setState({ onboardingComplete: false })
+                      router.replace('/onboarding')
+                    },
+                  },
+                ]
+              )
+            }}
+          />
+        </Card>
+
         {/* ── About ── */}
         <SectionTitle title="About" />
         <Card>
