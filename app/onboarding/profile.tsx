@@ -52,7 +52,13 @@ export default function ProfileScreen() {
   function canAdvance(): boolean {
     if (step === 0) return Number(weight) > 0
     if (step === 1) return Number(height) > 0
-    if (step === 2) return day.length === 2 && month.length === 2 && year.length === 4
+    if (step === 2) {
+      // Accept 1–2 digit day/month so typing "5" for the 5th doesn't block — padStart handles serialisation
+      const d = parseInt(day, 10)
+      const m = parseInt(month, 10)
+      const y = parseInt(year, 10)
+      return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= new Date().getFullYear()
+    }
     if (step === 3) return sex !== null
     return level !== null
   }
