@@ -19,6 +19,7 @@ export default function WelcomeScreen() {
   const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
 
   function handleContinue() {
+    if (!canContinue) return
     router.push('/onboarding/profile')
   }
 
@@ -73,7 +74,6 @@ export default function WelcomeScreen() {
           <Button
             label="Continue"
             onPress={handleContinue}
-            disabled={!canContinue}
             fullWidth
           />
 

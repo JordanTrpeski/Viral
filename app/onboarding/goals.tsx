@@ -119,13 +119,12 @@ export default function GoalsScreen() {
 
           {/* Continue button — prominent, full width */}
           <Pressable
-            onPress={() => goal && router.push('/onboarding/units')}
-            disabled={!goal}
+            onPress={() => { if (!goal) return; router.push('/onboarding/units') }}
             style={({ pressed }) => ({
-              backgroundColor: goal ? colors.primary : colors.surface2,
+              backgroundColor: colors.primary,
               borderRadius: radius.lg,
-              borderWidth: goal ? 0 : 1,
-              borderColor: colors.border,
+              borderWidth: 1,
+              borderColor: colors.borderHero,
               height: 56,
               flexDirection: 'row',
               alignItems: 'center',
@@ -135,14 +134,14 @@ export default function GoalsScreen() {
             })}
           >
             <Text style={{
-              color: goal ? '#fff' : colors.textMuted,
+              color: '#fff',
               fontSize: 17,
               fontWeight: '700',
               letterSpacing: 0.3,
             }}>
               Continue
             </Text>
-            {goal && <Ionicons name="arrow-forward" size={18} color="#fff" />}
+            <Ionicons name="arrow-forward" size={18} color="#fff" />
           </Pressable>
         </View>
       </View>

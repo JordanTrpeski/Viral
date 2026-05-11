@@ -52,7 +52,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const router = useRouter()
   const [ready, setReady] = useState(false)
-  const { onboardingComplete, loadProfile } = useUserStore()
+  const { onboardingComplete, loadProfile, profile } = useUserStore()
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
@@ -83,10 +83,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!ready) return
-    if (!onboardingComplete) {
+    // profile in SQLite is the canonical source — MMKV can silently fall back
+    // to in-memory storage on some devices, losing the flag on every restart.
+    // A completed user always has a profile row, so treat that as the truth.
+    if (!onboardingComplete && profile === null) {
       router.replace('/onboarding')
     }
-  }, [ready, onboardingComplete])
+  }, [ready, onboardingComplete, profile])
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>

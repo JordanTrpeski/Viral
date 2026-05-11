@@ -58,6 +58,7 @@ export default function ProfileScreen() {
   }
 
   function handleNext() {
+    if (!canAdvance()) return
     if (step < 4) {
       setStep((s) => (s + 1) as Step)
       return
@@ -208,7 +209,6 @@ export default function ProfileScreen() {
           <Button
             label={step < 4 ? 'Next' : 'Continue'}
             onPress={handleNext}
-            disabled={!canAdvance()}
             fullWidth
           />
           <View style={{ gap: spacing.xs }}>
