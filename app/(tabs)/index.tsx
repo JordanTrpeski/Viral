@@ -25,25 +25,31 @@ import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { formatVolume, formatDuration, todayStr } from '@modules/health/workout/workoutUtils'
 import { createStorage } from '@core/utils/storage'
-
-const workoutMmkv = createStorage('workout-store')
+import { useHabitStore } from '@modules/habits/habitStore'
+import { isHabitScheduledOn } from '@modules/habits/habitUtils'
+import { useSleepStore } from '@modules/health/sleep/sleepStore'
 import { localDateStr } from '@core/utils/units'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
+import type { Habit, HabitLog, SleepLog } from '@core/types'
+
+const workoutMmkv = createStorage('workout-store')
 
 // ─── Day Overview card (rings + actual values) ───────────────────────────────
 
 function DayOverviewCard({
-  calProgress, workoutProgress, waterProgress, stepsProgress,
+  calProgress, workoutProgress, waterProgress, stepsProgress, sleepProgress,
   totalCalories, calorieGoal, proteinG, carbsG, fatG,
   waterMl, waterGoalMl,
   stepCount, stepGoal,
+  sleepMinutes,
   workoutDone, workoutInProgress,
   onPress,
 }: {
-  calProgress: number; workoutProgress: number; waterProgress: number; stepsProgress: number
+  calProgress: number; workoutProgress: number; waterProgress: number; stepsProgress: number; sleepProgress: number
   totalCalories: number; calorieGoal: number; proteinG: number; carbsG: number; fatG: number
   waterMl: number; waterGoalMl: number
   stepCount: number; stepGoal: number
+  sleepMinutes: number
   workoutDone: boolean; workoutInProgress: boolean
   onPress: () => void
 }) {
@@ -53,10 +59,11 @@ function DayOverviewCard({
   const STROKE = 9
 
   const rings = [
-    { r: 50, progress: calProgress,     color: colors.primary },
-    { r: 36, progress: workoutProgress, color: colors.success  },
-    { r: 22, progress: waterProgress,   color: colors.water    },
-    { r: 8,  progress: stepsProgress,   color: colors.steps    },
+    { r: 52, progress: calProgress,     color: colors.primary },
+    { r: 41, progress: workoutProgress, color: colors.success  },
+    { r: 30, progress: waterProgress,   color: colors.water    },
+    { r: 19, progress: stepsProgress,   color: colors.steps    },
+    { r: 8,  progress: sleepProgress,   color: colors.sleep    },
   ]
 
   const pct = calorieGoal > 0 ? totalCalories / calorieGoal : 0
@@ -66,10 +73,11 @@ function DayOverviewCard({
 
   // Day score: average of 4 ring percentages, each capped at 100%
   const dayScore = Math.round(
-    ([calProgress, workoutProgress, waterProgress, stepsProgress]
+    ([calProgress, workoutProgress, waterProgress, stepsProgress, sleepProgress]
       .map((p) => Math.min(1, p))
-      .reduce((s, v) => s + v, 0) / 4) * 100,
+      .reduce((s, v) => s + v, 0) / 5) * 100,
   )
+  const sleepLabel = sleepMinutes > 0 ? `${Math.floor(sleepMinutes / 60)}h ${sleepMinutes % 60}m` : '—'
 
   return (
     <Pressable
@@ -172,6 +180,12 @@ function DayOverviewCard({
               {formatSteps(stepCount)}
               <Text style={{ color: colors.textMuted, fontWeight: '400' }}> / {formatSteps(stepGoal)}</Text>
             </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.sleep }} />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Sleep</Text>
+            <Text style={{ color: colors.text, fontSize: fontSize.micro, fontWeight: '600' }}>{sleepLabel}</Text>
           </View>
         </View>
       </View>
@@ -739,6 +753,95 @@ function OrganizerCard({ onPress }: { onPress: () => void }) {
   )
 }
 
+function HabitsDashboardCard({
+  habits,
+  logs,
+  today,
+  onToggle,
+  onPress,
+}: {
+  habits: Habit[]
+  logs: HabitLog[]
+  today: string
+  onToggle: (habitId: string) => void
+  onPress: () => void
+}) {
+  const scheduled = habits.filter((h) => isHabitScheduledOn(h, today))
+  const completed = new Set(logs.filter((l) => l.date === today).map((l) => l.habitId))
+
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Ionicons name="checkmark-circle-outline" size={14} color={colors.habits} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Habits</Text>
+          <Text style={{ color: colors.habits, fontSize: fontSize.label, fontWeight: '700' }}>
+            {completed.size}/{scheduled.length}
+          </Text>
+        </View>
+        {scheduled.length === 0 ? (
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>No habits scheduled today</Text>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+            {scheduled.slice(0, 8).map((habit) => {
+              const done = completed.has(habit.id)
+              return (
+                <Pressable key={habit.id} onPress={() => onToggle(habit.id)}>
+                  <View style={{
+                    width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: done ? colors.success : colors.surface2,
+                    borderWidth: 1, borderColor: done ? colors.success : colors.borderAccent,
+                  }}>
+                    <Text style={{ fontSize: 15 }}>{done ? '✓' : habit.icon}</Text>
+                  </View>
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
+      </View>
+    </Pressable>
+  )
+}
+
+function SleepDashboardCard({ log, onPress }: { log: SleepLog | null; onPress: () => void }) {
+  const hours = log ? Math.floor(log.durationMinutes / 60) : 0
+  const mins = log ? log.durationMinutes % 60 : 0
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: radius.lg,
+        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Ionicons name="moon-outline" size={14} color={colors.sleep} />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Sleep</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        </View>
+        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>
+          {log ? `${hours}h ${mins}m` : 'No log'}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 4, marginTop: spacing.xs }}>
+          {[1, 2, 3, 4, 5].map((q) => (
+            <View
+              key={q}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: log?.quality && log.quality >= q ? colors.sleep : colors.surface2,
+              }}
+            />
+          ))}
+        </View>
+      </View>
+    </Pressable>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -755,6 +858,8 @@ export default function HomeScreen() {
   const [currentMonthBudget, setCurrentMonthBudget] = useState({ totalIncome: 0, totalSpending: 0, year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
   const { loadReminders: loadOrgReminders, loadPeople: loadOrgPeople, loadNotes: loadOrgNotes } = useOrganizerStore()
   const { todayEntry: stepsEntry, todaySessions, loadToday: loadSteps, loadSessions: loadStepSessions } = useStepsStore()
+  const { habits, logs: habitLogs, loadHabits, toggleLog: toggleHabitLog } = useHabitStore()
+  const { todayLog: sleepTodayLog, history: sleepHistory, loadSleep } = useSleepStore()
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
@@ -800,6 +905,8 @@ export default function HomeScreen() {
     loadOrgReminders()
     loadOrgPeople()
     loadOrgNotes()
+    loadHabits()
+    loadSleep()
   }
 
   // Re-run loadAll every time this screen comes into focus (covers returning
@@ -865,6 +972,9 @@ export default function HomeScreen() {
   const stepCount = stepsEntry?.stepCount ?? 0
   const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
   const stepsProgress = stepGoal > 0 ? stepCount / stepGoal : 0
+  const latestSleep = sleepTodayLog ?? sleepHistory[sleepHistory.length - 1] ?? null
+  const sleepMinutes = latestSleep?.durationMinutes ?? 0
+  const sleepProgress = sleepMinutes / 480
   const { low: stepsLow, high: stepsHigh } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
   const [stepsStreak, setStepsStreak] = useState(0)
   const [prExercises, setPrExercises] = useState<string[]>([])
@@ -888,7 +998,7 @@ export default function HomeScreen() {
   const budgetMonthLabel = `${MONTH_NAMES[currentMonthBudget.month - 1]} ${currentMonthBudget.year}`
 
   // Empty state check — no data at all yet
-  const hasAnyData = totalCalories > 0 || waterMl > 0 || stepCount > 0
+  const hasAnyData = totalCalories > 0 || waterMl > 0 || stepCount > 0 || habits.length > 0 || sleepHistory.length > 0
     || weightHistory.length > 0 || recentSessions.length > 0
     || currentMonthBudget.totalIncome > 0 || currentMonthBudget.totalSpending > 0
 
@@ -968,6 +1078,7 @@ export default function HomeScreen() {
           workoutProgress={workoutProgress}
           waterProgress={waterProgress}
           stepsProgress={stepsProgress}
+          sleepProgress={sleepProgress}
           totalCalories={totalCalories}
           calorieGoal={macroGoals.calorieGoal}
           proteinG={totalProteinG}
@@ -977,9 +1088,23 @@ export default function HomeScreen() {
           waterGoalMl={waterGoalMl}
           stepCount={stepCount}
           stepGoal={stepGoal}
+          sleepMinutes={sleepMinutes}
           workoutDone={!!todaySession && !activeSession}
           workoutInProgress={!!activeSession}
           onPress={() => router.push('/health/diet')}
+        />
+
+        <HabitsDashboardCard
+          habits={habits}
+          logs={habitLogs}
+          today={today}
+          onToggle={(habitId) => toggleHabitLog(habitId, today)}
+          onPress={() => router.push('/(tabs)/habits' as never)}
+        />
+
+        <SleepDashboardCard
+          log={latestSleep}
+          onPress={() => router.push('/health/sleep' as never)}
         />
 
         {/* Water */}

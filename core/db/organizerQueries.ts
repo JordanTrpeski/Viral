@@ -324,11 +324,17 @@ export function dbUpdateReminder(
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
+const REPEAT_OCCURRENCE_ID_SEPARATOR = '__occurs__'
+
 type EventRow = {
   id: string; title: string; date: string; start_time: string | null
   end_time: string | null; is_all_day: number; location: string | null
   repeat: string | null; color: string | null; notes: string | null
   person_id: string | null; created_at: string
+}
+
+function originalEventId(id: string): string {
+  return id.split(REPEAT_OCCURRENCE_ID_SEPARATOR)[0]
 }
 
 function rowToEvent(r: EventRow): OrganizerEvent {
@@ -342,11 +348,23 @@ function rowToEvent(r: EventRow): OrganizerEvent {
   }
 }
 
+function dateAtNoon(date: string): Date {
+  return new Date(date + 'T12:00:00')
+}
+
+function addOneYear(date: string): string {
+  const d = dateAtNoon(date)
+  d.setFullYear(d.getFullYear() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
 /** Returns true if a repeating event with the given startDate + repeat rule occurs on targetDate */
 function doesRepeatOn(startDate: string, repeat: string, targetDate: string): boolean {
-  if (targetDate <= startDate) return false  // before or on start — original already included
-  const sd = new Date(startDate + 'T12:00:00')
-  const td = new Date(targetDate + 'T12:00:00')
+  if (targetDate <= startDate) return false  // before or on start: original row already covers start
+  if (targetDate > addOneYear(startDate)) return false
+
+  const sd = dateAtNoon(startDate)
+  const td = dateAtNoon(targetDate)
   switch (repeat) {
     case 'daily':   return true
     case 'weekly':  return sd.getDay() === td.getDay()
@@ -356,9 +374,17 @@ function doesRepeatOn(startDate: string, repeat: string, targetDate: string): bo
   }
 }
 
+function rowToVirtualEvent(row: EventRow, targetDate: string): OrganizerEvent {
+  return {
+    ...rowToEvent(row),
+    id: `${row.id}${REPEAT_OCCURRENCE_ID_SEPARATOR}${targetDate}`,
+    originalEventId: row.id,
+    date: targetDate,
+  }
+}
+
 export function dbGetEventsForMonth(year: number, month: number): OrganizerEvent[] {
   const prefix    = `${year}-${String(month).padStart(2, '0')}`
-  const monthEnd  = `${prefix}-31`
 
   // Non-repeating + repeating events that START this month
   const thisMonth = db.getAllSync<EventRow>(
@@ -381,7 +407,7 @@ export function dbGetEventsForMonth(year: number, month: number): OrganizerEvent
     for (let day = 1; day <= daysInMonth; day++) {
       const targetDate = `${prefix}-${String(day).padStart(2, '0')}`
       if (doesRepeatOn(row.date, row.repeat, targetDate)) {
-        virtual.push({ ...rowToEvent(row), date: targetDate })
+        virtual.push(rowToVirtualEvent(row, targetDate))
       }
     }
   }
@@ -405,7 +431,7 @@ export function dbGetEventsForDate(date: string): OrganizerEvent[] {
 
   const virtual: OrganizerEvent[] = repeating
     .filter((r) => r.repeat && doesRepeatOn(r.date, r.repeat, date))
-    .map((r) => ({ ...rowToEvent(r), date }))
+    .map((r) => rowToVirtualEvent(r, date))
 
   return [...exact.map(rowToEvent), ...virtual]
     .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
@@ -427,7 +453,7 @@ export function dbInsertEvent(
 }
 
 export function dbDeleteEvent(id: string): void {
-  db.runSync('DELETE FROM organizer_events WHERE id=?', [id])
+  db.runSync('DELETE FROM organizer_events WHERE id=?', [originalEventId(id)])
 }
 
 // ── Event Reminders ───────────────────────────────────────────────────────────

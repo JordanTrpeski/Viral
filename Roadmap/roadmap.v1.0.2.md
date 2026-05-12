@@ -1,6 +1,6 @@
 # roadmap.v1.0.2.md — Deployment Cycle 2: Feature Improvements + Module Upgrades
 
-## Status: Planned (start after ALL tasks in v1.0.1 are checked)
+## Status: Complete
 ## Prerequisites: roadmap.v1.0.1.md fully completed and checked
 ## Deployment version: 1.0.2
 
@@ -152,7 +152,7 @@ the existing app design exactly. No exceptions.
       Tap an empty slot → add event at that time.
       Tap an event block → event detail sheet.
 
-- [ ] **3.6 Repeating calendar events**
+- [x] **3.6 Repeating calendar events**
       File: `app/organizer/event-add.tsx` and event DB queries
       Add repeat selector to event creation: None / Daily / Weekly /
       Monthly / Yearly.
@@ -161,7 +161,7 @@ the existing app design exactly. No exceptions.
       repeating events up to 1 year ahead — do not store each occurrence,
       generate them on read.
 
-- [ ] **3.7 Event reminders (notifications)**
+- [x] **3.7 Event reminders (notifications)**
       File: `app/organizer/event-add.tsx`
       Add "Notify me" section to event creation.
       Options: At time of event / 15 min before / 30 min before /
@@ -169,7 +169,7 @@ the existing app design exactly. No exceptions.
       Multiple reminders per event allowed.
       Store in `event_reminders` table. Schedule via expo-notifications.
 
-- [ ] **3.8 Notes — confirm rich text or fix to proper rich text**
+- [x] **3.8 Notes — confirm rich text or fix to proper rich text**
       File: `app/organizer/note-edit.tsx`
       The report describes "rich plain-text" which is contradictory.
       Audit the note editor. If it is plain text only:

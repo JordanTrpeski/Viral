@@ -96,6 +96,14 @@ export default function HealthScreen() {
       available: true,
     },
     {
+      title: 'Sleep',
+      subtitle: 'Log sleep and bedtime reminders',
+      icon: 'moon-outline',
+      color: colors.sleep,
+      route: '/health/sleep',
+      available: true,
+    },
+    {
       title: 'Water',
       subtitle: 'Daily intake tracking',
       icon: 'water-outline',

@@ -116,6 +116,10 @@ export default function RootLayout() {
         <Stack.Screen name="checklist" />
         <Stack.Screen name="budget" />
         <Stack.Screen name="organizer" />
+        <Stack.Screen name="habits" />
+        <Stack.Screen name="insights" options={{ presentation: 'card' }} />
+        <Stack.Screen name="dev-tools" />
+        <Stack.Screen name="tools" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

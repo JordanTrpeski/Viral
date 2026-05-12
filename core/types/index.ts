@@ -103,6 +103,7 @@ export type EventRepeat = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export interface OrganizerEvent {
   id: string
+  originalEventId?: string      // Set for generated repeat occurrences
   title: string
   date: string              // YYYY-MM-DD
   startTime: string | null  // HH:MM
@@ -145,4 +146,37 @@ export interface OrganizerTag {
 export interface OrganizerNoteTag {
   noteId: string
   tagId: string
+}
+
+export type HabitFrequency = 'daily' | 'weekdays' | 'weekends' | 'custom'
+
+export interface Habit {
+  id: string
+  name: string
+  icon: string
+  color: string
+  frequency: HabitFrequency
+  customDays: number[]
+  reminderTime: string | null
+  sortOrder: number
+  isArchived: boolean
+  createdAt: string
+}
+
+export interface HabitLog {
+  id: string
+  habitId: string
+  date: string
+  completedAt: string
+}
+
+export interface SleepLog {
+  id: string
+  date: string
+  bedtime: string
+  wakeTime: string
+  durationMinutes: number
+  quality: number | null
+  notes: string | null
+  createdAt: string
 }

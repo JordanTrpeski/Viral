@@ -54,6 +54,53 @@ function isValidTime(str: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(str)
 }
 
+function toDate(date: string): Date {
+  return new Date(date + 'T12:00:00')
+}
+
+function formatDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function addOneYear(date: string): string {
+  const d = toDate(date)
+  d.setFullYear(d.getFullYear() + 1)
+  return formatDate(d)
+}
+
+function daysInMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate()
+}
+
+function nextRepeatDate(currentDate: string, repeat: Exclude<EventRepeat, 'none'>, originalDay: number): string {
+  const d = toDate(currentDate)
+  if (repeat === 'daily') d.setDate(d.getDate() + 1)
+  if (repeat === 'weekly') d.setDate(d.getDate() + 7)
+  if (repeat === 'monthly') {
+    const nextMonth = d.getMonth() + 1
+    d.setMonth(nextMonth, Math.min(originalDay, daysInMonth(d.getFullYear(), nextMonth)))
+  }
+  if (repeat === 'yearly') d.setFullYear(d.getFullYear() + 1)
+  return formatDate(d)
+}
+
+function occurrenceDates(startDate: string, repeat: EventRepeat | null): string[] {
+  if (!repeat || repeat === 'none') return [startDate]
+
+  const dates = [startDate]
+  const endDate = addOneYear(startDate)
+  const originalDay = toDate(startDate).getDate()
+  let cursor = startDate
+
+  while (dates.length < 64) {
+    cursor = nextRepeatDate(cursor, repeat, originalDay)
+    if (cursor > endDate) break
+    dates.push(cursor)
+  }
+
+  return dates
+}
+
 function Label({ text }: { text: string }) {
   return (
     <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
@@ -88,11 +135,11 @@ async function scheduleEventReminder(
       : `Starts in ${minutesBefore < 60 ? `${minutesBefore} min` : minutesBefore < 1440 ? `${minutesBefore / 60}h` : minutesBefore < 10080 ? '1 day' : '1 week'}`
 
     await Notifications.scheduleNotificationAsync({
-      identifier: `event-${eventId}-${minutesBefore}`,
+      identifier: `event-${eventId}-${date}-${minutesBefore}`,
       content: {
         title,
         body: bodyText,
-        data: { type: 'event', eventId },
+        data: { type: 'event', eventId, eventDate: date },
       },
       trigger: { date: notifyDt, type: Notifications.SchedulableTriggerInputTypes.DATE },
     })
@@ -167,7 +214,9 @@ export default function EventAddScreen() {
       for (const minutesBefore of reminders) {
         const remId = Crypto.randomUUID()
         dbInsertEventReminder(remId, eventId, minutesBefore)
-        await scheduleEventReminder(eventId, t, date, time, minutesBefore)
+        for (const occurrenceDate of occurrenceDates(date, repeat)) {
+          await scheduleEventReminder(eventId, t, occurrenceDate, time, minutesBefore)
+        }
       }
     }
 

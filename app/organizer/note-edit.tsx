@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import MarkdownText from '@modules/organizer/notes/components/MarkdownText'
 import { localDateStr } from '@core/utils/units'
 
 const BottomSheetFlatList = FlatList
@@ -179,7 +180,7 @@ export default function NoteEditScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, flex: 1 }}
+          contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -314,6 +315,29 @@ export default function NoteEditScreen() {
               </Pressable>
             ))}
           </View>
+
+          {body.trim().length > 0 && (
+            <View style={{
+              marginTop: spacing.lg,
+              backgroundColor: colors.surface,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.md,
+              gap: spacing.sm,
+            }}>
+              <Text style={{
+                color: colors.textMuted,
+                fontSize: fontSize.micro,
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+              }}>
+                Preview
+              </Text>
+              <MarkdownText content={body} />
+            </View>
+          )}
 
           {/* Linked reminders (editing only) */}
           {isEditing && (

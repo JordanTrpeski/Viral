@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TextInput, FlatList, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native'
+import { useEffect, useRef, useState, type ElementRef } from 'react'
+import { View, Text, TextInput, FlatList, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { CameraView, useCameraPermissions } from 'expo-camera'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useDietStore } from '@modules/health/diet/dietStore'
 import { calcEntryNutrition } from '@modules/health/diet/dietUtils'
+import { recognizeFoodFromImage, type RecognizedFoodItem } from '@core/utils/foodRecognition'
 import type { Food } from '@modules/health/shared/types'
 
 // ─── Food result row ──────────────────────────────────────────────────────────
@@ -254,6 +256,267 @@ function FieldRow({ label, value, onChange, placeholder, numeric }: {
   )
 }
 
+// ─── AI food camera ───────────────────────────────────────────────────────────
+
+function FoodCameraView({
+  recognizing,
+  onCapture,
+  onCancel,
+}: {
+  recognizing: boolean
+  onCapture: (uri: string) => void
+  onCancel: () => void
+}) {
+  const cameraRef = useRef<ElementRef<typeof CameraView>>(null)
+  const [permission, requestPermission] = useCameraPermissions()
+
+  async function handleCapture() {
+    if (recognizing) return
+    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.75, base64: false })
+    if (photo?.uri) onCapture(photo.uri)
+  }
+
+  if (!permission) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.diet} />
+      </SafeAreaView>
+    )
+  }
+
+  if (!permission.granted) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.md, justifyContent: 'center', gap: spacing.md }}>
+        <Ionicons name="camera-outline" size={48} color={colors.diet} style={{ alignSelf: 'center' }} />
+        <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '700', textAlign: 'center' }}>
+          Camera access needed
+        </Text>
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.body, textAlign: 'center', lineHeight: fontSize.body * 1.5 }}>
+          Viral uses the camera to identify foods from a meal photo. Add the API key later to turn captures into logged foods.
+        </Text>
+        <Pressable
+          onPress={requestPermission}
+          style={({ pressed }) => ({
+            backgroundColor: colors.diet,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            alignItems: 'center',
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Text style={{ color: '#fff', fontSize: fontSize.body, fontWeight: '700' }}>Allow Camera</Text>
+        </Pressable>
+        <Pressable onPress={onCancel} style={{ alignItems: 'center', padding: spacing.sm }}>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>Search manually</Text>
+        </Pressable>
+      </SafeAreaView>
+    )
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back">
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md }}>
+            <Pressable onPress={onCancel} style={{ padding: spacing.sm }}>
+              <Ionicons name="chevron-back" size={26} color="#fff" />
+            </Pressable>
+            <Text style={{ flex: 1, color: '#fff', fontSize: fontSize.sectionHeader, fontWeight: '700', textAlign: 'center' }}>
+              Point at your meal
+            </Text>
+            <View style={{ width: 42 }} />
+          </View>
+
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg }}>
+            <View style={{
+              width: '100%',
+              aspectRatio: 1.25,
+              borderWidth: 2,
+              borderColor: colors.diet,
+              borderRadius: radius.lg,
+              backgroundColor: 'rgba(0,0,0,0.08)',
+            }} />
+            <Text style={{
+              color: '#fff',
+              fontSize: fontSize.label,
+              textAlign: 'center',
+              marginTop: spacing.md,
+              backgroundColor: 'rgba(0,0,0,0.45)',
+              borderRadius: radius.full,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.xs,
+            }}>
+              Center the plate inside the frame
+            </Text>
+          </View>
+
+          <View style={{ alignItems: 'center', paddingBottom: spacing.xl, gap: spacing.sm }}>
+            <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: fontSize.micro, textAlign: 'center', paddingHorizontal: spacing.lg }}>
+              API key placeholder: capture works now, recognition unlocks after adding the Gemini Vision key.
+            </Text>
+            <Pressable
+              onPress={handleCapture}
+              disabled={recognizing}
+              style={({ pressed }) => ({
+                width: 74,
+                height: 74,
+                borderRadius: 37,
+                backgroundColor: '#fff',
+                borderWidth: 5,
+                borderColor: colors.diet,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed || recognizing ? 0.75 : 1,
+              })}
+            >
+              {recognizing
+                ? <ActivityIndicator color={colors.diet} />
+                : <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: colors.diet }} />
+              }
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </CameraView>
+    </View>
+  )
+}
+
+function RecognitionReview({
+  items,
+  onChange,
+  onConfirm,
+  onManual,
+}: {
+  items: RecognizedFoodItem[]
+  onChange: (items: RecognizedFoodItem[]) => void
+  onConfirm: () => void
+  onManual: () => void
+}) {
+  function updateGrams(index: number, value: string) {
+    const grams = Number(value)
+    onChange(items.map((item, i) => i === index
+      ? { ...item, estimatedGrams: Number.isFinite(grams) ? grams : 0 }
+      : item))
+  }
+
+  return (
+    <View style={{ backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.md, gap: spacing.md }}>
+      <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '700' }}>
+        Confirm detected foods
+      </Text>
+      {items.map((item, index) => (
+        <View key={`${item.name}-${index}`} style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.surface2,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing.sm,
+          gap: spacing.sm,
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+              {item.caloriesPer100g} kcal per 100g
+            </Text>
+          </View>
+          <TextInput
+            value={String(item.estimatedGrams || '')}
+            onChangeText={(value) => updateGrams(index, value)}
+            keyboardType="decimal-pad"
+            selectTextOnFocus
+            style={{
+              width: 76,
+              backgroundColor: colors.surface,
+              borderRadius: radius.sm,
+              borderWidth: 1,
+              borderColor: colors.border,
+              color: colors.text,
+              fontSize: fontSize.body,
+              fontWeight: '700',
+              textAlign: 'center',
+              paddingVertical: spacing.xs,
+            }}
+          />
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>g</Text>
+        </View>
+      ))}
+      <Pressable
+        onPress={onConfirm}
+        style={({ pressed }) => ({
+          backgroundColor: colors.diet,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          alignItems: 'center',
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <Text style={{ color: '#fff', fontSize: fontSize.body, fontWeight: '700' }}>Add All to Meal</Text>
+      </Pressable>
+      <Pressable onPress={onManual} style={{ alignItems: 'center', padding: spacing.xs }}>
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>Looks wrong - search manually</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function RecognitionFallback({
+  message,
+  onTryAgain,
+  onManual,
+}: {
+  message: string
+  onTryAgain: () => void
+  onManual: () => void
+}) {
+  return (
+    <View style={{ backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.md, gap: spacing.md }}>
+      <View style={{ alignItems: 'center', gap: spacing.sm }}>
+        <Ionicons name="sparkles-outline" size={34} color={colors.diet} />
+        <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700', textAlign: 'center' }}>
+          Couldn't identify food
+        </Text>
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, lineHeight: fontSize.label * 1.55, textAlign: 'center' }}>
+          {message}
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Pressable
+          onPress={onTryAgain}
+          style={({ pressed }) => ({
+            flex: 1,
+            backgroundColor: colors.diet,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            alignItems: 'center',
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Text style={{ color: '#fff', fontSize: fontSize.body, fontWeight: '700' }}>Try again</Text>
+        </Pressable>
+        <Pressable
+          onPress={onManual}
+          style={({ pressed }) => ({
+            flex: 1,
+            backgroundColor: colors.surface2,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.md,
+            alignItems: 'center',
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '700' }}>Search manually</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function FoodSearchScreen() {
@@ -269,6 +532,10 @@ export default function FoodSearchScreen() {
   const [query, setQuery] = useState('')
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
   const [showCustomForm, setShowCustomForm] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
+  const [recognizing, setRecognizing] = useState(false)
+  const [recognizedItems, setRecognizedItems] = useState<RecognizedFoodItem[]>([])
+  const [recognitionMessage, setRecognitionMessage] = useState('')
 
   // Edit mode: pre-select the food being edited
   const isEditMode = !!(editEntryId && editFoodId)
@@ -306,6 +573,58 @@ export default function FoodSearchScreen() {
     const newFood = createCustomFood(partial)
     setShowCustomForm(false)
     setSelectedFood(newFood)
+  }
+
+  function resetRecognition() {
+    setRecognizedItems([])
+    setRecognitionMessage('')
+  }
+
+  async function handleMealPhoto(uri: string) {
+    setRecognizing(true)
+    resetRecognition()
+    const result = await recognizeFoodFromImage(uri)
+    setRecognizing(false)
+    setShowCamera(false)
+
+    if (result.ok) {
+      setRecognizedItems(result.items)
+    } else {
+      setRecognitionMessage(result.message)
+    }
+  }
+
+  function handleConfirmRecognizedFoods() {
+    if (!mealId) return
+    for (const item of recognizedItems) {
+      if (item.estimatedGrams <= 0) continue
+      const food = createCustomFood({
+        name: item.name,
+        brand: 'AI estimate',
+        caloriesPer100g: item.caloriesPer100g,
+        proteinPer100g: item.proteinPer100g,
+        carbsPer100g: item.carbsPer100g,
+        fatPer100g: item.fatPer100g,
+        fiberPer100g: item.fiberPer100g,
+      })
+      addEntry(mealId, food, item.estimatedGrams)
+    }
+    resetRecognition()
+  }
+
+  function handleSearchManually() {
+    setShowCamera(false)
+    resetRecognition()
+  }
+
+  if (showCamera) {
+    return (
+      <FoodCameraView
+        recognizing={recognizing}
+        onCapture={handleMealPhoto}
+        onCancel={() => setShowCamera(false)}
+      />
+    )
   }
 
   if (showCustomForm) {
@@ -364,6 +683,16 @@ export default function FoodSearchScreen() {
                 style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
                 selectionColor={colors.primary}
               />
+              <Pressable
+                onPress={() => {
+                  resetRecognition()
+                  setShowCamera(true)
+                }}
+                hitSlop={8}
+                style={{ padding: spacing.xs }}
+              >
+                <Ionicons name="camera-outline" size={18} color={colors.diet} />
+              </Pressable>
               {query.length > 0 && (
                 <Pressable onPress={() => { setQuery(''); searchFoods('') }}>
                   <Ionicons name="close-circle" size={16} color={colors.textMuted} />
@@ -433,6 +762,26 @@ export default function FoodSearchScreen() {
               setSelectedFood(null)
             }}
             actionLabel={isEditMode ? 'Update Amount' : 'Add to Meal'}
+          />
+        )}
+
+        {recognizedItems.length > 0 && (
+          <RecognitionReview
+            items={recognizedItems}
+            onChange={setRecognizedItems}
+            onConfirm={handleConfirmRecognizedFoods}
+            onManual={handleSearchManually}
+          />
+        )}
+
+        {recognitionMessage.length > 0 && (
+          <RecognitionFallback
+            message={recognitionMessage}
+            onTryAgain={() => {
+              resetRecognition()
+              setShowCamera(true)
+            }}
+            onManual={handleSearchManually}
           />
         )}
       </KeyboardAvoidingView>

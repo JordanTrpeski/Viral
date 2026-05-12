@@ -34,6 +34,9 @@ export const colors = {
   reminders:  '#c4452a',   // oxidized iron (reuse danger)
   checklist:  '#9b8ab8',   // faded violet (reuse organizer)
   steps:      '#d4a574',   // raw brass (reuse warning)
+  habits:     '#8fa860',   // moss copper (reuse success)
+  sleep:      '#6ba0aa',   // verdigris (reuse water)
+  tools:      '#d49a4a',   // amber (reuse notes)
 } as const
 
 // Importance tier colors (Organizer module) — mapped to rustic palette

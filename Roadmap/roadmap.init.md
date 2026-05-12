@@ -27,9 +27,9 @@ Do NOT read all roadmap versions at once.
 | roadmap.v1.md | Build 1 | App Shell + Health + Dashboard | Complete |
 | roadmap.v2.md | Build 2 | Budget Module | Complete |
 | roadmap.v3.md | Build 3 | Organizer Module | Complete |
-| roadmap.v1.0.1.md | Deploy 1.0.1 | Critical Fixes + Missing Core Features | Active |
-| roadmap.v1.0.2.md | Deploy 1.0.2 | Feature Improvements + Module Upgrades | Planned |
-| roadmap.v1.0.3.md | Deploy 1.0.3 | New Modules (Habits, Sleep, Dev Tools, AI) | Planned |
+| roadmap.v1.0.1.md | Deploy 1.0.1 | Critical Fixes + Missing Core Features | Complete |
+| roadmap.v1.0.2.md | Deploy 1.0.2 | Feature Improvements + Module Upgrades | Complete |
+| roadmap.v1.0.3.md | Deploy 1.0.3 | New Modules (Habits, Sleep, Dev Tools, AI) | Complete |
 
 ### Versioning Logic
 - **v1, v2, v3** — initial build phases. App did not exist yet. Never touch these.
@@ -43,7 +43,7 @@ Do NOT read all roadmap versions at once.
 
 ## Current Active Cycle
 
-**Deploy 1.0.1 — read roadmap.v1.0.1.md**
+**No active cycle — create/read roadmap.v1.0.4.md before starting the next phase**
 
 ---
 
