@@ -1,0 +1,118 @@
+name: Production Build
+
+# ── Triggers ───────────────────────────────────────────────────────────────────
+#
+#  1. Push a version tag  →  git tag v1.0.2 && git push origin v1.0.2
+#     The version in app.json is automatically bumped to match the tag.
+#
+#  2. Manual dispatch via GitHub UI  →  Actions → Production Build → Run workflow
+#     Optionally enter a version string to bump app.json before building.
+#     Leave version blank to build whatever is currently in app.json.
+#
+# ── How this fits with OTA updates ────────────────────────────────────────────
+#
+#  ota-update.yml runs on every push to main (JS bundle only, instant OTA).
+#  This workflow runs a full native EAS build (required when native deps change
+#  or when you bump the app version for a new release).
+#
+#  runtimeVersion.policy = "appVersion" means OTA updates are only served to
+#  devices running the matching native build. Bump the version here when you
+#  want to cut a new native release; leave it alone for JS-only changes.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # e.g. v1.0.2
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version to set in app.json (e.g. 1.0.2). Leave blank to keep current.'
+        required: false
+        type: string
+      platform:
+        description: 'Platform(s) to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+
+jobs:
+  build:
+    name: EAS Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node ──────────────────────────────────────────────────────────────────
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Version bump (tag trigger) ─────────────────────────────────────────
+      - name: Bump version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # Strip leading 'v' from tag name (v1.0.2 → 1.0.2)
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Setting app.json version to $VERSION"
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = process.env.VERSION;
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+            console.log('app.json version →', app.expo.version);
+          "
+        env:
+          VERSION: ${{ github.ref_name }}
+
+      # ── Version bump (manual trigger, if provided) ─────────────────────────
+      - name: Bump version from input
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          echo "Setting app.json version to $VERSION"
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = process.env.VERSION;
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+            console.log('app.json version →', app.expo.version);
+          "
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+
+      # ── Show final version ─────────────────────────────────────────────────
+      - name: Show version being built
+        run: node -e "const a=require('./app.json'); console.log('Building version:', a.expo.version)"
+
+      # ── EAS Build ─────────────────────────────────────────────────────────
+      - name: Run EAS production build
+        run: |
+          PLATFORM="${{ github.event.inputs.platform }}"
+          if [ -z "$PLATFORM" ]; then PLATFORM="all"; fi
+          echo "Building for platform: $PLATFORM"
+          npx eas-cli build \
+            --platform "$PLATFORM" \
+            --profile production \
+            --non-interactive \
+            --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # ── Summary ───────────────────────────────────────────────────────────
+      - name: Build queued
+        run: |
+          echo "✅ EAS build queued. Monitor progress at:"
+          echo "   https://expo.dev/accounts/viralargos/projects/Viral/builds"
