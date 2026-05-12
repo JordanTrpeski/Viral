@@ -43,6 +43,12 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Viral to use the camera for barcode scanning and AI meal photo recognition."
+        }
+      ],
       "expo-updates",
       "expo-web-browser",
       "@sentry/react-native"

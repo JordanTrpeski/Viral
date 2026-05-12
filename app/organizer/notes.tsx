@@ -6,6 +6,7 @@ import { useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import MarkdownText from '@modules/organizer/notes/components/MarkdownText'
 import SwipeableRow from '@core/components/SwipeableRow'
 import type { OrganizerNote } from '@core/types'
 
@@ -22,9 +23,15 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function previewBody(body: string): string {
+function plainMarkdownPreview(body: string): string {
   const first = body.split('\n').find((l) => l.trim()) ?? ''
-  return first.length > 80 ? first.slice(0, 80) + '…' : first
+  const plain = first
+    .replace(/^#{1,3}\s+/, '')
+    .replace(/^[-*]\s+/, '')
+    .replace(/^\d+\.\s+/, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+  return plain.length > 80 ? plain.slice(0, 80) + '…' : plain
 }
 
 // ── Note card ──────────────────────────────────────────────────────────────────
@@ -38,7 +45,7 @@ function NoteCard({
   onArchive: () => void
   onDelete: () => void
 }) {
-  const preview = previewBody(note.body)
+  const preview = plainMarkdownPreview(note.body)
 
   const rightActions = [
     {
@@ -89,9 +96,12 @@ function NoteCard({
           </Text>
         </View>
         {note.title && preview ? (
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }} numberOfLines={2}>
-            {preview}
-          </Text>
+          <MarkdownText
+            content={note.body}
+            compact
+            numberOfLines={2}
+            style={{ color: colors.textMuted, fontSize: fontSize.micro, lineHeight: fontSize.micro * 1.5 }}
+          />
         ) : null}
       </Pressable>
     </SwipeableRow>

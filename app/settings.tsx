@@ -573,6 +573,28 @@ export default function SettingsScreen() {
           />
         </Card>
 
+        {/* ── Tools ── */}
+        <SectionTitle title="Tools" />
+        <Card>
+          <Row
+            icon="cash-outline"
+            label="Currency converter"
+            onPress={() => router.push('/tools/currency' as never)}
+          />
+          <Divider />
+          <Row
+            icon="code-slash-outline"
+            label="Dev tools"
+            onPress={() => router.push('/dev-tools' as never)}
+          />
+          <Divider />
+          <Row
+            icon="sparkles-outline"
+            label="Weekly insights"
+            onPress={() => router.push('/insights' as never)}
+          />
+        </Card>
+
         {/* ── Data ── */}
         <SectionTitle title="Data" />
         <Card>
