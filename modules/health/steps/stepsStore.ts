@@ -12,6 +12,8 @@ interface StepsState {
   todayEntry: StepEntry | null
   todaySessions: StepSession[]
   history: StepEntry[]
+  /** 'unknown' = not yet checked, 'granted' = OK, 'denied' = user refused */
+  pedometerStatus: 'unknown' | 'granted' | 'denied' | 'unavailable'
 
   loadToday: (date: string, dateOfBirth: string) => void
   loadSessions: (date: string) => void
@@ -28,6 +30,7 @@ export const useStepsStore = create<StepsState>((set, get) => ({
   todayEntry: null,
   todaySessions: [],
   history: [],
+  pedometerStatus: 'unknown',
 
   loadToday(date, dateOfBirth) {
     const entry = dbGetStepsForDate(date) ?? {
@@ -91,7 +94,11 @@ export const useStepsStore = create<StepsState>((set, get) => ({
     try {
       const { Pedometer } = await import('expo-sensors')
       const { status } = await Pedometer.requestPermissionsAsync()
-      if (status !== 'granted') return
+      if (status !== 'granted') {
+        set({ pedometerStatus: 'denied' })
+        return
+      }
+      set({ pedometerStatus: 'granted' })
       const start = new Date(date + 'T00:00:00')
       const end   = new Date(date + 'T23:59:59')
       const { steps } = await Pedometer.getStepCountAsync(start, end)
@@ -101,7 +108,8 @@ export const useStepsStore = create<StepsState>((set, get) => ({
         get().setSteps(date, steps, current?.goal ?? defaultGoal(dateOfBirth))
       }
     } catch {
-      // Sensor not available — fail silently
+      // Sensor not available on this device
+      set({ pedometerStatus: 'unavailable' })
     }
   },
 }))

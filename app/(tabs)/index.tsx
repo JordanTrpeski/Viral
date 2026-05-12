@@ -1,23 +1,32 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert } from 'react-native'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert, AppState } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Circle } from 'react-native-svg'
+import GorhomBottomSheet from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
-import { Button, SparklineGraph, ProgressBar } from '@core/components'
+import { Button, BottomSheet, SparklineGraph, ProgressBar } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
 import { useWorkoutStore } from '@modules/health/workout/workoutStore'
 import { useDietStore } from '@modules/health/diet/dietStore'
 import { useStepsStore } from '@modules/health/steps/stepsStore'
 import { formatSteps, estimateCalories, defaultGoal } from '@modules/health/steps/stepsUtils'
+import { dbGetStepsStreak } from '@core/db/stepsQueries'
 import { useChecklistStore } from '@modules/checklist/checklistStore'
 import { dbGetChecklistItems, type ChecklistItem } from '@core/db/checklistQueries'
-import { useBudgetStore } from '@modules/budget/budgetStore'
+import {
+  dbGetCurrentMonthSummary, dbGetCategoriesByType,
+  dbInsertExpense, dbInsertExpenseItem,
+  type BudgetCategory,
+} from '@core/db/budgetQueries'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { formatVolume, formatDuration, todayStr } from '@modules/health/workout/workoutUtils'
+import { createStorage } from '@core/utils/storage'
+
+const workoutMmkv = createStorage('workout-store')
 import { localDateStr } from '@core/utils/units'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
 
@@ -55,6 +64,13 @@ function DayOverviewCard({
   const workoutLabel = workoutInProgress ? 'In Progress' : workoutDone ? 'Done ✓' : '—'
   const workoutColor = workoutInProgress ? colors.warning : workoutDone ? colors.success : colors.textMuted
 
+  // Day score: average of 4 ring percentages, each capped at 100%
+  const dayScore = Math.round(
+    ([calProgress, workoutProgress, waterProgress, stepsProgress]
+      .map((p) => Math.min(1, p))
+      .reduce((s, v) => s + v, 0) / 4) * 100,
+  )
+
   return (
     <Pressable
       onPress={onPress}
@@ -73,25 +89,33 @@ function DayOverviewCard({
       </Text>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-        {/* Activity rings */}
-        <Svg width={SIZE} height={SIZE}>
-          {rings.map(({ r, progress, color }, i) => {
-            const circ = 2 * Math.PI * r
-            const offset = circ * (1 - Math.min(1, progress))
-            return (
-              <React.Fragment key={i}>
-                <Circle cx={cx} cy={cy} r={r} stroke={colors.surface2} strokeWidth={STROKE} fill="none" />
-                {progress > 0 && (
-                  <Circle
-                    cx={cx} cy={cy} r={r} stroke={color} strokeWidth={STROKE} fill="none"
-                    strokeDasharray={`${circ}`} strokeDashoffset={offset}
-                    strokeLinecap="round" rotation="-90" origin={`${cx},${cy}`}
-                  />
-                )}
-              </React.Fragment>
-            )
-          })}
-        </Svg>
+        {/* Activity rings + day score */}
+        <View style={{ alignItems: 'center' }}>
+          <Svg width={SIZE} height={SIZE}>
+            {rings.map(({ r, progress, color }, i) => {
+              const circ = 2 * Math.PI * r
+              const offset = circ * (1 - Math.min(1, progress))
+              return (
+                <React.Fragment key={i}>
+                  <Circle cx={cx} cy={cy} r={r} stroke={colors.surface2} strokeWidth={STROKE} fill="none" />
+                  {progress > 0 && (
+                    <Circle
+                      cx={cx} cy={cy} r={r} stroke={color} strokeWidth={STROKE} fill="none"
+                      strokeDasharray={`${circ}`} strokeDashoffset={offset}
+                      strokeLinecap="round" rotation="-90" origin={`${cx},${cy}`}
+                    />
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </Svg>
+          <View style={{ alignItems: 'center', marginTop: 4 }}>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold`, lineHeight: 20 }}>
+              {dayScore}%
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Day score</Text>
+          </View>
+        </View>
 
         {/* Metrics */}
         <View style={{ flex: 1, gap: spacing.sm }}>
@@ -277,8 +301,8 @@ function WaterCard({ waterMl, goalMl, onAdd, onPress }: {
 
 // ─── Steps card ───────────────────────────────────────────────────────────────
 
-function StepsCard({ stepCount, goal, low, high, onPress }: {
-  stepCount: number; goal: number; low: number; high: number; onPress: () => void
+function StepsCard({ stepCount, goal, low, high, streak, onPress }: {
+  stepCount: number; goal: number; low: number; high: number; streak: number; onPress: () => void
 }) {
   const SIZE = 60
   const STROKE = 7
@@ -324,6 +348,11 @@ function StepsCard({ stepCount, goal, low, high, onPress }: {
               {low === high ? `~${low}` : `${low}–${high}`} kcal
             </Text>
           )}
+          {streak > 0 && (
+            <Text style={{ color: colors.warning, fontSize: fontSize.micro, fontWeight: '600' }}>
+              🔥 {streak}-day streak
+            </Text>
+          )}
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
@@ -334,9 +363,10 @@ function StepsCard({ stepCount, goal, low, high, onPress }: {
 
 // ─── Workout card ──────────────────────────────────────────────────────────────
 
-function WorkoutCard({ activeSession, todaySession, onPress, onStart }: {
+function WorkoutCard({ activeSession, todaySession, prExercises, onPress, onStart }: {
   activeSession: ReturnType<typeof useWorkoutStore>['activeSession']
   todaySession?: SessionSummaryRow
+  prExercises: string[]
   onPress: () => void
   onStart: () => void
 }) {
@@ -354,11 +384,25 @@ function WorkoutCard({ activeSession, todaySession, onPress, onStart }: {
         backgroundColor: colors.surface, borderRadius: radius.lg,
         borderWidth: 1, borderColor: colors.border, padding: spacing.md,
       }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
-        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: statusColor, marginRight: spacing.xs }} />
-        <Text style={{ color: statusColor, fontSize: fontSize.label, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {statusLabel}
-        </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: statusColor, marginRight: spacing.xs }} />
+          <Text style={{ color: statusColor, fontSize: fontSize.label, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {statusLabel}
+          </Text>
+        </View>
+        {done && prExercises.length > 0 && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 3,
+            backgroundColor: colors.warning + '22', borderRadius: radius.sm,
+            paddingHorizontal: spacing.xs, paddingVertical: 2,
+          }}>
+            <Text style={{ fontSize: 10 }}>🏆</Text>
+            <Text style={{ color: colors.warning, fontSize: fontSize.label, fontWeight: '700' }}>
+              New PR{prExercises.length > 1 ? ` ×${prExercises.length}` : `: ${prExercises[0]}`}
+            </Text>
+          </View>
+        )}
       </View>
 
       <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: spacing.sm, fontFamily: `${fonts.ui}_700Bold` }}>
@@ -401,10 +445,23 @@ function StatPill({ icon, value }: { icon: string; value: string }) {
 
 // ─── Weight card ──────────────────────────────────────────────────────────────
 
-function WeightCard({ weightKg, delta, sparklineData, onPress }: {
-  weightKg?: number; delta: number | null; sparklineData: number[]; onPress: () => void
+function WeightCard({ weightKg, delta, sparklineData, goalWeightKg, onPress }: {
+  weightKg?: number; delta: number | null; sparklineData: number[]
+  goalWeightKg?: number; onPress: () => void
 }) {
   const deltaColor = delta === null ? colors.textMuted : delta <= 0 ? colors.success : colors.danger
+
+  const goalRow = (() => {
+    if (!goalWeightKg || weightKg == null) return null
+    const diff = weightKg - goalWeightKg
+    if (Math.abs(diff) < 0.1) {
+      return { label: 'Goal reached ✓', color: colors.success }
+    }
+    return {
+      label: `${Math.abs(diff).toFixed(1)} kg ${diff > 0 ? 'to goal' : 'below goal'}`,
+      color: diff > 0 ? colors.textMuted : colors.success,
+    }
+  })()
 
   return (
     <Pressable
@@ -433,6 +490,11 @@ function WeightCard({ weightKg, delta, sparklineData, onPress }: {
               {Math.abs(delta).toFixed(1)} kg vs yesterday
             </Text>
           </View>
+        )}
+        {goalRow && (
+          <Text style={{ color: goalRow.color, fontSize: fontSize.label, marginTop: 2 }}>
+            {goalRow.label}
+          </Text>
         )}
       </View>
       {sparklineData.length >= 2 && (
@@ -507,7 +569,7 @@ function BudgetCard({ spent, income, month, onPress }: {
 }) {
   const pct = income > 0 ? Math.min(1, spent / income) : 0
   const left = income - spent
-  const barColor = pct >= 1 ? colors.danger : pct >= 0.75 ? colors.warning : colors.success
+  const barColor = pct >= 0.85 ? colors.danger : pct >= 0.60 ? colors.warning : colors.success
 
   return (
     <Pressable
@@ -538,12 +600,13 @@ function BudgetCard({ spent, income, month, onPress }: {
 
 // ─── Weekly strip ──────────────────────────────────────────────────────────────
 
-function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today }: {
+function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today, onPressDay }: {
   days: string[]
   calorieHistory: { date: string; calories: number }[]
   recentSessions: SessionSummaryRow[]
   calorieGoal: number
   today: string
+  onPressDay: (date: string) => void
 }) {
   const BAR_MAX = 64
 
@@ -555,6 +618,7 @@ function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {days.map((date) => {
           const isToday = date === today
+          const isPast  = date < today
           const cal = calorieHistory.find((h) => h.date === date)?.calories ?? 0
           const hasWorkout = recentSessions.some((s) => s.date === date && s.ended_at)
           const barH = calorieGoal > 0 ? Math.round(Math.min(BAR_MAX, (cal / calorieGoal) * BAR_MAX)) : 0
@@ -563,7 +627,14 @@ function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today 
           const dayLabel = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' }).slice(0, 1)
 
           return (
-            <View key={date} style={{ alignItems: 'center', flex: 1 }}>
+            <Pressable
+              key={date}
+              onPress={() => (isToday || isPast) ? onPressDay(date) : undefined}
+              style={({ pressed }) => ({
+                alignItems: 'center', flex: 1,
+                opacity: pressed && (isToday || isPast) ? 0.7 : 1,
+              })}
+            >
               {/* Bar area */}
               <View style={{ height: BAR_MAX, justifyContent: 'flex-end', marginBottom: 4 }}>
                 <View style={{ width: 18, height: Math.max(2, barH), backgroundColor: barColor, borderRadius: 3 }} />
@@ -580,7 +651,7 @@ function WeeklyStrip({ days, calorieHistory, recentSessions, calorieGoal, today 
               }}>
                 {dayLabel}
               </Text>
-            </View>
+            </Pressable>
           )
         })}
       </View>
@@ -601,9 +672,9 @@ function OrganizerCard({ onPress }: { onPress: () => void }) {
 
   const upcomingBirthdays = people
     .map((p) => ({ person: p, days: getPersonDaysUntilBirthday(p) }))
-    .filter(({ days }) => days !== null && days <= 7)
+    .filter(({ days }) => days !== null && days <= 14)
     .sort((a, b) => (a.days ?? 99) - (b.days ?? 99))
-    .slice(0, 3)
+    .slice(0, 5)
 
   const pinnedNotes = notes.filter((n) => n.isPinned && !n.isArchived)
 
@@ -681,12 +752,21 @@ export default function HomeScreen() {
     waterMl, waterGoalMl, loadToday: loadDiet, calorieHistory, loadHistory: loadDietHistory, addWater,
   } = useDietStore()
   const { checklists, loadChecklists, toggleItem } = useChecklistStore()
-  const { totalIncome, totalSpending, viewMonth, viewYear, loadMonth: loadBudgetMonth, loadCategories: loadBudgetCategories } = useBudgetStore()
+  const [currentMonthBudget, setCurrentMonthBudget] = useState({ totalIncome: 0, totalSpending: 0, year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
   const { loadReminders: loadOrgReminders, loadPeople: loadOrgPeople, loadNotes: loadOrgNotes } = useOrganizerStore()
   const { todayEntry: stepsEntry, todaySessions, loadToday: loadSteps, loadSessions: loadStepSessions } = useStepsStore()
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
+
+  // Quick log sheet
+  const quickLogSheetRef = useRef<GorhomBottomSheet>(null)
+  const [quickTab, setQuickTab] = useState<'weight' | 'expense' | 'water'>('weight')
+  const [quickWeight, setQuickWeight] = useState('')
+  const [quickExpenseAmt, setQuickExpenseAmt] = useState('')
+  const [quickExpenseCatId, setQuickExpenseCatId] = useState<string | null>(null)
+  const [quickExpenseCategories, setQuickExpenseCategories] = useState<BudgetCategory[]>([])
+  const [quickWaterMl, setQuickWaterMl] = useState('')
 
   const today = todayStr()
   const hour = new Date().getHours()
@@ -700,15 +780,23 @@ export default function HomeScreen() {
 
   function loadAll() {
     loadWeight(today)
-    loadWeightHistory('7d')
+    loadWeightHistory('all')
     loadRecentSessions()
     loadDiet()
     loadDietHistory(7)
     loadSteps(today, dob)
     loadStepSessions(today)
+    setStepsStreak(dbGetStepsStreak())
+    // Load today's workout PRs from MMKV
+    const prDate = workoutMmkv.getString('pr_date')
+    const prJson = workoutMmkv.getString('pr_exercises')
+    if (prDate === today && prJson) {
+      try { setPrExercises(JSON.parse(prJson) as string[]) } catch { setPrExercises([]) }
+    } else {
+      setPrExercises([])
+    }
     loadChecklists()
-    loadBudgetCategories()
-    loadBudgetMonth()
+    setCurrentMonthBudget(dbGetCurrentMonthSummary())
     loadOrgReminders()
     loadOrgPeople()
     loadOrgNotes()
@@ -744,10 +832,22 @@ export default function HomeScreen() {
     }
   }, [firstChecklist?.id])
 
+  // Refresh budget month (and full loadAll) when app returns to foreground —
+  // covers the midnight month-rollover case where the user leaves the app open.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        setCurrentMonthBudget(dbGetCurrentMonthSummary())
+      }
+    })
+    return () => sub.remove()
+  }, [])
+
   async function handleRefresh() {
     setRefreshing(true)
     loadAll()
     if (firstChecklist) setPreviewItems(dbGetChecklistItems(firstChecklist.id).slice(0, 3))
+    setCurrentMonthBudget(dbGetCurrentMonthSummary())
     setRefreshing(false)
   }
 
@@ -766,12 +866,15 @@ export default function HomeScreen() {
   const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
   const stepsProgress = stepGoal > 0 ? stepCount / stepGoal : 0
   const { low: stepsLow, high: stepsHigh } = estimateCalories(stepCount, weightKg, heightCm, todaySessions)
+  const [stepsStreak, setStepsStreak] = useState(0)
+  const [prExercises, setPrExercises] = useState<string[]>([])
 
-  // Weight delta from 7-day history (sorted desc: [0]=most recent, [1]=second most recent)
+  // Weight delta — show if any 2 entries exist in all history (not just 7 days)
   const weightDelta = weightHistory.length >= 2
     ? weightHistory[0].weightKg - weightHistory[1].weightKg
     : null
-  const sparklineData = [...weightHistory].reverse().map((e) => e.weightKg)
+  // Sparkline shows last 7 entries (history is desc, so take first 7 and reverse)
+  const sparklineData = [...weightHistory].slice(0, 7).reverse().map((e) => e.weightKg)
 
   // Last 7 days for weekly strip
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -782,7 +885,12 @@ export default function HomeScreen() {
 
   const dateLabel = new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  const budgetMonthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`
+  const budgetMonthLabel = `${MONTH_NAMES[currentMonthBudget.month - 1]} ${currentMonthBudget.year}`
+
+  // Empty state check — no data at all yet
+  const hasAnyData = totalCalories > 0 || waterMl > 0 || stepCount > 0
+    || weightHistory.length > 0 || recentSessions.length > 0
+    || currentMonthBudget.totalIncome > 0 || currentMonthBudget.totalSpending > 0
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -815,6 +923,44 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         </View>
+
+        {/* Empty state — shown to brand-new users before any data */}
+        {!hasAnyData && (
+          <View style={{
+            backgroundColor: colors.surface, borderRadius: radius.lg,
+            borderWidth: 1, borderColor: colors.borderAccent,
+            padding: spacing.lg, gap: spacing.md,
+          }}>
+            <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '700' }}>
+              Welcome, {profile?.name?.split(' ')[0] ?? 'there'}! 👋
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.body, lineHeight: 22 }}>
+              You're all set. Here are a few things to get started:
+            </Text>
+            {[
+              { icon: 'barbell-outline', label: 'Log your first workout', route: '/health/workout-start', color: colors.success },
+              { icon: 'wallet-outline', label: 'Set your budget', route: '/(tabs)/budget', color: colors.budget },
+              { icon: 'people-outline', label: 'Add someone\'s birthday', route: '/organizer/person-add', color: colors.organizer },
+            ].map(({ icon, label, route, color }) => (
+              <Pressable
+                key={label}
+                onPress={() => router.push(route as never)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+                  backgroundColor: colors.surface2, borderRadius: radius.md,
+                  borderWidth: 1, borderColor: colors.border,
+                  padding: spacing.md, opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: `${color}22`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={icon as never} size={18} color={color} />
+                </View>
+                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500', flex: 1 }}>{label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {/* Day Overview — rings + actual values */}
         <DayOverviewCard
@@ -850,6 +996,7 @@ export default function HomeScreen() {
           goal={stepGoal}
           low={stepsLow}
           high={stepsHigh}
+          streak={stepsStreak}
           onPress={() => router.push('/health/steps')}
         />
 
@@ -857,6 +1004,7 @@ export default function HomeScreen() {
         <WorkoutCard
           activeSession={activeSession}
           todaySession={todaySession}
+          prExercises={prExercises}
           onPress={() => router.push(activeSession ? '/health/workout-active' : '/health/workout')}
           onStart={() => router.push(activeSession ? '/health/workout-active' : '/health/workout-start')}
         />
@@ -866,6 +1014,7 @@ export default function HomeScreen() {
           weightKg={todayEntry?.weightKg}
           delta={weightDelta}
           sparklineData={sparklineData}
+          goalWeightKg={profile?.goalWeightKg}
           onPress={() => router.push('/health/body-weight')}
         />
 
@@ -888,12 +1037,13 @@ export default function HomeScreen() {
           recentSessions={recentSessions}
           calorieGoal={macroGoals.calorieGoal}
           today={today}
+          onPressDay={(date) => router.push({ pathname: '/daily-summary', params: { date } } as never)}
         />
 
         {/* Budget card */}
         <BudgetCard
-          spent={totalSpending}
-          income={totalIncome}
+          spent={currentMonthBudget.totalSpending}
+          income={currentMonthBudget.totalIncome}
           month={budgetMonthLabel}
           onPress={() => router.push('/(tabs)/budget' as never)}
         />
@@ -902,6 +1052,212 @@ export default function HomeScreen() {
         <OrganizerCard onPress={() => router.push('/(tabs)/organizer' as never)} />
 
       </ScrollView>
+
+      {/* Quick log FAB */}
+      <Pressable
+        onPress={() => {
+          setQuickExpenseCategories(dbGetCategoriesByType('expense'))
+          quickLogSheetRef.current?.expand()
+        }}
+        style={({ pressed }) => ({
+          position: 'absolute', bottom: 24, right: spacing.lg,
+          width: 52, height: 52, borderRadius: 26,
+          backgroundColor: colors.primary,
+          alignItems: 'center', justifyContent: 'center',
+          opacity: pressed ? 0.85 : 1,
+          shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
+        })}
+      >
+        <Ionicons name="add" size={26} color="#fff" />
+      </Pressable>
+
+      {/* Quick log sheet */}
+      <BottomSheet ref={quickLogSheetRef} snapPoints={['55%']}>
+        <View style={{ padding: spacing.lg, flex: 1 }}>
+          <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginBottom: spacing.md }}>
+            Quick Log
+          </Text>
+
+          {/* Tab selector */}
+          <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md }}>
+            {(['weight', 'expense', 'water'] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setQuickTab(tab)}
+                style={{
+                  flex: 1, paddingVertical: 8, borderRadius: radius.full, alignItems: 'center',
+                  backgroundColor: quickTab === tab ? colors.primary : colors.surface2,
+                }}
+              >
+                <Text style={{
+                  color: quickTab === tab ? '#fff' : colors.textMuted,
+                  fontSize: fontSize.label, fontWeight: '600', textTransform: 'capitalize',
+                }}>
+                  {tab === 'weight' ? 'Weight' : tab === 'expense' ? 'Expense' : 'Water'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Weight tab */}
+          {quickTab === 'weight' && (
+            <View style={{ gap: spacing.md }}>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface2, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md,
+              }}>
+                <TextInput
+                  value={quickWeight}
+                  onChangeText={setQuickWeight}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 75.5"
+                  placeholderTextColor={colors.textMuted}
+                  style={{ flex: 1, color: colors.text, fontSize: 28, fontWeight: '700', paddingVertical: spacing.sm }}
+                  selectionColor={colors.primary}
+                />
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>kg</Text>
+              </View>
+              <Button
+                label="Save Weight"
+                onPress={() => {
+                  const w = parseFloat(quickWeight)
+                  if (w > 0) {
+                    const bwStore = useBodyWeightStore.getState()
+                    bwStore.logWeight(today, w)
+                    setQuickWeight('')
+                    quickLogSheetRef.current?.close()
+                    loadAll()
+                  }
+                }}
+                fullWidth
+              />
+            </View>
+          )}
+
+          {/* Expense tab */}
+          {quickTab === 'expense' && (
+            <View style={{ gap: spacing.sm }}>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface2, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md,
+              }}>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.body, marginRight: 4 }}>€</Text>
+                <TextInput
+                  value={quickExpenseAmt}
+                  onChangeText={setQuickExpenseAmt}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textMuted}
+                  style={{ flex: 1, color: colors.text, fontSize: 24, fontWeight: '700', paddingVertical: spacing.sm }}
+                  selectionColor={colors.primary}
+                />
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.xs }}>
+                <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                  {quickExpenseCategories.map((cat) => (
+                    <Pressable
+                      key={cat.id}
+                      onPress={() => setQuickExpenseCatId(cat.id)}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 4,
+                        paddingHorizontal: spacing.sm, paddingVertical: 6,
+                        borderRadius: radius.full,
+                        backgroundColor: quickExpenseCatId === cat.id ? cat.color : colors.surface2,
+                        borderWidth: 1, borderColor: quickExpenseCatId === cat.id ? cat.color : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>{cat.emoji}</Text>
+                      <Text style={{
+                        color: quickExpenseCatId === cat.id ? '#fff' : colors.textMuted,
+                        fontSize: fontSize.label, fontWeight: '500',
+                      }}>
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+              <Button
+                label="Save Expense"
+                onPress={() => {
+                  const amt = parseFloat(quickExpenseAmt)
+                  if (amt > 0 && quickExpenseCatId) {
+                    const expId = dbInsertExpense(null, today, quickExpenseCatId, null, null, null)
+                    dbInsertExpenseItem(expId, 'Quick expense', amt)
+                    setQuickExpenseAmt('')
+                    setQuickExpenseCatId(null)
+                    quickLogSheetRef.current?.close()
+                    setCurrentMonthBudget(dbGetCurrentMonthSummary())
+                  }
+                }}
+                fullWidth
+              />
+            </View>
+          )}
+
+          {/* Water tab */}
+          {quickTab === 'water' && (
+            <View style={{ gap: spacing.sm }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                {[150, 250, 330, 500, 750, 1000].map((ml) => (
+                  <Pressable
+                    key={ml}
+                    onPress={() => {
+                      addWater(ml)
+                      quickLogSheetRef.current?.close()
+                    }}
+                    style={({ pressed }) => ({
+                      flex: 1, minWidth: '28%',
+                      backgroundColor: pressed ? colors.water : `${colors.water}22`,
+                      borderRadius: radius.md, paddingVertical: spacing.sm, alignItems: 'center',
+                    })}
+                  >
+                    {({ pressed }) => (
+                      <Text style={{ color: pressed ? '#fff' : colors.water, fontSize: fontSize.body, fontWeight: '700' }}>
+                        +{ml}ml
+                      </Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: colors.surface2, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, gap: spacing.sm,
+              }}>
+                <TextInput
+                  value={quickWaterMl}
+                  onChangeText={setQuickWaterMl}
+                  keyboardType="number-pad"
+                  placeholder="Custom ml"
+                  placeholderTextColor={colors.textMuted}
+                  style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
+                  selectionColor={colors.primary}
+                />
+                <Pressable
+                  onPress={() => {
+                    const ml = parseInt(quickWaterMl)
+                    if (ml > 0) {
+                      addWater(ml)
+                      setQuickWaterMl('')
+                      quickLogSheetRef.current?.close()
+                    }
+                  }}
+                  style={({ pressed }) => ({
+                    backgroundColor: colors.water, borderRadius: radius.sm,
+                    paddingHorizontal: spacing.md, paddingVertical: 6, opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: fontSize.label }}>Add</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   )
 }

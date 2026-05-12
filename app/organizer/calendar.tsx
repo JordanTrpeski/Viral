@@ -1,12 +1,12 @@
-import { useState, useMemo, useRef } from 'react'
-import { View, Text, ScrollView, Pressable, FlatList } from 'react-native'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { View, Text, ScrollView, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { dbGetEventsForDate } from '@core/db/organizerQueries'
 import type { OrganizerEvent, OrganizerPerson } from '@core/types'
 import { localDateStr } from '@core/utils/units'
 
@@ -19,6 +19,12 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Week view constants
+const HOUR_HEIGHT = 60          // px per hour
+const TIME_COL_W  = 42          // width of time-label column
+const WEEK_HOURS  = Array.from({ length: 17 }, (_, i) => i + 6) // 06..22
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +42,38 @@ function firstDayOfMonth(year: number, month: number): number {
   return new Date(year, month - 1, 1).getDay()
 }
 
+/** Returns the Monday of the week containing `d` */
+function getMondayOf(d: Date): Date {
+  const copy = new Date(d)
+  const day = copy.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  copy.setDate(copy.getDate() + diff)
+  copy.setHours(0, 0, 0, 0)
+  return copy
+}
+
+function addDays(d: Date, n: number): Date {
+  const copy = new Date(d)
+  copy.setDate(copy.getDate() + n)
+  return copy
+}
+
+function formatWeekRange(weekStart: Date): string {
+  const weekEnd = addDays(weekStart, 6)
+  const sM = MONTH_SHORT[weekStart.getMonth()]
+  const eM = MONTH_SHORT[weekEnd.getMonth()]
+  const sD = weekStart.getDate()
+  const eD = weekEnd.getDate()
+  if (sM === eM) return `${sM} ${sD}–${eD}, ${weekStart.getFullYear()}`
+  return `${sM} ${sD} – ${eM} ${eD}, ${weekEnd.getFullYear()}`
+}
+
+/** Parse "HH:MM" → fraction of hours from midnight */
+function timeFrac(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h + m / 60
+}
+
 // ── Event dot ──────────────────────────────────────────────────────────────────
 
 function EventDots({ colors: dotColors }: { colors: string[] }) {
@@ -49,11 +87,10 @@ function EventDots({ colors: dotColors }: { colors: string[] }) {
   )
 }
 
-// ── Day cell ───────────────────────────────────────────────────────────────────
+// ── Month grid cell ────────────────────────────────────────────────────────────
 
 function DayCell({
-  day, isToday, isSelected, dotColors, hasBirthday,
-  onPress,
+  day, isToday, isSelected, dotColors, hasBirthday, onPress,
 }: {
   day: number
   isToday: boolean
@@ -97,6 +134,256 @@ function DayCell({
   )
 }
 
+// ── Timed event block (week view) ──────────────────────────────────────────────
+
+function TimeEventBlock({
+  event, onPress,
+}: {
+  event: OrganizerEvent
+  onPress: () => void
+}) {
+  const startF = timeFrac(event.startTime!)
+  const top    = (startF - 6) * HOUR_HEIGHT
+
+  let heightF = 1
+  if (event.endTime) {
+    heightF = timeFrac(event.endTime) - startF
+    if (heightF < 0.3) heightF = 0.3
+  }
+  const height = heightF * HOUR_HEIGHT
+
+  const bg    = event.color ?? colors.organizer
+  const short = heightF < 0.5
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        position: 'absolute',
+        top: top + 1,
+        left: 1,
+        right: 1,
+        height: height - 2,
+        backgroundColor: `${bg}CC`,
+        borderRadius: 4,
+        borderLeftWidth: 2,
+        borderLeftColor: bg,
+        paddingHorizontal: 3,
+        paddingVertical: 2,
+        overflow: 'hidden',
+        opacity: pressed ? 0.75 : 1,
+      })}
+    >
+      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }} numberOfLines={1}>
+        {event.title}
+      </Text>
+      {!short && (
+        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 8 }} numberOfLines={1}>
+          {event.startTime}
+        </Text>
+      )}
+    </Pressable>
+  )
+}
+
+// ── Week view ──────────────────────────────────────────────────────────────────
+
+function WeekView({
+  weekDates,
+  weekDateStrs,
+  eventsMap,
+  birthdayMap,
+  today,
+  selectedDate,
+  onDayHeaderPress,
+  onSlotPress,
+  onEventPress,
+}: {
+  weekDates: Date[]
+  weekDateStrs: string[]
+  eventsMap: Record<string, OrganizerEvent[]>
+  birthdayMap: Record<string, OrganizerPerson[]>
+  today: string
+  selectedDate: string
+  onDayHeaderPress: (ds: string) => void
+  onSlotPress: (ds: string, hour: number) => void
+  onEventPress: (ds: string) => void
+}) {
+  // Check which columns have all-day content
+  const hasAllDay = weekDateStrs.some((ds) => {
+    const [, mm, dd] = ds.split('-')
+    const key = `${mm}-${dd}`
+    const evs = eventsMap[ds] ?? []
+    return !!(birthdayMap[key]?.length) || evs.some((e) => e.isAllDay || !e.startTime)
+  })
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Column headers: time spacer + Mon–Sun */}
+      <View style={{
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        paddingBottom: spacing.xs,
+      }}>
+        <View style={{ width: TIME_COL_W }} />
+        {weekDates.map((d, i) => {
+          const ds   = weekDateStrs[i]
+          const isT  = ds === today
+          const isSel = ds === selectedDate
+          return (
+            <Pressable
+              key={i}
+              onPress={() => onDayHeaderPress(ds)}
+              style={{ flex: 1, alignItems: 'center', paddingTop: 4 }}
+            >
+              <Text style={{
+                color: colors.textMuted,
+                fontSize: 9,
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
+              </Text>
+              <View style={{
+                width: 26, height: 26, borderRadius: 13,
+                alignItems: 'center', justifyContent: 'center', marginTop: 2,
+                backgroundColor: isSel ? colors.organizer : isT ? `${colors.organizer}33` : 'transparent',
+                borderWidth: isT && !isSel ? 1 : 0,
+                borderColor: colors.organizer,
+              }}>
+                <Text style={{
+                  color: isSel ? '#fff' : isT ? colors.organizer : colors.text,
+                  fontSize: fontSize.micro,
+                  fontWeight: isT || isSel ? '700' : '400',
+                }}>
+                  {d.getDate()}
+                </Text>
+              </View>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      {/* All-day row */}
+      {hasAllDay && (
+        <View style={{
+          flexDirection: 'row',
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          minHeight: 28,
+        }}>
+          <View style={{ width: TIME_COL_W, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: colors.textMuted, fontSize: 8 }}>all{'\n'}day</Text>
+          </View>
+          {weekDateStrs.map((ds) => {
+            const [, mm, dd] = ds.split('-')
+            const key = `${mm}-${dd}`
+            const birthdays = birthdayMap[key] ?? []
+            const allDayEvs = (eventsMap[ds] ?? []).filter((e) => e.isAllDay || !e.startTime)
+            return (
+              <View key={ds} style={{ flex: 1, paddingVertical: 2, paddingHorizontal: 1, gap: 2 }}>
+                {birthdays.slice(0, 1).map((p) => (
+                  <View
+                    key={p.id}
+                    style={{
+                      backgroundColor: `${colors.people}22`,
+                      borderRadius: 3,
+                      paddingHorizontal: 2,
+                      paddingVertical: 1,
+                      borderLeftWidth: 2,
+                      borderLeftColor: colors.people,
+                    }}
+                  >
+                    <Text style={{ color: colors.people, fontSize: 8, fontWeight: '700' }} numberOfLines={1}>
+                      🎂 {p.name.split(' ')[0]}
+                    </Text>
+                  </View>
+                ))}
+                {allDayEvs.slice(0, 2).map((ev) => (
+                  <Pressable
+                    key={ev.id}
+                    onPress={() => onEventPress(ds)}
+                    style={{
+                      backgroundColor: `${ev.color ?? colors.organizer}22`,
+                      borderRadius: 3,
+                      paddingHorizontal: 2,
+                      paddingVertical: 1,
+                      borderLeftWidth: 2,
+                      borderLeftColor: ev.color ?? colors.organizer,
+                    }}
+                  >
+                    <Text
+                      style={{ color: ev.color ?? colors.organizer, fontSize: 8, fontWeight: '600' }}
+                      numberOfLines={1}
+                    >
+                      {ev.title}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )
+          })}
+        </View>
+      )}
+
+      {/* Scrollable time grid */}
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing.xl }}
+      >
+        <View style={{ flexDirection: 'row' }}>
+          {/* Time label column */}
+          <View style={{ width: TIME_COL_W }}>
+            {WEEK_HOURS.map((h) => (
+              <View key={h} style={{ height: HOUR_HEIGHT, justifyContent: 'flex-start', alignItems: 'flex-end', paddingRight: 6, paddingTop: 2 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 9 }}>
+                  {String(h).padStart(2, '0')}:00
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Event columns */}
+          {weekDateStrs.map((ds) => {
+            const timedEvs = (eventsMap[ds] ?? []).filter((e) => !e.isAllDay && !!e.startTime)
+            return (
+              <View key={ds} style={{ flex: 1, position: 'relative' }}>
+                {/* Hour slot rows (tappable) */}
+                {WEEK_HOURS.map((h) => (
+                  <Pressable
+                    key={h}
+                    onPress={() => onSlotPress(ds, h)}
+                    style={({ pressed }) => ({
+                      height: HOUR_HEIGHT,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                      borderRightWidth: 1,
+                      borderRightColor: colors.border,
+                      backgroundColor: pressed ? `${colors.organizer}08` : 'transparent',
+                    })}
+                  />
+                ))}
+
+                {/* Timed event blocks (absolutely positioned) */}
+                {timedEvs.map((ev) => (
+                  <TimeEventBlock
+                    key={ev.id}
+                    event={ev}
+                    onPress={() => onEventPress(ds)}
+                  />
+                ))}
+              </View>
+            )
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
 // ── Day sheet content ──────────────────────────────────────────────────────────
 
 function DaySheet({
@@ -108,12 +395,8 @@ function DaySheet({
   onAddEvent: () => void
   onDeleteEvent: (id: string) => void
 }) {
-  const [d, m, day] = [
-    new Date(date + 'T12:00:00').getDate(),
-    new Date(date + 'T12:00:00').getMonth(),
-    new Date(date + 'T12:00:00').getDay(),
-  ]
-  const label = `${DAY_NAMES[day]}, ${MONTH_NAMES[m]} ${d}`
+  const dateObj = new Date(date + 'T12:00:00')
+  const label   = `${DAY_NAMES[dateObj.getDay()]}, ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}`
 
   return (
     <BottomSheetScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}>
@@ -216,31 +499,57 @@ export default function CalendarScreen() {
   const router = useRouter()
   const { events, people, loadEvents, loadPeople, removeEvent } = useOrganizerStore()
 
-  const today = todayStr()
+  const today     = todayStr()
   const todayDate = new Date()
 
+  // Month view state
   const [year,  setYear]  = useState(todayDate.getFullYear())
   const [month, setMonth] = useState(todayDate.getMonth() + 1)
+
+  // View mode + week state
+  const [viewMode,   setViewMode]   = useState<'month' | 'week'>('month')
+  const [weekStart,  setWeekStart]  = useState<Date>(() => getMondayOf(todayDate))
   const [selectedDate, setSelectedDate] = useState(today)
+
+  // Week events (loaded separately from month events)
+  const [weekEventsMap, setWeekEventsMap] = useState<Record<string, OrganizerEvent[]>>({})
 
   const daySheetRef = useRef<BottomSheet>(null)
 
-  useFocusEffect(useCallback(() => {
-    loadEvents(year, month)
-    loadPeople()
-  }, [year, month]))
+  // Derived: 7 dates for the week view
+  const weekDates = useMemo(() =>
+    Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
+  )
+  const weekDateStrs = useMemo(() =>
+    weekDates.map((d) => dateStr(d.getFullYear(), d.getMonth() + 1, d.getDate())),
+    [weekDates],
+  )
 
-  // Build dot map: date → colors[]
-  const dotMap = useMemo(() => {
-    const map: Record<string, string[]> = {}
-    for (const ev of events) {
-      if (!map[ev.date]) map[ev.date] = []
-      map[ev.date].push(ev.color ?? colors.organizer)
+  function loadWeekEvents(strs: string[]) {
+    const map: Record<string, OrganizerEvent[]> = {}
+    for (const ds of strs) {
+      map[ds] = dbGetEventsForDate(ds)
     }
-    return map
-  }, [events])
+    setWeekEventsMap(map)
+  }
 
-  // Build birthday map: date key (MM-DD) → persons
+  useFocusEffect(useCallback(() => {
+    loadPeople()
+    if (viewMode === 'month') {
+      loadEvents(year, month)
+    } else {
+      loadWeekEvents(weekDateStrs)
+    }
+  }, [viewMode, year, month, weekDateStrs.join(',')]))
+
+  // Reload week events when week changes
+  useEffect(() => {
+    if (viewMode !== 'week') return
+    loadWeekEvents(weekDateStrs)
+  }, [weekDateStrs.join(','), viewMode])
+
+  // ── Birthday map (MM-DD → persons) ──
   const birthdayMap = useMemo(() => {
     const map: Record<string, OrganizerPerson[]> = {}
     for (const p of people) {
@@ -252,13 +561,23 @@ export default function CalendarScreen() {
     return map
   }, [people])
 
+  // ── Month view helpers ──
+  const dotMap = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const ev of events) {
+      if (!map[ev.date]) map[ev.date] = []
+      map[ev.date].push(ev.color ?? colors.organizer)
+    }
+    return map
+  }, [events])
+
   function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12) }
-    else setMonth(m => m - 1)
+    if (month === 1) { setYear((y) => y - 1); setMonth(12) }
+    else setMonth((m) => m - 1)
   }
   function nextMonth() {
-    if (month === 12) { setYear(y => y + 1); setMonth(1) }
-    else setMonth(m => m + 1)
+    if (month === 12) { setYear((y) => y + 1); setMonth(1) }
+    else setMonth((m) => m + 1)
   }
 
   function handleDayPress(day: number) {
@@ -268,28 +587,51 @@ export default function CalendarScreen() {
   }
 
   const selectedEvents = useMemo(() => {
-    return events.filter((e) => e.date === selectedDate)
-  }, [events, selectedDate])
+    if (viewMode === 'month') return events.filter((e) => e.date === selectedDate)
+    return weekEventsMap[selectedDate] ?? []
+  }, [events, weekEventsMap, selectedDate, viewMode])
 
   const selectedBirthdays = useMemo(() => {
     const [, mm, dd] = selectedDate.split('-')
-    const key = `${mm}-${dd}`
-    return birthdayMap[key] ?? []
+    return birthdayMap[`${mm}-${dd}`] ?? []
   }, [selectedDate, birthdayMap])
 
-  // Build calendar grid
+  // Month grid cells
   const firstDay  = firstDayOfMonth(year, month)
   const totalDays = daysInMonth(year, month)
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: totalDays }, (_, i) => i + 1),
   ]
-  // Pad to complete final row
   while (cells.length % 7 !== 0) cells.push(null)
+
+  // ── View mode switch helpers ──
+  function switchToWeek() {
+    // Show the week containing selectedDate
+    const selD = new Date(selectedDate + 'T12:00:00')
+    setWeekStart(getMondayOf(selD))
+    setViewMode('week')
+  }
+
+  function switchToMonth() {
+    // Show the month containing weekStart
+    setYear(weekStart.getFullYear())
+    setMonth(weekStart.getMonth() + 1)
+    setViewMode('month')
+    loadEvents(weekStart.getFullYear(), weekStart.getMonth() + 1)
+  }
+
+  function goToday() {
+    const d = new Date()
+    setYear(d.getFullYear())
+    setMonth(d.getMonth() + 1)
+    setSelectedDate(today)
+    setWeekStart(getMondayOf(d))
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
@@ -301,138 +643,198 @@ export default function CalendarScreen() {
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
           Calendar
         </Text>
-        <Pressable
-          onPress={() => {
-            const d = new Date()
-            setYear(d.getFullYear()); setMonth(d.getMonth() + 1)
-            setSelectedDate(today)
-          }}
-          style={{ padding: spacing.sm }}
-        >
+
+        {/* Month | Week toggle */}
+        <View style={{
+          flexDirection: 'row',
+          backgroundColor: colors.surface2,
+          borderRadius: 8,
+          padding: 2,
+          marginRight: spacing.sm,
+        }}>
+          {(['month', 'week'] as const).map((mode) => (
+            <Pressable
+              key={mode}
+              onPress={() => mode === 'month' ? switchToMonth() : switchToWeek()}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 6,
+                backgroundColor: viewMode === mode ? colors.organizer : 'transparent',
+              }}
+            >
+              <Text style={{
+                color: viewMode === mode ? '#fff' : colors.textMuted,
+                fontSize: fontSize.micro,
+                fontWeight: '600',
+                textTransform: 'capitalize',
+              }}>
+                {mode}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable onPress={goToday} style={{ padding: spacing.sm }}>
           <Text style={{ color: colors.organizer, fontSize: fontSize.micro, fontWeight: '700' }}>Today</Text>
         </Pressable>
       </View>
 
-      {/* Month nav */}
+      {/* ── Nav row (month or week title + prev/next) ── */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
       }}>
-        <Pressable onPress={prevMonth} style={{ padding: spacing.sm }}>
+        <Pressable
+          onPress={() => viewMode === 'month' ? prevMonth() : setWeekStart((w) => addDays(w, -7))}
+          style={{ padding: spacing.sm }}
+        >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.body, fontWeight: '700', textAlign: 'center' }}>
-          {MONTH_NAMES[month - 1]} {year}
+          {viewMode === 'month'
+            ? `${MONTH_NAMES[month - 1]} ${year}`
+            : formatWeekRange(weekStart)}
         </Text>
-        <Pressable onPress={nextMonth} style={{ padding: spacing.sm }}>
+        <Pressable
+          onPress={() => viewMode === 'month' ? nextMonth() : setWeekStart((w) => addDays(w, 7))}
+          style={{ padding: spacing.sm }}
+        >
           <Ionicons name="chevron-forward" size={20} color={colors.text} />
         </Pressable>
       </View>
 
-      {/* Day name row */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.xs }}>
-        {DAY_NAMES.map((d) => (
-          <Text key={d} style={{
-            flex: 1, textAlign: 'center',
-            color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600',
-          }}>
-            {d}
-          </Text>
-        ))}
-      </View>
-
-      {/* Calendar grid */}
-      <View style={{ paddingHorizontal: spacing.md }}>
-        {Array.from({ length: cells.length / 7 }, (_, row) => (
-          <View key={row} style={{ flexDirection: 'row' }}>
-            {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
-              if (!day) return <View key={col} style={{ flex: 1 }} />
-              const ds = dateStr(year, month, day)
-              const mmdd = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-              return (
-                <DayCell
-                  key={col}
-                  day={day}
-                  isToday={ds === today}
-                  isSelected={ds === selectedDate}
-                  dotColors={dotMap[ds] ?? []}
-                  hasBirthday={!!(birthdayMap[mmdd]?.length)}
-                  onPress={() => handleDayPress(day)}
-                />
-              )
-            })}
-          </View>
-        ))}
-      </View>
-
-      {/* Legend */}
-      <View style={{ flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.people }} />
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Birthday</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.organizer }} />
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Event</Text>
-        </View>
-      </View>
-
-      {/* Upcoming events list below calendar */}
-      {events.length > 0 && (
-        <ScrollView
-          style={{ flex: 1, marginTop: spacing.sm }}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}
-        >
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
-            THIS MONTH · {events.length}
-          </Text>
-          <View style={{ gap: spacing.xs }}>
-            {events.map((ev) => (
-              <Pressable
-                key={ev.id}
-                onPress={() => {
-                  setSelectedDate(ev.date)
-                  daySheetRef.current?.expand()
-                }}
-                style={({ pressed }) => ({
-                  flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: colors.surface, borderRadius: radius.md,
-                  borderWidth: 1, borderColor: colors.border,
-                  borderLeftWidth: 4, borderLeftColor: ev.color ?? colors.organizer,
-                  padding: spacing.sm, gap: spacing.sm,
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
-                <View style={{ width: 36, alignItems: 'center' }}>
-                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '700' }}>
-                    {MONTH_NAMES[Number(ev.date.split('-')[1]) - 1].slice(0, 3).toUpperCase()}
-                  </Text>
-                  <Text style={{ color: colors.text, fontSize: fontSize.label, fontWeight: '700' }}>
-                    {Number(ev.date.split('-')[2])}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>{ev.title}</Text>
-                  {ev.startTime && (
-                    <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
-                      {ev.startTime}{ev.endTime ? ` – ${ev.endTime}` : ''}
-                    </Text>
-                  )}
-                </View>
-              </Pressable>
+      {/* ── Month view ── */}
+      {viewMode === 'month' && (
+        <>
+          {/* Day name row */}
+          <View style={{ flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.xs }}>
+            {DAY_NAMES.map((d) => (
+              <Text key={d} style={{
+                flex: 1, textAlign: 'center',
+                color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600',
+              }}>
+                {d}
+              </Text>
             ))}
           </View>
-        </ScrollView>
+
+          {/* Calendar grid */}
+          <View style={{ paddingHorizontal: spacing.md }}>
+            {Array.from({ length: cells.length / 7 }, (_, row) => (
+              <View key={row} style={{ flexDirection: 'row' }}>
+                {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
+                  if (!day) return <View key={col} style={{ flex: 1 }} />
+                  const ds   = dateStr(year, month, day)
+                  const mmdd = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  return (
+                    <DayCell
+                      key={col}
+                      day={day}
+                      isToday={ds === today}
+                      isSelected={ds === selectedDate}
+                      dotColors={dotMap[ds] ?? []}
+                      hasBirthday={!!(birthdayMap[mmdd]?.length)}
+                      onPress={() => handleDayPress(day)}
+                    />
+                  )
+                })}
+              </View>
+            ))}
+          </View>
+
+          {/* Legend */}
+          <View style={{ flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.people }} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Birthday</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.organizer }} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Event</Text>
+            </View>
+          </View>
+
+          {/* Upcoming events list */}
+          {events.length > 0 ? (
+            <ScrollView
+              style={{ flex: 1, marginTop: spacing.sm }}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}
+            >
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
+                THIS MONTH · {events.length}
+              </Text>
+              <View style={{ gap: spacing.xs }}>
+                {events.map((ev) => (
+                  <Pressable
+                    key={ev.id}
+                    onPress={() => {
+                      setSelectedDate(ev.date)
+                      daySheetRef.current?.expand()
+                    }}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row', alignItems: 'center',
+                      backgroundColor: colors.surface, borderRadius: radius.md,
+                      borderWidth: 1, borderColor: colors.border,
+                      borderLeftWidth: 4, borderLeftColor: ev.color ?? colors.organizer,
+                      padding: spacing.sm, gap: spacing.sm,
+                      opacity: pressed ? 0.85 : 1,
+                    })}
+                  >
+                    <View style={{ width: 36, alignItems: 'center' }}>
+                      <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '700' }}>
+                        {MONTH_NAMES[Number(ev.date.split('-')[1]) - 1].slice(0, 3).toUpperCase()}
+                      </Text>
+                      <Text style={{ color: colors.text, fontSize: fontSize.label, fontWeight: '700' }}>
+                        {Number(ev.date.split('-')[2])}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>{ev.title}</Text>
+                      {ev.startTime && (
+                        <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                          {ev.startTime}{ev.endTime ? ` – ${ev.endTime}` : ''}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>Tap a day to add an event</Text>
+            </View>
+          )}
+        </>
       )}
 
-      {events.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>Tap a day to add an event</Text>
-        </View>
+      {/* ── Week view ── */}
+      {viewMode === 'week' && (
+        <WeekView
+          weekDates={weekDates}
+          weekDateStrs={weekDateStrs}
+          eventsMap={weekEventsMap}
+          birthdayMap={birthdayMap}
+          today={today}
+          selectedDate={selectedDate}
+          onDayHeaderPress={(ds) => {
+            setSelectedDate(ds)
+            daySheetRef.current?.expand()
+          }}
+          onSlotPress={(ds, hour) => {
+            const hh = String(hour).padStart(2, '0')
+            router.push(`/organizer/event-add?date=${ds}&time=${hh}:00` as never)
+          }}
+          onEventPress={(ds) => {
+            setSelectedDate(ds)
+            daySheetRef.current?.expand()
+          }}
+        />
       )}
 
-      {/* Day detail sheet */}
+      {/* ── Day detail sheet ── */}
       <BottomSheet
         ref={daySheetRef}
         index={-1}
@@ -452,6 +854,10 @@ export default function CalendarScreen() {
           onDeleteEvent={(id) => {
             const [y, m] = selectedDate.split('-').map(Number)
             removeEvent(id, y, m)
+            // Reload week events if in week mode
+            if (viewMode === 'week') {
+              loadWeekEvents(weekDateStrs)
+            }
           }}
         />
       </BottomSheet>

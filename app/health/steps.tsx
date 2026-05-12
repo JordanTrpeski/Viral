@@ -15,6 +15,7 @@ import {
   estimateCalories, formatSteps, formatDistance, defaultGoal,
   ACTIVITY_LABELS, INCLINE_LABELS,
 } from '@modules/health/steps/stepsUtils'
+import { dbGetStepsStreak } from '@core/db/stepsQueries'
 import { localDateStr } from '@core/utils/units'
 import type { ActivityType, InclineLevel } from '@modules/health/shared/types'
 import GorhomBottomSheet from '@gorhom/bottom-sheet'
@@ -37,7 +38,7 @@ export default function StepsScreen() {
   const router = useRouter()
   const { profile } = useUserStore()
   const {
-    todayEntry, todaySessions, history,
+    todayEntry, todaySessions, history, pedometerStatus,
     loadToday, loadSessions, loadHistory,
     addSteps, setGoal, addSession, deleteSession, syncPedometer,
   } = useStepsStore()
@@ -49,6 +50,7 @@ export default function StepsScreen() {
 
   const [goalExpanded, setGoalExpanded] = useState(false)
   const [goalInput, setGoalInput] = useState(String(todayEntry?.goal ?? defaultGoal(dob)))
+  const [streak, setStreak] = useState(0)
   const [customAmount, setCustomAmount] = useState('')
 
   // Session sheet state
@@ -63,6 +65,7 @@ export default function StepsScreen() {
     loadSessions(today)
     loadHistory()
     syncPedometer(today, dob)
+    setStreak(dbGetStepsStreak())
   }, [])
 
   useEffect(() => {
@@ -254,6 +257,53 @@ export default function StepsScreen() {
               </View>
             </View>
           </View>
+
+          {/* Streak */}
+          {streak > 0 && (
+            <View style={{
+              backgroundColor: colors.surface, borderRadius: radius.lg,
+              borderWidth: 1, borderColor: colors.border,
+              padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+            }}>
+              <Text style={{ fontSize: 24 }}>🔥</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700' }}>
+                  {streak}-day streak
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                  Goal met {streak} day{streak !== 1 ? 's' : ''} in a row — keep it up!
+                </Text>
+              </View>
+              <View style={{
+                backgroundColor: `${colors.steps}22`, borderRadius: radius.full,
+                paddingHorizontal: spacing.sm, paddingVertical: 4,
+              }}>
+                <Text style={{ color: colors.steps, fontSize: fontSize.label, fontWeight: '700' }}>
+                  {streak}🔥
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Pedometer denied banner */}
+          {pedometerStatus === 'denied' && (
+            <View style={{
+              backgroundColor: `${colors.warning}18`,
+              borderRadius: radius.lg,
+              borderWidth: 1, borderColor: `${colors.warning}44`,
+              padding: spacing.md, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
+            }}>
+              <Ionicons name="footsteps-outline" size={18} color={colors.warning} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.warning, fontSize: fontSize.label, fontWeight: '700', marginBottom: 2 }}>
+                  Automatic tracking is off
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, lineHeight: 16 }}>
+                  Step counter permission was denied. Steps must be logged manually. You can grant access in your device Settings → Privacy → Motion & Fitness.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Quick add */}
           <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md }}>

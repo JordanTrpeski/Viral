@@ -130,6 +130,18 @@ export default function TemplatesScreen() {
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
           Expense Templates
         </Text>
+        <Pressable
+          onPress={() => router.push('/budget/recurring' as never)}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center', gap: 4,
+            backgroundColor: `${colors.budget}22`, borderRadius: radius.full,
+            paddingHorizontal: spacing.sm, paddingVertical: 6,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons name="repeat-outline" size={16} color={colors.budget} />
+          <Text style={{ color: colors.budget, fontSize: fontSize.micro, fontWeight: '700' }}>Recurring</Text>
+        </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>

@@ -188,15 +188,19 @@ export default function WeeklyScreen() {
 
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [dailyData, setDailyData] = useState<DailyTotal[]>([])
+  const [prevWeekData, setPrevWeekData] = useState<DailyTotal[]>([])
   const [categories, setCategories] = useState<WeeklyCategoryTotal[]>([])
 
   const startStr = toISO(weekStart)
   const endStr   = toISO(addDays(weekStart, 6))
+  const prevStartStr = toISO(addDays(weekStart, -7))
+  const prevEndStr   = toISO(addDays(weekStart, -1))
   const isCurrentWeek = startStr === toISO(getWeekStart(new Date()))
 
   useEffect(() => {
     setDailyData(dbGetDailyTotals(startStr, endStr))
     setCategories(dbGetWeeklyCategoryBreakdown(startStr, endStr))
+    setPrevWeekData(dbGetDailyTotals(prevStartStr, prevEndStr))
   }, [startStr])
 
   function prevWeek() { setWeekStart((w) => addDays(w, -7)) }
@@ -204,10 +208,16 @@ export default function WeeklyScreen() {
     if (!isCurrentWeek) setWeekStart((w) => addDays(w, 7))
   }
 
-  const totalIncome   = dailyData.reduce((s, d) => s + d.income, 0)
-  const totalSpending = dailyData.reduce((s, d) => s + d.spending, 0)
-  const netBalance    = totalIncome - totalSpending
-  const top3          = categories.slice(0, 3)
+  const totalIncome    = dailyData.reduce((s, d) => s + d.income, 0)
+  const totalSpending  = dailyData.reduce((s, d) => s + d.spending, 0)
+  const netBalance     = totalIncome - totalSpending
+  const top3           = categories.slice(0, 3)
+  const prevSpending   = prevWeekData.reduce((s, d) => s + d.spending, 0)
+  const spendingDelta  = totalSpending - prevSpending
+  const spendingDeltaPct = prevSpending > 0
+    ? Math.abs(spendingDelta / prevSpending) * 100
+    : null
+  const hasPrevData = prevSpending > 0
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -258,6 +268,45 @@ export default function WeeklyScreen() {
             </View>
           ))}
         </View>
+
+        {/* vs last week comparison */}
+        {hasPrevData && (
+          <View style={{
+            backgroundColor: colors.surface, borderRadius: radius.lg,
+            borderWidth: 1, borderColor: colors.border,
+            padding: spacing.md, gap: 4,
+          }}>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              vs last week
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Ionicons
+                name={spendingDelta > 0 ? 'trending-up' : spendingDelta < 0 ? 'trending-down' : 'remove'}
+                size={20}
+                color={spendingDelta > 0 ? colors.danger : spendingDelta < 0 ? colors.success : colors.textMuted}
+              />
+              <Text style={{
+                color: spendingDelta > 0 ? colors.danger : spendingDelta < 0 ? colors.success : colors.textMuted,
+                fontSize: fontSize.body, fontWeight: '700',
+              }}>
+                {spendingDelta > 0 ? '+' : ''}€{spendingDelta.toFixed(2)} spending
+              </Text>
+              {spendingDeltaPct !== null && (
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>
+                  ({spendingDelta > 0 ? '+' : '-'}{spendingDeltaPct.toFixed(0)}%)
+                </Text>
+              )}
+            </View>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+              {spendingDelta > 0
+                ? `You spent ${spendingDeltaPct?.toFixed(0) ?? ''}% more than last week`
+                : spendingDelta < 0
+                  ? `You spent ${spendingDeltaPct?.toFixed(0) ?? ''}% less than last week`
+                  : 'Same spending as last week'
+              }
+            </Text>
+          </View>
+        )}
 
         {/* Spending bar chart */}
         <View style={{

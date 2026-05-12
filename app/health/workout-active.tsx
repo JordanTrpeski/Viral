@@ -76,86 +76,145 @@ function SetRow({
   set: ActiveSet
   exerciseId: string
   setIdx: number
-  onUpdate: (field: 'weightInput' | 'repsInput', val: string) => void
+  onUpdate: (field: 'weightInput' | 'repsInput' | 'notes', val: string) => void
   onConfirm: () => void
 }) {
-  const repsRef = useRef<TextInput>(null)
+  const repsRef   = useRef<TextInput>(null)
+  const [showNote, setShowNote] = useState(false)
   const canConfirm = set.weightInput.length > 0 && set.repsInput.length > 0
 
   if (set.confirmed) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm }}>
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, width: 20, textAlign: 'center' }}>{set.setNumber}</Text>
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.body, flex: 1 }}>
-          {set.weightInput} kg × {set.repsInput} reps
-        </Text>
-        <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+      <View style={{ paddingVertical: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, width: 20, textAlign: 'center' }}>{set.setNumber}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.body, flex: 1 }}>
+            {set.weightInput} kg × {set.repsInput} reps
+          </Text>
+          <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+        </View>
+        {set.notes ? (
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: 2, paddingLeft: 28 }}>
+            📝 {set.notes}
+          </Text>
+        ) : null}
       </View>
     )
   }
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.label, width: 20, textAlign: 'center' }}>
-        {set.setNumber}
-      </Text>
-      <TextInput
-        value={set.weightInput}
-        onChangeText={(v) => onUpdate('weightInput', v)}
-        keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor={colors.textMuted}
-        returnKeyType="next"
-        onSubmitEditing={() => repsRef.current?.focus()}
-        style={{
-          flex: 1, backgroundColor: colors.surface2, borderRadius: radius.sm,
-          borderWidth: 1, borderColor: colors.border,
-          color: colors.text, fontSize: fontSize.body, fontWeight: '600',
-          paddingHorizontal: spacing.sm, paddingVertical: 6, textAlign: 'center',
-        }}
-        selectionColor={colors.primary}
-      />
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>kg ×</Text>
-      <TextInput
-        ref={repsRef}
-        value={set.repsInput}
-        onChangeText={(v) => onUpdate('repsInput', v)}
-        keyboardType="number-pad"
-        placeholder="0"
-        placeholderTextColor={colors.textMuted}
-        returnKeyType="done"
-        onSubmitEditing={canConfirm ? onConfirm : undefined}
-        style={{
-          flex: 1, backgroundColor: colors.surface2, borderRadius: radius.sm,
-          borderWidth: 1, borderColor: colors.border,
-          color: colors.text, fontSize: fontSize.body, fontWeight: '600',
-          paddingHorizontal: spacing.sm, paddingVertical: 6, textAlign: 'center',
-        }}
-        selectionColor={colors.primary}
-      />
+    <View style={{ paddingVertical: spacing.xs }}>
       <Pressable
-        onPress={canConfirm ? onConfirm : undefined}
-        style={({ pressed }) => ({
-          width: 36, height: 36, borderRadius: 18,
-          backgroundColor: canConfirm ? colors.success : colors.surface2,
-          alignItems: 'center', justifyContent: 'center',
-          opacity: pressed ? 0.7 : 1,
-        })}
+        onLongPress={() => setShowNote((v) => !v)}
+        delayLongPress={400}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
       >
-        <Ionicons name="checkmark" size={18} color={canConfirm ? '#fff' : colors.textMuted} />
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label, width: 20, textAlign: 'center' }}>
+          {set.setNumber}
+        </Text>
+        <TextInput
+          value={set.weightInput}
+          onChangeText={(v) => onUpdate('weightInput', v)}
+          keyboardType="decimal-pad"
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          returnKeyType="next"
+          onSubmitEditing={() => repsRef.current?.focus()}
+          style={{
+            flex: 1, backgroundColor: colors.surface2, borderRadius: radius.sm,
+            borderWidth: 1, borderColor: colors.border,
+            color: colors.text, fontSize: fontSize.body, fontWeight: '600',
+            paddingHorizontal: spacing.sm, paddingVertical: 6, textAlign: 'center',
+          }}
+          selectionColor={colors.primary}
+        />
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>kg ×</Text>
+        <TextInput
+          ref={repsRef}
+          value={set.repsInput}
+          onChangeText={(v) => onUpdate('repsInput', v)}
+          keyboardType="number-pad"
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          returnKeyType="done"
+          onSubmitEditing={canConfirm ? onConfirm : undefined}
+          style={{
+            flex: 1, backgroundColor: colors.surface2, borderRadius: radius.sm,
+            borderWidth: 1, borderColor: colors.border,
+            color: colors.text, fontSize: fontSize.body, fontWeight: '600',
+            paddingHorizontal: spacing.sm, paddingVertical: 6, textAlign: 'center',
+          }}
+          selectionColor={colors.primary}
+        />
+        <Pressable
+          onPress={canConfirm ? onConfirm : undefined}
+          style={({ pressed }) => ({
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: canConfirm ? colors.success : colors.surface2,
+            alignItems: 'center', justifyContent: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons name="checkmark" size={18} color={canConfirm ? '#fff' : colors.textMuted} />
+        </Pressable>
       </Pressable>
+
+      {/* Notes input — revealed by long press */}
+      {showNote && (
+        <TextInput
+          value={set.notes}
+          onChangeText={(v) => onUpdate('notes', v)}
+          placeholder="Add a note for this set…"
+          placeholderTextColor={colors.textMuted}
+          multiline
+          returnKeyType="done"
+          blurOnSubmit
+          autoFocus
+          style={{
+            marginTop: 6,
+            marginLeft: 28,
+            backgroundColor: colors.surface2,
+            borderRadius: radius.sm,
+            borderWidth: 1,
+            borderColor: `${colors.primary}55`,
+            color: colors.text,
+            fontSize: fontSize.micro,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: 6,
+            minHeight: 32,
+          }}
+          selectionColor={colors.primary}
+        />
+      )}
     </View>
   )
 }
 
 // ─── Exercise block ───────────────────────────────────────────────────────────
 
-function ExerciseBlock({ ex }: { ex: SessionExercise }) {
-  const { updateSetInput, confirmSet, addSet, removeExercise } = useWorkoutStore()
+function ExerciseBlock({ ex, isFirst, isLast }: { ex: SessionExercise; isFirst: boolean; isLast: boolean }) {
+  const { updateSetInput, confirmSet, addSet, removeExercise, moveExercise } = useWorkoutStore()
 
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+        {/* Up/Down reorder arrows */}
+        <View style={{ flexDirection: 'column', marginRight: spacing.xs }}>
+          <Pressable
+            onPress={() => moveExercise(ex.exercise.id, 'up')}
+            disabled={isFirst}
+            style={{ padding: 2, opacity: isFirst ? 0.2 : 0.7 }}
+          >
+            <Ionicons name="chevron-up" size={14} color={colors.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={() => moveExercise(ex.exercise.id, 'down')}
+            disabled={isLast}
+            style={{ padding: 2, opacity: isLast ? 0.2 : 0.7 }}
+          >
+            <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+          </Pressable>
+        </View>
         <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', flex: 1 }}>
           {ex.exercise.name}
         </Text>
@@ -303,8 +362,13 @@ export default function WorkoutActiveScreen() {
             </View>
           )}
 
-          {sessionExercises.map((ex) => (
-            <ExerciseBlock key={ex.exercise.id} ex={ex} />
+          {sessionExercises.map((ex, idx) => (
+            <ExerciseBlock
+              key={ex.exercise.id}
+              ex={ex}
+              isFirst={idx === 0}
+              isLast={idx === sessionExercises.length - 1}
+            />
           ))}
         </ScrollView>
       </KeyboardAvoidingView>

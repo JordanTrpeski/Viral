@@ -4,9 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
+import * as Notifications from 'expo-notifications'
+import * as Crypto from 'expo-crypto'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
+import { dbInsertEventReminder } from '@core/db/organizerQueries'
 import { localDateStr } from '@core/utils/units'
+import type { EventRepeat } from '@core/types'
 
 const BottomSheetFlatList = FlatList
 
@@ -16,6 +20,27 @@ const EVENT_COLORS = [
   '#FF453A', '#FF9F0A', '#FFD60A', '#30D158',
   '#64D2FF', '#0A84FF', '#BF5AF2', '#FF375F',
   colors.organizer, colors.people, colors.reminders,
+]
+
+// ── Repeat options ─────────────────────────────────────────────────────────────
+
+const REPEAT_OPTIONS: { value: EventRepeat | null; label: string }[] = [
+  { value: null,      label: 'None' },
+  { value: 'daily',   label: 'Daily' },
+  { value: 'weekly',  label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly',  label: 'Yearly' },
+]
+
+// ── Reminder presets ───────────────────────────────────────────────────────────
+
+const REMINDER_PRESETS: { minutes: number; label: string }[] = [
+  { minutes: 0,    label: 'At event' },
+  { minutes: 15,   label: '15 min' },
+  { minutes: 30,   label: '30 min' },
+  { minutes: 60,   label: '1 hour' },
+  { minutes: 1440, label: '1 day' },
+  { minutes: 10080, label: '1 week' },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -37,23 +62,64 @@ function Label({ text }: { text: string }) {
   )
 }
 
+// ── Schedule notification for event reminder ───────────────────────────────────
+
+async function scheduleEventReminder(
+  eventId: string,
+  title: string,
+  date: string,
+  startTime: string | null,
+  minutesBefore: number,
+): Promise<void> {
+  try {
+    const { status } = await Notifications.getPermissionsAsync()
+    if (status !== 'granted') return
+
+    // Build event datetime
+    const timeStr = startTime ?? '09:00'
+    const [hh, mm] = timeStr.split(':').map(Number)
+    const eventDt = new Date(`${date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`)
+    const notifyDt = new Date(eventDt.getTime() - minutesBefore * 60_000)
+
+    if (notifyDt <= new Date()) return // Already past
+
+    const bodyText = minutesBefore === 0
+      ? `Your event is starting now`
+      : `Starts in ${minutesBefore < 60 ? `${minutesBefore} min` : minutesBefore < 1440 ? `${minutesBefore / 60}h` : minutesBefore < 10080 ? '1 day' : '1 week'}`
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: `event-${eventId}-${minutesBefore}`,
+      content: {
+        title,
+        body: bodyText,
+        data: { type: 'event', eventId },
+      },
+      trigger: { date: notifyDt, type: Notifications.SchedulableTriggerInputTypes.DATE },
+    })
+  } catch {
+    // Silently fail — notifications are best-effort
+  }
+}
+
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export default function EventAddScreen() {
   const router = useRouter()
-  const { date: dateParam } = useLocalSearchParams<{ date?: string }>()
+  const { date: dateParam, time: timeParam } = useLocalSearchParams<{ date?: string; time?: string }>()
 
   const { people, loadPeople, addEvent } = useOrganizerStore()
 
   const [title,     setTitle]     = useState('')
   const [date,      setDate]      = useState(dateParam ?? localDateStr())
-  const [startTime, setStartTime] = useState('')
+  const [startTime, setStartTime] = useState(timeParam ?? '')
   const [endTime,   setEndTime]   = useState('')
   const [isAllDay,  setIsAllDay]  = useState(false)
   const [location,  setLocation]  = useState('')
   const [noteText,  setNoteText]  = useState('')
   const [color,     setColor]     = useState<string>(colors.organizer)
   const [personId,  setPersonId]  = useState<string | null>(null)
+  const [repeat,    setRepeat]    = useState<EventRepeat | null>(null)
+  const [reminders, setReminders] = useState<Set<number>>(new Set())
 
   const personSheetRef = useRef<BottomSheet>(null)
 
@@ -61,7 +127,16 @@ export default function EventAddScreen() {
 
   const selectedPerson = personId ? people.find((p) => p.id === personId) : null
 
-  function handleSave() {
+  function toggleReminder(minutes: number) {
+    setReminders((prev) => {
+      const next = new Set(prev)
+      if (next.has(minutes)) next.delete(minutes)
+      else next.add(minutes)
+      return next
+    })
+  }
+
+  async function handleSave() {
     const t = title.trim()
     if (!t) { Alert.alert('Title required', 'Please enter an event title.'); return }
     if (!isValidDate(date)) { Alert.alert('Invalid date', 'Enter a date in YYYY-MM-DD format.'); return }
@@ -74,17 +149,28 @@ export default function EventAddScreen() {
       return
     }
 
-    addEvent(
+    const eventId = addEvent(
       t, date,
       isAllDay ? null : (startTime.trim() || null),
       isAllDay ? null : (endTime.trim() || null),
       isAllDay,
       location.trim() || null,
-      null,
+      repeat,
       color,
       noteText.trim() || null,
       personId,
     )
+
+    // Save event reminders + schedule notifications
+    if (reminders.size > 0 && eventId) {
+      const time = isAllDay ? null : (startTime.trim() || null)
+      for (const minutesBefore of reminders) {
+        const remId = Crypto.randomUUID()
+        dbInsertEventReminder(remId, eventId, minutesBefore)
+        await scheduleEventReminder(eventId, t, date, time, minutesBefore)
+      }
+    }
+
     router.back()
   }
 
@@ -205,6 +291,69 @@ export default function EventAddScreen() {
             </View>
           </View>
         )}
+
+        {/* Repeat */}
+        <View>
+          <Label text="REPEAT" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {REPEAT_OPTIONS.map((opt) => {
+              const isActive = repeat === opt.value
+              return (
+                <Pressable
+                  key={String(opt.value)}
+                  onPress={() => setRepeat(opt.value)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: spacing.sm + 2,
+                    paddingVertical: spacing.xs + 2,
+                    borderRadius: radius.full,
+                    backgroundColor: isActive ? colors.organizer : colors.surface,
+                    borderWidth: 1,
+                    borderColor: isActive ? colors.organizer : colors.border,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: isActive ? '#fff' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </View>
+
+        {/* Notify me */}
+        <View>
+          <Label text="NOTIFY ME" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {REMINDER_PRESETS.map((preset) => {
+              const isActive = reminders.has(preset.minutes)
+              return (
+                <Pressable
+                  key={preset.minutes}
+                  onPress={() => toggleReminder(preset.minutes)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: spacing.sm + 2,
+                    paddingVertical: spacing.xs + 2,
+                    borderRadius: radius.full,
+                    backgroundColor: isActive ? `${colors.organizer}33` : colors.surface,
+                    borderWidth: 1,
+                    borderColor: isActive ? colors.organizer : colors.border,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: isActive ? colors.organizer : colors.textMuted, fontSize: fontSize.label, fontWeight: isActive ? '700' : '400' }}>
+                    {preset.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          {isAllDay && reminders.size > 0 && (
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs }}>
+              All-day event reminders fire at 09:00 on the event day.
+            </Text>
+          )}
+        </View>
 
         {/* Location */}
         <View>

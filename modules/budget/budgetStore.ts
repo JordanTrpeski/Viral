@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import { localDateStr } from '@core/utils/units'
+import { createStorage } from '@core/utils/storage'
 import {
   BudgetCategory,
   BudgetTemplate,
@@ -141,26 +142,61 @@ if (Platform.OS !== 'web') {
   })
 }
 
+const alertMmkv = createStorage('budget-alerts')
+
+function alertKey(id: string): string {
+  const now = new Date()
+  return `alerted_${id}_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 async function maybeNotifyLimitBreach(
   categoryId: string,
   categories: BudgetCategory[],
   spending: Record<string, number>,
+  totalIncome: number,
 ) {
   if (Platform.OS === 'web') return
-  const cat = categories.find((c) => c.id === categoryId)
-  if (!cat?.monthlyLimit) return
-  const spent = spending[categoryId] ?? 0
-  const pct   = spent / cat.monthlyLimit
-  if (pct < 0.8) return
   const { status } = await Notifications.getPermissionsAsync()
   if (status !== 'granted') return
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: `${cat.emoji} ${cat.name} at ${Math.round(pct * 100)}%`,
-      body: `You've spent €${spent.toFixed(2)} of your €${cat.monthlyLimit.toFixed(0)} limit.`,
-    },
-    trigger: null,
-  })
+
+  // ── Per-category limit check (80%) ─────────────────────────────────────────
+  const cat = categories.find((c) => c.id === categoryId)
+  if (cat?.monthlyLimit) {
+    const spent = spending[categoryId] ?? 0
+    const pct   = spent / cat.monthlyLimit
+    if (pct >= 0.8) {
+      const key = alertKey(categoryId)
+      if (!alertMmkv.getBoolean(key)) {
+        alertMmkv.set(key, true)
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${cat.emoji} ${cat.name} at ${Math.round(pct * 100)}%`,
+            body: `You've spent €${spent.toFixed(2)} of your €${cat.monthlyLimit.toFixed(0)} monthly limit.`,
+          },
+          trigger: null,
+        })
+      }
+    }
+  }
+
+  // ── Global spending vs income check (85%) ──────────────────────────────────
+  if (totalIncome > 0) {
+    const totalSpent  = Object.values(spending).reduce((s, v) => s + v, 0)
+    const globalPct   = totalSpent / totalIncome
+    if (globalPct >= 0.85) {
+      const key = alertKey('__global__')
+      if (!alertMmkv.getBoolean(key)) {
+        alertMmkv.set(key, true)
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '💸 Monthly spending at 85%',
+            body: `You've spent €${totalSpent.toFixed(2)} of your €${totalIncome.toFixed(2)} income this month.`,
+          },
+          trigger: null,
+        })
+      }
+    }
+  }
 }
 
 export const useBudgetStore = create<BudgetStore>((set, get) => ({
@@ -316,8 +352,8 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     items.forEach(({ name, amount }) => dbInsertExpenseItem(expenseId, name, amount))
     get().loadMonth()
     // Check limit breach after state updated
-    const { expenseCategories, categorySpending } = get()
-    maybeNotifyLimitBreach(categoryId, expenseCategories, categorySpending)
+    const { expenseCategories, categorySpending, totalIncome } = get()
+    maybeNotifyLimitBreach(categoryId, expenseCategories, categorySpending, totalIncome)
   },
 
   removeIncome(id) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useDietStore } from '@modules/health/diet/dietStore'
+import { dbGetMacroHistory } from '@core/db/dietQueries'
 import { localDateStr } from '@core/utils/units'
 
 // ─── Bar chart ────────────────────────────────────────────────────────────────
@@ -92,6 +93,119 @@ function CalorieBarChart({ data, goal }: {
 // Need React import for Fragment
 import React from 'react'
 
+// ─── Weekly Averages helpers ──────────────────────────────────────────────────
+
+function getMondayOf(d: Date): Date {
+  const copy = new Date(d)
+  const day = copy.getDay()
+  copy.setDate(copy.getDate() - (day === 0 ? 6 : day - 1))
+  copy.setHours(0, 0, 0, 0)
+  return copy
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function avg(vals: number[]): number {
+  if (vals.length === 0) return 0
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+}
+
+function WeeklyAverages({ proteinGoalG }: { proteinGoalG: number }) {
+  const today    = new Date()
+  const thisMon  = getMondayOf(today)
+  const lastMon  = new Date(thisMon); lastMon.setDate(lastMon.getDate() - 7)
+  const lastSun  = new Date(thisMon); lastSun.setDate(lastSun.getDate() - 1)
+
+  const thisWeek = dbGetMacroHistory(toDateStr(thisMon), toDateStr(today))
+  const lastWeek = dbGetMacroHistory(toDateStr(lastMon), toDateStr(lastSun))
+
+  const thisAvgCal  = avg(thisWeek.map((d) => d.calories))
+  const lastAvgCal  = avg(lastWeek.map((d) => d.calories))
+  const thisAvgProt = avg(thisWeek.map((d) => d.proteinG))
+  const thisAvgCarb = avg(thisWeek.map((d) => d.carbsG))
+  const thisAvgFat  = avg(thisWeek.map((d) => d.fatG))
+
+  const missedDays = thisWeek.filter((d) => d.proteinG < proteinGoalG)
+
+  const calDiff = thisAvgCal - lastAvgCal
+  const calDiffColor = calDiff > 0 ? colors.danger : calDiff < 0 ? colors.success : colors.textMuted
+  const calDiffLabel = calDiff === 0
+    ? 'Same as last week'
+    : `${calDiff > 0 ? '+' : ''}${calDiff} vs last week`
+
+  if (thisWeek.length === 0 && lastWeek.length === 0) return null
+
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md }}>
+      <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', marginBottom: spacing.md }}>
+        Weekly Averages
+      </Text>
+
+      {/* Calorie comparison */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+        <View style={{ flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
+          <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700' }}>{thisAvgCal}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>This week avg</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>kcal/day</Text>
+        </View>
+        <View style={{ flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.cardTitle, fontWeight: '700' }}>{lastAvgCal}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>Last week avg</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>kcal/day</Text>
+        </View>
+      </View>
+      {lastAvgCal > 0 && (
+        <Text style={{ color: calDiffColor, fontSize: fontSize.label, fontWeight: '600', textAlign: 'center', marginBottom: spacing.md }}>
+          {calDiffLabel}
+        </Text>
+      )}
+
+      {/* Macro averages this week */}
+      {thisWeek.length > 0 && (
+        <>
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600', marginBottom: spacing.xs }}>
+            THIS WEEK DAILY AVERAGE
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+            {[
+              { label: 'Protein', val: thisAvgProt, color: colors.primary },
+              { label: 'Carbs', val: thisAvgCarb, color: colors.warning },
+              { label: 'Fat', val: thisAvgFat, color: colors.danger },
+            ].map(({ label, val, color }) => (
+              <View key={label} style={{ flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
+                <Text style={{ color, fontSize: fontSize.body, fontWeight: '700' }}>{val}g</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>{label}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* Protein goal missed */}
+      {proteinGoalG > 0 && thisWeek.length > 0 && (
+        <View style={{ backgroundColor: missedDays.length > 0 ? `${colors.warning}11` : `${colors.success}11`, borderRadius: radius.md, padding: spacing.sm, borderWidth: 1, borderColor: missedDays.length > 0 ? `${colors.warning}33` : `${colors.success}33` }}>
+          {missedDays.length === 0 ? (
+            <Text style={{ color: colors.success, fontSize: fontSize.label, fontWeight: '600' }}>
+              ✓ Protein goal met every day this week
+            </Text>
+          ) : (
+            <>
+              <Text style={{ color: colors.warning, fontSize: fontSize.label, fontWeight: '600', marginBottom: 4 }}>
+                Protein goal missed: {missedDays.length} {missedDays.length === 1 ? 'day' : 'days'}
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                {missedDays.map((d) => d.date.slice(5)).join(', ')}
+              </Text>
+            </>
+          )}
+        </View>
+      )}
+    </View>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function NutritionHistoryScreen() {
@@ -171,6 +285,9 @@ export default function NutritionHistoryScreen() {
           </Text>
           <CalorieBarChart data={calorieHistory} goal={macroGoals.calorieGoal} />
         </View>
+
+        {/* Weekly averages */}
+        <WeeklyAverages proteinGoalG={macroGoals.proteinGoalG} />
 
         {/* Day list */}
         {calorieHistory.length > 0 && (

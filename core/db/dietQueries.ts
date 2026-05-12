@@ -149,6 +149,34 @@ export function dbGetCalorieHistory(days: number): { date: string; calories: num
   ).reverse()
 }
 
+export interface DayMacros {
+  date: string
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+}
+
+export function dbGetMacroHistory(fromDate: string, toDate: string): DayMacros[] {
+  return db.getAllSync<{ date: string; calories: number; protein_g: number; carbs_g: number; fat_g: number }>(
+    `SELECT m.date,
+       ROUND(SUM(f.calories_per_100g * me.amount_grams / 100)) as calories,
+       ROUND(SUM(f.protein_per_100g  * me.amount_grams / 100), 1) as protein_g,
+       ROUND(SUM(f.carbs_per_100g    * me.amount_grams / 100), 1) as carbs_g,
+       ROUND(SUM(f.fat_per_100g      * me.amount_grams / 100), 1) as fat_g
+     FROM meal_entries me
+     JOIN meals m ON me.meal_id = m.id
+     JOIN foods f ON me.food_id = f.id
+     WHERE m.date >= ? AND m.date <= ?
+     GROUP BY m.date
+     ORDER BY m.date ASC`,
+    [fromDate, toDate],
+  ).map((r) => ({
+    date: r.date, calories: r.calories,
+    proteinG: r.protein_g, carbsG: r.carbs_g, fatG: r.fat_g,
+  }))
+}
+
 // ─── Water ────────────────────────────────────────────────────────────────────
 
 export function dbGetWaterForDate(date: string): number {

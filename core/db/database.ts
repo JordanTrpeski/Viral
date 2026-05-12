@@ -208,8 +208,27 @@ export function initDatabase(): void {
   `)
 
   try { db.execSync(`ALTER TABLE steps_log ADD COLUMN goal INTEGER NOT NULL DEFAULT 8000`) } catch { /* already exists */ }
+
+  // ── Body Measurements ────────────────────────────────────────────────────────
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS body_measurements (
+      id           TEXT PRIMARY KEY,
+      date         TEXT NOT NULL UNIQUE,
+      chest_cm     REAL,
+      waist_cm     REAL,
+      hips_cm      REAL,
+      left_arm_cm  REAL,
+      right_arm_cm REAL,
+      left_thigh_cm  REAL,
+      right_thigh_cm REAL,
+      notes        TEXT,
+      created_at   TEXT NOT NULL
+    );
+  `)
   try { db.execSync(`ALTER TABLE user_profile ADD COLUMN sex TEXT`) } catch { /* already exists */ }
   try { db.execSync(`ALTER TABLE user_profile ADD COLUMN activity_level TEXT`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE user_profile ADD COLUMN goal_weight_kg REAL`) } catch { /* already exists */ }
 
   // ── Budget ──────────────────────────────────────────────────────────────────
 

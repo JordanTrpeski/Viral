@@ -155,6 +155,11 @@ export default function SettingsScreen() {
   const [name, setName]       = useState(profile?.name ?? '')
   const [dob,  setDob]        = useState(profile?.dateOfBirth ?? '')
   const [calGoal, setCalGoal] = useState(String(profile?.calorieGoalKcal ?? ''))
+  const [goalWeight, setGoalWeight] = useState(() =>
+    profile?.goalWeightKg
+      ? units === 'metric' ? String(profile.goalWeightKg) : String(kgToLbs(profile.goalWeightKg))
+      : ''
+  )
   const [sex, setSex]         = useState<Sex | undefined>(profile?.sex)
   const [activityLevel, setActivityLevelVal] = useState<ActivityLevel | undefined>(profile?.activityLevel)
 
@@ -187,6 +192,13 @@ export default function SettingsScreen() {
     setName(profile?.name ?? '')
     setDob(profile?.dateOfBirth ?? '')
     setCalGoal(String(profile?.calorieGoalKcal ?? ''))
+    setGoalWeight(
+      profile?.goalWeightKg
+        ? units === 'metric'
+          ? String(profile.goalWeightKg)
+          : String(kgToLbs(profile.goalWeightKg))
+        : ''
+    )
     setSex(profile?.sex)
     setActivityLevelVal(profile?.activityLevel)
     setWeightVal(
@@ -218,6 +230,9 @@ export default function SettingsScreen() {
       units === 'metric' ? Number(weightVal) : lbsToKg(Number(weightVal))
     const heightCmVal =
       units === 'metric' ? Number(heightCm) : ftInToCm(Number(heightFt), Number(heightIn))
+    const goalWeightKg = goalWeight
+      ? (units === 'metric' ? Number(goalWeight) : lbsToKg(Number(goalWeight)))
+      : undefined
     updateProfile({
       name: name.trim(),
       dateOfBirth: dob,
@@ -226,6 +241,7 @@ export default function SettingsScreen() {
       sex,
       activityLevel,
       calorieGoalKcal: Number(calGoal) || profile.calorieGoalKcal,
+      goalWeightKg: goalWeightKg && goalWeightKg > 0 ? goalWeightKg : undefined,
     })
     setDirty(false)
   }
@@ -359,6 +375,12 @@ export default function SettingsScreen() {
             )}
 
             <EditField label="Calorie goal (kcal)" value={calGoal} onChange={d(setCalGoal)} numeric />
+            <EditField
+              label={`Goal weight (${units === 'metric' ? 'kg' : 'lbs'}) — optional`}
+              value={goalWeight}
+              onChange={d(setGoalWeight)}
+              numeric
+            />
 
             {/* Sex selector */}
             <View>
@@ -585,8 +607,9 @@ export default function SettingsScreen() {
                   { text: 'Cancel', style: 'cancel' },
                   {
                     text: 'Restart',
+                    style: 'destructive',
                     onPress: () => {
-                      useUserStore.setState({ onboardingComplete: false })
+                      useUserStore.getState().resetForOnboarding()
                       router.replace('/onboarding')
                     },
                   },

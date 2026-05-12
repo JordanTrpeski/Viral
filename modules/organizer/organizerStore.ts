@@ -83,7 +83,7 @@ interface OrganizerStore {
     title: string, date: string, startTime: string | null, endTime: string | null,
     isAllDay: boolean, location: string | null, repeat: string | null,
     color: string | null, notes: string | null, personId: string | null,
-  ) => void
+  ) => string | null  // returns the new event id
   removeEvent: (id: string, year: number, month: number) => void
 
   // Notes
@@ -217,10 +217,12 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
   },
 
   addEvent(title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
     const [y, m] = date.split('-').map(Number)
-    dbInsertEvent(genId('event'), title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId)
+    const id = genId('event')
+    dbInsertEvent(id, title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId)
     get().loadEvents(y, m)
+    return id
   },
 
   removeEvent(id, year, month) {

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useFocusEffect } from 'expo-router'
+import { useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
@@ -8,6 +11,8 @@ import { useStepsStore } from '@modules/health/steps/stepsStore'
 import { useUserStore } from '@core/store/userStore'
 import { formatWeight, localDateStr } from '@core/utils/units'
 import { formatSteps, defaultGoal } from '@modules/health/steps/stepsUtils'
+import { dbGetLatestMeasurement } from '@core/db/measurementQueries'
+import type { BodyMeasurement } from '@modules/health/shared/types'
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -26,11 +31,24 @@ export default function HealthScreen() {
   const { units, profile } = useUserStore()
   const { todayEntry, streak } = useBodyWeightStore()
   const { todayEntry: stepsEntry } = useStepsStore()
+  const [latestMeasurement, setLatestMeasurement] = useState<BodyMeasurement | null>(null)
 
   const today = localDateStr()
   const dob = profile?.dateOfBirth ?? '1990-01-01'
   const stepCount = stepsEntry?.stepCount ?? 0
   const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
+
+  useFocusEffect(
+    useCallback(() => {
+      setLatestMeasurement(dbGetLatestMeasurement())
+    }, [])
+  )
+
+  const measurementSubtitle = (() => {
+    if (!latestMeasurement) return 'Log your measurements'
+    const date = latestMeasurement.date === today ? 'today' : latestMeasurement.date
+    return `Last logged ${date}`
+  })()
 
   const cards: HubCard[] = [
     {
@@ -41,6 +59,14 @@ export default function HealthScreen() {
       icon: 'scale-outline',
       color: colors.primary,
       route: '/health/body-weight',
+      available: true,
+    },
+    {
+      title: 'Measurements',
+      subtitle: measurementSubtitle,
+      icon: 'body-outline',
+      color: colors.primary,
+      route: '/health/measurements',
       available: true,
     },
     {

@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Pla
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg'
+import Svg, { Polyline, Line, Circle, Text as SvgText, G } from 'react-native-svg'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
@@ -51,9 +51,11 @@ const PAD = { top: 16, right: 8, bottom: 24, left: 36 }
 function WeightChart({
   data,
   todayDate,
+  goalWeightKg,
 }: {
   data: { date: string; weightKg: number }[]
   todayDate: string
+  goalWeightKg?: number
 }) {
   if (data.length < 2) {
     return (
@@ -66,8 +68,9 @@ function WeightChart({
   }
 
   const weights  = data.map((d) => d.weightKg)
-  const minW     = Math.min(...weights)
-  const maxW     = Math.max(...weights)
+  const allVals  = goalWeightKg ? [...weights, goalWeightKg] : weights
+  const minW     = Math.min(...allVals)
+  const maxW     = Math.max(...allVals)
   const rangeW   = maxW - minW || 1
   const innerW   = CHART_W - PAD.left - PAD.right
   const innerH   = CHART_H - PAD.top  - PAD.bottom
@@ -90,6 +93,29 @@ function WeightChart({
         {/* X axis labels */}
         <SvgText x={PAD.left}            y={CHART_H - 4} fill={colors.textMuted} fontSize={9} textAnchor="middle">{data[0].date.slice(5)}</SvgText>
         <SvgText x={PAD.left + innerW}   y={CHART_H - 4} fill={colors.textMuted} fontSize={9} textAnchor="middle">{data[data.length - 1].date.slice(5)}</SvgText>
+
+        {/* Goal weight line */}
+        {goalWeightKg != null && (
+          <>
+            <Line
+              x1={PAD.left} y1={toY(goalWeightKg)}
+              x2={PAD.left + innerW} y2={toY(goalWeightKg)}
+              stroke={colors.success}
+              strokeWidth={1}
+              strokeDasharray="5 4"
+              opacity={0.7}
+            />
+            <SvgText
+              x={PAD.left + innerW + 2}
+              y={toY(goalWeightKg) + 3}
+              fill={colors.success}
+              fontSize={8}
+              textAnchor="start"
+            >
+              Goal
+            </SvgText>
+          </>
+        )}
 
         {/* Trend line */}
         <Polyline
@@ -325,7 +351,7 @@ export default function BodyWeightScreen() {
           </View>
 
           <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md }}>
-            <WeightChart data={history} todayDate={todayStr()} />
+            <WeightChart data={history} todayDate={todayStr()} goalWeightKg={profile?.goalWeightKg} />
           </View>
         </View>
 

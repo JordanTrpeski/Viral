@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOnboardingStore, type OnboardingGoal } from '@core/store/onboardingStore'
 
-const TOTAL_STEPS = 10
-const CURRENT_STEP = 6
+const TOTAL_STEPS = 6
+const CURRENT_STEP = 3  // 0-indexed → step 4 of 6
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 

@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import * as Crypto from 'expo-crypto'
+import { createStorage } from '@core/utils/storage'
+
+const workoutMmkv = createStorage('workout-store')
 import {
   dbGetExercises, dbInsertExercise, dbGetLastPerformance, dbGetPersonalBestExcluding,
 } from '@core/db/exerciseQueries'
@@ -23,6 +26,7 @@ export interface ActiveSet {
   setNumber: number
   weightInput: string
   repsInput: string
+  notes: string
   confirmed: boolean
 }
 
@@ -53,7 +57,7 @@ export interface SessionSummary {
 }
 
 function newPendingSet(setNumber: number): ActiveSet {
-  return { id: Crypto.randomUUID(), setNumber, weightInput: '', repsInput: '', confirmed: false }
+  return { id: Crypto.randomUUID(), setNumber, weightInput: '', repsInput: '', notes: '', confirmed: false }
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -86,8 +90,9 @@ interface WorkoutState {
   updateSessionName: (name: string) => void
   addExercise: (exercise: Exercise) => void
   removeExercise: (exerciseId: string) => void
+  moveExercise: (exerciseId: string, direction: 'up' | 'down') => void
   addSet: (exerciseId: string) => void
-  updateSetInput: (exerciseId: string, setIdx: number, field: 'weightInput' | 'repsInput', value: string) => void
+  updateSetInput: (exerciseId: string, setIdx: number, field: 'weightInput' | 'repsInput' | 'notes', value: string) => void
   confirmSet: (exerciseId: string, setIdx: number) => void
   startRestTimer: (seconds?: number) => void
   clearRestTimer: () => void
@@ -172,6 +177,18 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set((s) => ({ sessionExercises: s.sessionExercises.filter((e) => e.exercise.id !== exerciseId) }))
   },
 
+  moveExercise: (exerciseId, direction) => {
+    set((s) => {
+      const list = [...s.sessionExercises]
+      const idx  = list.findIndex((e) => e.exercise.id === exerciseId)
+      if (idx < 0) return {}
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+      if (swapIdx < 0 || swapIdx >= list.length) return {}
+      ;[list[idx], list[swapIdx]] = [list[swapIdx], list[idx]]
+      return { sessionExercises: list }
+    })
+  },
+
   addSet: (exerciseId) => {
     set((s) => ({
       sessionExercises: s.sessionExercises.map((e) => {
@@ -213,6 +230,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       setNumber: activeSet.setNumber,
       weightKg,
       reps,
+      notes: activeSet.notes.trim() || undefined,
       createdAt: new Date().toISOString(),
     }
     dbInsertSet(workoutSet)
@@ -276,6 +294,15 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       totalVolumeKg,
       durationMinutes,
       personalBests,
+    }
+
+    // Persist today's PRs to MMKV so the dashboard card can display a badge
+    if (personalBests.length > 0) {
+      workoutMmkv.set('pr_date', activeSession.date)
+      workoutMmkv.set('pr_exercises', JSON.stringify(personalBests.map((pb) => pb.exercise.name)))
+    } else {
+      workoutMmkv.delete('pr_date')
+      workoutMmkv.delete('pr_exercises')
     }
 
     set({ sessionSummary: summary, activeSession: null, sessionExercises: [], restTimer: null })

@@ -9,11 +9,12 @@ interface Props {
   item: MealWithEntries
   onAddFood: () => void
   onDeleteEntry: (entryId: string) => void
+  onEditEntry: (entryId: string, foodId: string, amountGrams: number) => void
   onDeleteMeal: () => void
   onSaveTemplate: () => void
 }
 
-export default function MealCard({ item, onAddFood, onDeleteEntry, onDeleteMeal, onSaveTemplate }: Props) {
+export default function MealCard({ item, onAddFood, onDeleteEntry, onEditEntry, onDeleteMeal, onSaveTemplate }: Props) {
   const { meal, entries, totalCalories, totalProteinG, totalCarbsG, totalFatG } = item
   const label = MEAL_TYPE_LABELS[meal.mealType] ?? meal.mealType
   const icon = MEAL_TYPE_ICONS[meal.mealType] ?? 'nutrition-outline'
@@ -97,7 +98,18 @@ export default function MealCard({ item, onAddFood, onDeleteEntry, onDeleteMeal,
               {entry.amountGrams}g · {entry.calories} kcal
             </Text>
           </View>
-          <Pressable onPress={() => confirmDeleteEntry(entry.entryId, entry.foodName)} hitSlop={8}>
+          <Pressable
+            onPress={() => onEditEntry(entry.entryId, entry.foodId, entry.amountGrams)}
+            hitSlop={8}
+            style={{ padding: spacing.xs }}
+          >
+            <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={() => confirmDeleteEntry(entry.entryId, entry.foodName)}
+            hitSlop={8}
+            style={{ padding: spacing.xs }}
+          >
             <Ionicons name="close" size={16} color={colors.textMuted} />
           </Pressable>
         </View>

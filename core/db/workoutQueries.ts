@@ -96,9 +96,9 @@ function rowToSet(r: RawSet): WorkoutSet {
 
 export function dbInsertSet(set: WorkoutSet): void {
   db.runSync(
-    `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight_kg, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [set.id, set.sessionId, set.exerciseId, set.setNumber, set.reps ?? null, set.weightKg ?? null, set.createdAt],
+    `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight_kg, notes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [set.id, set.sessionId, set.exerciseId, set.setNumber, set.reps ?? null, set.weightKg ?? null, set.notes ?? null, set.createdAt],
   )
 }
 

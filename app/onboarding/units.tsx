@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { useOnboardingStore, type Units } from '@core/store/onboardingStore'
 
-const TOTAL_STEPS = 10
-const CURRENT_STEP = 7  // 0-indexed → step 8 of 10
+const TOTAL_STEPS = 6
+const CURRENT_STEP = 4  // 0-indexed → step 5 of 6
 
 const OPTIONS: {
   id: Units
@@ -171,7 +171,7 @@ export default function UnitsScreen() {
         {/* Button + progress */}
         <View style={{ paddingBottom: spacing.md, gap: spacing.md }}>
           <Pressable
-            onPress={() => router.push('/onboarding/calories')}
+            onPress={() => router.push('/onboarding/complete')}
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >
             {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}

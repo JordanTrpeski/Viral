@@ -1,80 +1,51 @@
 import { useRef, useState, forwardRef } from 'react'
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions } from 'react-native'
+import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useOnboardingStore } from '@core/store/onboardingStore'
-import { ACTIVITY_LABELS, ACTIVITY_DESCRIPTIONS } from '@core/utils/tdee'
-import type { Sex, ActivityLevel } from '@core/types'
 
-type Step = 0 | 1 | 2 | 3 | 4
+const TOTAL_STEPS = 6
+const CURRENT_STEP = 1  // 0-indexed → step 2 of 6
 
-const TOTAL_STEPS = 10
-// Profile sub-steps occupy global steps 1–5 (shown as Step 2–6 of 10)
-const PROFILE_STEP_OFFSET = 1
-
-const STEP_QUESTIONS: string[] = [
-  'How much do you weigh?',
-  'How tall are you?',
-  'When were you born?',
-  'What\'s your biological sex?',
-  'What describes your daily activity?',
-]
-
-const SEX_OPTIONS: { id: Sex; label: string; description: string }[] = [
-  { id: 'male',   label: 'Male',   description: 'Used for accurate BMR calculation' },
-  { id: 'female', label: 'Female', description: 'Used for accurate BMR calculation' },
-]
-
-const ACTIVITY_LEVELS: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'very_active']
-
-export default function ProfileScreen() {
+export default function PhysicalStatsScreen() {
   const router = useRouter()
   const { width } = useWindowDimensions()
-  const { setWeight, setHeight, setDateOfBirth, setSex, setActivityLevel } = useOnboardingStore()
-  const [step, setStep] = useState<Step>(0)
-
-  const [weight,  setWeightVal] = useState('')
-  const [height,  setHeightVal] = useState('')
-  const [day,     setDay]       = useState('')
-  const [month,   setMonth]     = useState('')
-  const [year,    setYear]      = useState('')
-  const [sex,     setSexVal]    = useState<Sex | null>(null)
-  const [level,   setLevel]     = useState<ActivityLevel | null>(null)
-
-  const monthRef = useRef<TextInput>(null)
-  const yearRef  = useRef<TextInput>(null)
-
+  const { weightKg, heightCm, dateOfBirth, setWeight, setHeight, setDateOfBirth } = useOnboardingStore()
   const titleSize = width < 360 ? 26 : width < 390 ? 29 : 32
-  const currentGlobalStep = PROFILE_STEP_OFFSET + step  // 1, 2, 3, 4, 5
+
+  // Local string state for text inputs
+  const [weightStr, setWeightStr] = useState(weightKg > 0 ? String(weightKg) : '')
+  const [heightStr, setHeightStr] = useState(heightCm > 0 ? String(heightCm) : '')
+  const [day,   setDay]   = useState(dateOfBirth ? dateOfBirth.split('-')[2] ?? '' : '')
+  const [month, setMonth] = useState(dateOfBirth ? dateOfBirth.split('-')[1] ?? '' : '')
+  const [year,  setYear]  = useState(dateOfBirth ? dateOfBirth.split('-')[0] ?? '' : '')
+
+  const heightRef = useRef<TextInput>(null)
+  const monthRef  = useRef<TextInput>(null)
+  const yearRef   = useRef<TextInput>(null)
 
   function canAdvance(): boolean {
-    if (step === 0) return Number(weight) > 0
-    if (step === 1) return Number(height) > 0
-    if (step === 2) {
-      // Accept 1–2 digit day/month so typing "5" for the 5th doesn't block — padStart handles serialisation
-      const d = parseInt(day, 10)
-      const m = parseInt(month, 10)
-      const y = parseInt(year, 10)
-      return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= new Date().getFullYear()
-    }
-    if (step === 3) return sex !== null
-    return level !== null
+    const w = Number(weightStr)
+    const h = Number(heightStr)
+    const d = parseInt(day, 10)
+    const m = parseInt(month, 10)
+    const y = parseInt(year, 10)
+    return (
+      w > 0 && h > 0 &&
+      d >= 1 && d <= 31 &&
+      m >= 1 && m <= 12 &&
+      y >= 1900 && y <= new Date().getFullYear()
+    )
   }
 
   function handleNext() {
     if (!canAdvance()) return
-    if (step < 4) {
-      setStep((s) => (s + 1) as Step)
-      return
-    }
-    setWeight(Number(weight))
-    setHeight(Number(height))
+    setWeight(Number(weightStr))
+    setHeight(Number(heightStr))
     setDateOfBirth(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`)
-    if (sex) setSex(sex)
-    if (level) setActivityLevel(level)
-    router.push('/onboarding/goals')
+    router.push('/onboarding/lifestyle')
   }
 
   return (
@@ -89,135 +60,102 @@ export default function ProfileScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header + title */}
+          {/* Header */}
           <View style={{ paddingTop: spacing.lg, marginBottom: spacing.xl }}>
             <Text style={{
               color: colors.primary, fontSize: fontSize.label, fontWeight: '600',
               letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing.sm,
             }}>
-              About You
+              Your Stats
             </Text>
             <Text style={{ color: colors.text, fontSize: titleSize, fontWeight: '700', lineHeight: titleSize * 1.25 }}>
-              {STEP_QUESTIONS[step]}
+              Tell us about{'\n'}your body
             </Text>
           </View>
 
-          {/* Fields */}
-          {step === 0 && (
-            <NumberField value={weight} onChange={setWeightVal} suffix="kg" autoFocus
-              onSubmit={canAdvance() ? handleNext : undefined} />
-          )}
+          {/* Weight */}
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            Weight
+          </Text>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: colors.surface2, borderRadius: radius.md,
+            borderWidth: 1, borderColor: colors.border,
+            paddingHorizontal: spacing.md, minHeight: 56, marginBottom: spacing.md,
+          }}>
+            <TextInput
+              value={weightStr}
+              onChangeText={setWeightStr}
+              keyboardType="numeric"
+              autoFocus
+              returnKeyType="next"
+              onSubmitEditing={() => heightRef.current?.focus()}
+              style={{ flex: 1, color: colors.text, fontSize: 28, fontWeight: '600' }}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.primary}
+              placeholder="0"
+            />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.sectionHeader, fontWeight: '500' }}>kg</Text>
+          </View>
 
-          {step === 1 && (
-            <NumberField value={height} onChange={setHeightVal} suffix="cm" autoFocus
-              onSubmit={canAdvance() ? handleNext : undefined} />
-          )}
+          {/* Height */}
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            Height
+          </Text>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: colors.surface2, borderRadius: radius.md,
+            borderWidth: 1, borderColor: colors.border,
+            paddingHorizontal: spacing.md, minHeight: 56, marginBottom: spacing.md,
+          }}>
+            <TextInput
+              ref={heightRef}
+              value={heightStr}
+              onChangeText={setHeightStr}
+              keyboardType="numeric"
+              returnKeyType="next"
+              onSubmitEditing={() => monthRef.current?.focus()}
+              style={{ flex: 1, color: colors.text, fontSize: 28, fontWeight: '600' }}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.primary}
+              placeholder="0"
+            />
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.sectionHeader, fontWeight: '500' }}>cm</Text>
+          </View>
 
-          {step === 2 && (
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <DOBField
-                value={day}
-                onChange={(v) => {
-                  setDay(v)
-                  // advance once both digits are in
-                  if (v.length === 2) monthRef.current?.focus()
-                }}
-                placeholder="DD" maxLength={2} autoFocus
-              />
-              <DOBField
-                ref={monthRef}
-                value={month}
-                onChange={(v) => {
-                  setMonth(v)
-                  if (v.length === 2) yearRef.current?.focus()
-                }}
-                placeholder="MM" maxLength={2}
-              />
-              <DOBField
-                ref={yearRef}
-                value={year}
-                onChange={setYear}
-                placeholder="YYYY" maxLength={4} flex={2}
-              />
-            </View>
-          )}
-
-          {step === 3 && (
-            <View style={{ gap: spacing.sm }}>
-              {SEX_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.id}
-                  onPress={() => setSexVal(opt.id)}
-                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-                >
-                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
-                  <View style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    backgroundColor: sex === opt.id ? `${colors.primary}15` : colors.surface,
-                    borderRadius: radius.lg, borderWidth: 1.5,
-                    borderColor: sex === opt.id ? colors.primary : colors.border,
-                    padding: spacing.md, gap: spacing.md,
-                  }}>
-                    <View style={{
-                      width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-                      borderColor: sex === opt.id ? colors.primary : colors.border,
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {sex === opt.id && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>{opt.label}</Text>
-                      <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{opt.description}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          {step === 4 && (
-            <View style={{ gap: spacing.sm }}>
-              {ACTIVITY_LEVELS.map((lvl) => (
-                <Pressable
-                  key={lvl}
-                  onPress={() => setLevel(lvl)}
-                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-                >
-                  {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
-                  <View style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    backgroundColor: level === lvl ? `${colors.primary}15` : colors.surface,
-                    borderRadius: radius.lg, borderWidth: 1.5,
-                    borderColor: level === lvl ? colors.primary : colors.border,
-                    padding: spacing.md, gap: spacing.md,
-                  }}>
-                    <View style={{
-                      width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-                      borderColor: level === lvl ? colors.primary : colors.border,
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {level === lvl && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '600' }}>
-                        {ACTIVITY_LABELS[lvl]}
-                      </Text>
-                      <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>
-                        {ACTIVITY_DESCRIPTIONS[lvl]}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
+          {/* Date of Birth */}
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontWeight: '600', marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            Date of Birth
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl }}>
+            <DOBField
+              value={day}
+              onChange={(v) => { setDay(v); if (v.length === 2) monthRef.current?.focus() }}
+              placeholder="DD"
+              maxLength={2}
+            />
+            <DOBField
+              ref={monthRef}
+              value={month}
+              onChange={(v) => { setMonth(v); if (v.length === 2) yearRef.current?.focus() }}
+              placeholder="MM"
+              maxLength={2}
+            />
+            <DOBField
+              ref={yearRef}
+              value={year}
+              onChange={setYear}
+              placeholder="YYYY"
+              maxLength={4}
+              flex={2}
+            />
+          </View>
         </ScrollView>
 
-        {/* Fixed footer — sits above keyboard, never scrolls away */}
+        {/* Fixed footer */}
         <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md }}>
           <Button
-            label={step < 4 ? 'Next' : 'Continue'}
+            label="Next"
             onPress={handleNext}
             fullWidth
           />
@@ -228,13 +166,13 @@ export default function ProfileScreen() {
                   key={i}
                   style={{
                     flex: 1, height: 3, borderRadius: radius.full,
-                    backgroundColor: i <= currentGlobalStep ? colors.primary : colors.surface2,
+                    backgroundColor: i <= CURRENT_STEP ? colors.primary : colors.surface2,
                   }}
                 />
               ))}
             </View>
             <Text style={{ color: colors.textMuted, fontSize: fontSize.label, textAlign: 'center' }}>
-              Step {currentGlobalStep + 1} of {TOTAL_STEPS}
+              Step {CURRENT_STEP + 1} of {TOTAL_STEPS}
             </Text>
           </View>
         </View>
@@ -243,48 +181,25 @@ export default function ProfileScreen() {
   )
 }
 
-function NumberField({
-  value, onChange, suffix, autoFocus, onSubmit,
-}: {
-  value: string; onChange: (v: string) => void
-  suffix: string; autoFocus?: boolean; onSubmit?: () => void
-}) {
-  return (
-    <View style={{
-      flexDirection: 'row', alignItems: 'center',
-      backgroundColor: colors.surface2, borderRadius: radius.md,
-      borderWidth: 1, borderColor: colors.border,
-      paddingHorizontal: spacing.md, minHeight: 64,
-    }}>
-      <TextInput
-        value={value} onChangeText={onChange}
-        keyboardType="numeric" autoFocus={autoFocus}
-        returnKeyType="done" onSubmitEditing={onSubmit}
-        style={{ flex: 1, color: colors.text, fontSize: 32, fontWeight: '600' }}
-        placeholderTextColor={colors.textMuted} selectionColor={colors.primary}
-      />
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.sectionHeader, fontWeight: '500' }}>{suffix}</Text>
-    </View>
-  )
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const DOBField = forwardRef<TextInput, {
   value: string; onChange: (v: string) => void
-  placeholder: string; maxLength: number; autoFocus?: boolean; flex?: number
-}>(function DOBField({ value, onChange, placeholder, maxLength, autoFocus, flex = 1 }, ref) {
+  placeholder: string; maxLength: number; flex?: number
+}>(function DOBField({ value, onChange, placeholder, maxLength, flex = 1 }, ref) {
   return (
     <View style={{
       flex, backgroundColor: colors.surface2, borderRadius: radius.md,
       borderWidth: 1, borderColor: colors.border,
-      alignItems: 'center', justifyContent: 'center', minHeight: 64,
+      alignItems: 'center', justifyContent: 'center', minHeight: 56,
     }}>
       <TextInput
         ref={ref} value={value}
         onChangeText={(v) => onChange(v.replace(/\D/g, ''))}
-        keyboardType="number-pad" maxLength={maxLength} autoFocus={autoFocus}
+        keyboardType="number-pad" maxLength={maxLength}
         placeholder={placeholder} placeholderTextColor={colors.textMuted}
         selectionColor={colors.primary}
-        style={{ color: colors.text, fontSize: 24, fontWeight: '600', textAlign: 'center', width: '100%', paddingVertical: spacing.sm }}
+        style={{ color: colors.text, fontSize: 22, fontWeight: '600', textAlign: 'center', width: '100%', paddingVertical: spacing.sm }}
       />
     </View>
   )

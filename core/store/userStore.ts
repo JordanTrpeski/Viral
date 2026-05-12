@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createStorage } from '@core/utils/storage'
-import { dbGetUserProfile, dbInsertUserProfile, dbUpdateUserProfile } from '@core/db/userQueries'
+import { dbGetUserProfile, dbInsertUserProfile, dbUpdateUserProfile, dbDeleteUserProfile } from '@core/db/userQueries'
 import { calculateTDEE, goalAdjustedCalories } from '@core/utils/tdee'
 import type { UserProfile } from '@core/types'
 
@@ -19,6 +19,7 @@ interface UserState {
   recalcCaloriesFromWeight: (newWeightKg: number) => void
   setUnits: (units: Units) => void
   completeOnboarding: () => void
+  resetForOnboarding: () => void
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -66,5 +67,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   completeOnboarding: () => {
     mmkv.set('onboarding_complete', true)
     set({ onboardingComplete: true })
+  },
+
+  resetForOnboarding: () => {
+    dbDeleteUserProfile()
+    mmkv.delete('onboarding_complete')
+    set({ profile: null, onboardingComplete: false })
   },
 }))

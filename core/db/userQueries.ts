@@ -11,6 +11,7 @@ interface RawProfileRow {
   activity_level: string | null
   goals: string
   calorie_goal_kcal: number | null
+  goal_weight_kg: number | null
   created_at: string
   updated_at: string
 }
@@ -26,9 +27,14 @@ function rowToProfile(row: RawProfileRow): UserProfile {
     activityLevel: (row.activity_level as ActivityLevel | null) ?? undefined,
     goals: JSON.parse(row.goals) as string[],
     calorieGoalKcal: row.calorie_goal_kcal ?? undefined,
+    goalWeightKg: row.goal_weight_kg ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+export function dbDeleteUserProfile(): void {
+  db.runSync('DELETE FROM user_profile')
 }
 
 export function dbGetUserProfile(): UserProfile | null {
@@ -39,8 +45,9 @@ export function dbGetUserProfile(): UserProfile | null {
 export function dbInsertUserProfile(profile: UserProfile): void {
   db.runSync(
     `INSERT INTO user_profile
-       (id, name, date_of_birth, weight_kg, height_cm, sex, activity_level, goals, calorie_goal_kcal, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, date_of_birth, weight_kg, height_cm, sex, activity_level, goals,
+        calorie_goal_kcal, goal_weight_kg, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       profile.id,
       profile.name,
@@ -51,6 +58,7 @@ export function dbInsertUserProfile(profile: UserProfile): void {
       profile.activityLevel ?? null,
       JSON.stringify(profile.goals),
       profile.calorieGoalKcal ?? null,
+      profile.goalWeightKg ?? null,
       profile.createdAt,
       profile.updatedAt,
     ],
@@ -60,7 +68,8 @@ export function dbInsertUserProfile(profile: UserProfile): void {
 export function dbUpdateUserProfile(profile: UserProfile): void {
   db.runSync(
     `UPDATE user_profile
-     SET name=?, date_of_birth=?, weight_kg=?, height_cm=?, sex=?, activity_level=?, goals=?, calorie_goal_kcal=?, updated_at=?
+     SET name=?, date_of_birth=?, weight_kg=?, height_cm=?, sex=?, activity_level=?,
+         goals=?, calorie_goal_kcal=?, goal_weight_kg=?, updated_at=?
      WHERE id=?`,
     [
       profile.name,
@@ -71,6 +80,7 @@ export function dbUpdateUserProfile(profile: UserProfile): void {
       profile.activityLevel ?? null,
       JSON.stringify(profile.goals),
       profile.calorieGoalKcal ?? null,
+      profile.goalWeightKg ?? null,
       profile.updatedAt,
       profile.id,
     ],

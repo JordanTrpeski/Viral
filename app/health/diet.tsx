@@ -91,6 +91,13 @@ export default function DietScreen() {
     router.push({ pathname: '/health/food-search', params: { mealId } } as never)
   }
 
+  function handleEditEntry(mealId: string, entryId: string, foodId: string, amountGrams: number) {
+    router.push({
+      pathname: '/health/food-search',
+      params: { mealId, editEntryId: entryId, editFoodId: foodId, editGrams: String(amountGrams) },
+    } as never)
+  }
+
   function handleCustomWater() {
     const ml = parseInt(customWaterMl)
     if (ml > 0) {
@@ -223,6 +230,9 @@ export default function DietScreen() {
             item={item}
             onAddFood={() => handleAddFood(item.meal.id)}
             onDeleteEntry={(entryId) => deleteEntry(entryId, item.meal.id)}
+            onEditEntry={(entryId, foodId, amountGrams) =>
+              handleEditEntry(item.meal.id, entryId, foodId, amountGrams)
+            }
             onDeleteMeal={() => deleteMeal(item.meal.id)}
             onSaveTemplate={() => handleSaveTemplate(item.meal.id)}
           />

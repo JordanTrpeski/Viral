@@ -3,7 +3,7 @@ import { createStorage } from '@core/utils/storage'
 import * as Crypto from 'expo-crypto'
 import { localDateStr } from '@core/utils/units'
 import {
-  dbSearchFoods, dbInsertMeal, dbDeleteMeal,
+  dbSearchFoods, dbInsertFood, dbInsertMeal, dbDeleteMeal,
   dbGetMealsForDate, dbGetEntriesForDate,
   dbInsertMealEntry, dbUpdateMealEntryGrams, dbDeleteMealEntry,
   dbGetCalorieHistory, dbGetWaterForDate, dbAddWater,
@@ -92,6 +92,7 @@ interface DietState {
   deleteEntry: (entryId: string, mealId: string) => void
 
   searchFoods: (query: string) => void
+  createCustomFood: (food: Omit<Food, 'id' | 'createdAt' | 'isCustom'>) => Food
 
   addWater: (ml: number) => void
   setWaterGoal: (ml: number) => void
@@ -182,10 +183,29 @@ export const useDietStore = create<DietState>((set, get) => ({
     get().loadToday()
   },
 
-  // ── Food search ────────────────────────────────────────────────────────────
+  // ── Food search & creation ─────────────────────────────────────────────────
 
   searchFoods: (query) => {
     set({ searchResults: dbSearchFoods(query) })
+  },
+
+  createCustomFood: (partial) => {
+    const food: Food = {
+      id: Crypto.randomUUID(),
+      name: partial.name,
+      brand: partial.brand,
+      caloriesPer100g: partial.caloriesPer100g,
+      proteinPer100g: partial.proteinPer100g,
+      carbsPer100g: partial.carbsPer100g,
+      fatPer100g: partial.fatPer100g,
+      fiberPer100g: partial.fiberPer100g,
+      isCustom: true,
+      createdAt: new Date().toISOString(),
+    }
+    dbInsertFood(food)
+    // Refresh search so the new food appears
+    get().searchFoods('')
+    return food
   },
 
   // ── Water ──────────────────────────────────────────────────────────────────

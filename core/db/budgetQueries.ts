@@ -310,6 +310,19 @@ export function dbGetRecurringIncomeSummaries(): RecurringIncomeSummary[] {
   }))
 }
 
+/** Removes the recurring flag from all income entries matching the given template key. */
+export function dbCancelRecurringIncome(
+  sourceName: string,
+  categoryId: string,
+  recurrencePeriod: string,
+): void {
+  db.runSync(
+    `UPDATE budget_income SET is_recurring = 0, recurrence_period = NULL
+     WHERE source_name = ? AND category_id = ? AND recurrence_period = ? AND is_recurring = 1`,
+    [sourceName, categoryId, recurrencePeriod],
+  )
+}
+
 export function dbGetIncomeHistory(
   categoryId: string | null,
   fromDate: string,
@@ -586,6 +599,33 @@ export function dbGetAnnualOverview(year: number): { month: number; income: numb
     income:   incomeMap[i + 1]  ?? 0,
     spending: spendMap[i + 1]   ?? 0,
   }))
+}
+
+// ── Current-month summary (always uses today's calendar month) ────────────────
+
+export function dbGetCurrentMonthSummary(): { totalIncome: number; totalSpending: number; year: number; month: number } {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const month = now.getMonth() + 1
+  const prefix = `${year}-${String(month).padStart(2, '0')}`
+
+  const incRow = db.getFirstSync<{ total: number }>(
+    `SELECT COALESCE(SUM(amount), 0) as total FROM budget_income WHERE date LIKE ?`,
+    [`${prefix}%`],
+  )
+  const spendRow = db.getFirstSync<{ total: number }>(
+    `SELECT COALESCE(SUM(ei.amount), 0) as total
+     FROM budget_expenses e
+     JOIN budget_expense_items ei ON ei.expense_id = e.id
+     WHERE e.date LIKE ?`,
+    [`${prefix}%`],
+  )
+  return {
+    totalIncome:   incRow?.total   ?? 0,
+    totalSpending: spendRow?.total ?? 0,
+    year,
+    month,
+  }
 }
 
 // ── Balance overview queries ───────────────────────────────────────────────────

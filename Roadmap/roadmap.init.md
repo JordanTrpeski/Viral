@@ -22,32 +22,43 @@ Do NOT read all roadmap versions at once.
 
 ## Phase Index
 
-| File | Phase | Module | Status |
+| File | Version | Content | Status |
 |---|---|---|---|
-| roadmap.v1.md | Phase 1 | App Shell + Health + Dashboard | Active |
-| roadmap.v2.md | Phase 2 | Budget | Planned |
-| roadmap.v3.md | Phase 3 | Organizer (Notes + Calendar + People + Reminders) | Planned |
+| roadmap.v1.md | Build 1 | App Shell + Health + Dashboard | Complete |
+| roadmap.v2.md | Build 2 | Budget Module | Complete |
+| roadmap.v3.md | Build 3 | Organizer Module | Complete |
+| roadmap.v1.0.1.md | Deploy 1.0.1 | Critical Fixes + Missing Core Features | Active |
+| roadmap.v1.0.2.md | Deploy 1.0.2 | Feature Improvements + Module Upgrades | Planned |
+| roadmap.v1.0.3.md | Deploy 1.0.3 | New Modules (Habits, Sleep, Dev Tools, AI) | Planned |
 
-> New phases get a new file: roadmap.v4.md, roadmap.v5.md, etc.
-> Never edit a completed version file — it's a record of what was built.
+### Versioning Logic
+- **v1, v2, v3** — initial build phases. App did not exist yet. Never touch these.
+- **v1.0.1, v1.0.2, v1.0.3** — deployment update cycles. App is live, updates
+  pushed via EAS OTA. Each cycle = one `eas update` deployment when complete.
+- **Next cycle** → create roadmap.v1.0.4.md and add it to this table.
+- Never edit a completed file — it is a permanent record.
+- Never mark a cycle complete unless every checkbox in the file is checked.
 
 ---
 
-## Current Active Phase
+## Current Active Cycle
 
-**Phase 1 — read roadmap.v1.md**
+**Deploy 1.0.1 — read roadmap.v1.0.1.md**
 
 ---
 
-## Full Phase Overview (summary only)
+## Full Overview (summary only)
 
-- **v1** — App shell, onboarding, settings, body weight log, workout module,
-  checklist, diet module, home dashboard
-- **v2** — Budget module: income, spending, templates, daily/weekly/monthly
-  summaries, category limits, balance overview
-- **v3** — Organizer module: people profiles, importance tiers, birthday
-  reminders, calendar, reminders, notes
-- **v4+** — AI food recognition, cloud sync, web support, wearables, new modules
+- **Build v1** — App shell, onboarding, health module, dashboard
+- **Build v2** — Budget module
+- **Build v3** — Organizer module
+- **Deploy v1.0.1** — Critical fixes: onboarding bugs, mobile/web UI, rest timer,
+  PRs, custom foods, barcode scanner, balance screen, dashboard bugs, alerts
+- **Deploy v1.0.2** — Improvements: body measurements, goal weight, gift ideas,
+  notification overrides, calendar week view, repeating events, rich text,
+  snooze, workout reorder, nutrition averages
+- **Deploy v1.0.3** — New modules: AI food recognition, AI weekly insights,
+  habit tracker, sleep tracker, dev tools, currency converter
 
 ---
 

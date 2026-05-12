@@ -52,7 +52,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const router = useRouter()
   const [ready, setReady] = useState(false)
-  const { onboardingComplete, loadProfile, profile } = useUserStore()
+  const { loadProfile, profile } = useUserStore()
 
   // Run initDatabase() synchronously on first render so all tables exist
   // before any child screen's useFocusEffect fires and queries them.
@@ -90,13 +90,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!ready) return
-    // profile in SQLite is the canonical source — MMKV can silently fall back
-    // to in-memory storage on some devices, losing the flag on every restart.
-    // A completed user always has a profile row, so treat that as the truth.
-    if (!onboardingComplete && profile === null) {
+    // SQLite profile is the single source of truth for onboarding completion.
+    // MMKV can silently fall back to in-memory storage on some Android devices,
+    // losing the flag between launches. A completed user always has a SQLite profile row.
+    // Only redirect if no profile row exists — this is reliable across all restarts.
+    if (profile === null) {
       router.replace('/onboarding')
     }
-  }, [ready, onboardingComplete, profile])
+  }, [ready, profile])
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>

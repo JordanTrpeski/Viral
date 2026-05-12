@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { View, Text, TextInput, FlatList, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { View, Text, TextInput, FlatList, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView, NativeSyntheticEvent, TextInputSelectionChangeEventData } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -38,6 +38,28 @@ export default function NoteEditScreen() {
   const personSheetRef = useRef<BottomSheet>(null)
   const tagSheetRef    = useRef<BottomSheet>(null)
   const bodyRef        = useRef<TextInput>(null)
+  const selRef         = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+
+  // ── Formatting helpers ──────────────────────────────────────────────────────
+  function applyFormat(
+    prefix: string,
+    suffix: string = prefix,
+    placeholder = 'text',
+  ) {
+    const { start, end } = selRef.current
+    const selected = body.slice(start, end)
+    const replacement = selected.length > 0 ? `${prefix}${selected}${suffix}` : `${prefix}${placeholder}${suffix}`
+    const newBody = body.slice(0, start) + replacement + body.slice(end)
+    setBody(newBody)
+  }
+
+  function applyLinePrefix(prefix: string) {
+    const { start } = selRef.current
+    // Find beginning of current line
+    const lineStart = body.lastIndexOf('\n', start - 1) + 1
+    const newBody = body.slice(0, lineStart) + prefix + body.slice(lineStart)
+    setBody(newBody)
+  }
 
   useEffect(() => {
     loadNotes()
@@ -237,6 +259,9 @@ export default function NoteEditScreen() {
             ref={bodyRef}
             value={body}
             onChangeText={setBody}
+            onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+              selRef.current = e.nativeEvent.selection
+            }}
             placeholder="Start writing…"
             placeholderTextColor={colors.textMuted}
             multiline
@@ -250,6 +275,45 @@ export default function NoteEditScreen() {
               textAlignVertical: 'top',
             }}
           />
+
+          {/* Formatting toolbar */}
+          <View style={{
+            flexDirection: 'row', gap: spacing.xs,
+            paddingTop: spacing.sm,
+            borderTopWidth: 1, borderTopColor: colors.border,
+            marginTop: spacing.sm,
+          }}>
+            {[
+              { icon: 'B',  action: () => applyFormat('**', '**', 'bold text') },
+              { icon: 'I',  action: () => applyFormat('*', '*', 'italic text') },
+              { icon: 'H',  action: () => applyLinePrefix('## ') },
+              { icon: '•',  action: () => applyLinePrefix('- ') },
+              { icon: '1.', action: () => applyLinePrefix('1. ') },
+            ].map(({ icon, action }) => (
+              <Pressable
+                key={icon}
+                onPress={action}
+                style={({ pressed }) => ({
+                  width: 36, height: 36,
+                  borderRadius: radius.sm,
+                  backgroundColor: pressed ? colors.surface2 : 'transparent',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                })}
+              >
+                <Text style={{
+                  color: colors.textMuted,
+                  fontSize: icon === '1.' ? 11 : 13,
+                  fontWeight: '700',
+                  fontStyle: icon === 'I' ? 'italic' : 'normal',
+                }}>
+                  {icon}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           {/* Linked reminders (editing only) */}
           {isEditing && (

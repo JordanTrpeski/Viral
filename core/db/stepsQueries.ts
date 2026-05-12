@@ -65,3 +65,42 @@ export function dbInsertSession(session: StepSession): void {
 export function dbDeleteSession(id: string): void {
   db.runSync(`DELETE FROM step_sessions WHERE id = ?`, [id])
 }
+
+/**
+ * Returns the current step-goal streak: the number of consecutive days
+ * (ending today or yesterday) where step_count >= goal.
+ */
+export function dbGetStepsStreak(): number {
+  // Get last 365 days of step logs, ordered desc
+  const rows = db.getAllSync<{ date: string; step_count: number; goal: number }>(
+    `SELECT date, step_count, goal FROM steps_log ORDER BY date DESC LIMIT 365`,
+  )
+
+  if (rows.length === 0) return 0
+
+  // Build a set of "goal met" dates
+  const goalMetDates = new Set(
+    rows.filter((r) => r.step_count >= r.goal).map((r) => r.date),
+  )
+
+  // Walk backwards from today; allow starting from yesterday if today not yet logged
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+  let streak = 0
+  const cur = new Date(today)
+
+  // If today isn't in the set, start from yesterday (streak may still be alive)
+  const todayStr = cur.toISOString().slice(0, 10)
+  if (!goalMetDates.has(todayStr)) {
+    cur.setDate(cur.getDate() - 1)
+  }
+
+  while (true) {
+    const dateStr = cur.toISOString().slice(0, 10)
+    if (!goalMetDates.has(dateStr)) break
+    streak++
+    cur.setDate(cur.getDate() - 1)
+  }
+
+  return streak
+}

@@ -11,6 +11,7 @@ export interface UserProfile {
   activityLevel?: ActivityLevel
   goals: string[]
   calorieGoalKcal?: number
+  goalWeightKg?: number
   createdAt: string
   updatedAt: string
 }

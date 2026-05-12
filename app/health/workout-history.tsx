@@ -45,9 +45,16 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
             <MuscleGroupBadge muscleGroup={ex.muscleGroup as MuscleGroup} small />
           </View>
           {ex.sets.map((s) => (
-            <Text key={s.id} style={{ color: colors.textMuted, fontSize: fontSize.label, paddingLeft: spacing.sm }}>
-              Set {s.setNumber}: {s.weightKg ?? 0} kg × {s.reps ?? 0} reps
-            </Text>
+            <View key={s.id} style={{ paddingLeft: spacing.sm, marginBottom: 2 }}>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>
+                Set {s.setNumber}: {s.weightKg ?? 0} kg × {s.reps ?? 0} reps
+              </Text>
+              {s.notes ? (
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, opacity: 0.7 }}>
+                  📝 {s.notes}
+                </Text>
+              ) : null}
+            </View>
           ))}
         </View>
       ))}

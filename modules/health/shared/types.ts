@@ -130,3 +130,23 @@ export interface DailyWorkoutSummary {
   totalDurationMinutes: number
   muscleGroupsHit: MuscleGroup[]
 }
+
+// Body Measurements
+export type MeasurementField =
+  | 'chest_cm' | 'waist_cm' | 'hips_cm'
+  | 'left_arm_cm' | 'right_arm_cm'
+  | 'left_thigh_cm' | 'right_thigh_cm'
+
+export interface BodyMeasurement {
+  id: string
+  date: string          // YYYY-MM-DD
+  chestCm?: number
+  waistCm?: number
+  hipsCm?: number
+  leftArmCm?: number
+  rightArmCm?: number
+  leftThighCm?: number
+  rightThighCm?: number
+  notes?: string
+  createdAt: string
+}

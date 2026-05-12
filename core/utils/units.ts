@@ -28,6 +28,14 @@ export function formatWeight(weightKg: number, units: 'metric' | 'imperial'): st
   return `${kgToLbs(weightKg)} lbs`
 }
 
+export function cmToInches(cm: number): number {
+  return Math.round(cm * 0.3937 * 10) / 10
+}
+
+export function inchesToCm(inches: number): number {
+  return Math.round((inches / 0.3937) * 10) / 10
+}
+
 export function localDateStr(date: Date = new Date()): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
