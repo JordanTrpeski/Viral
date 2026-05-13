@@ -31,6 +31,7 @@ import { useSleepStore } from '@modules/health/sleep/sleepStore'
 import { localDateStr } from '@core/utils/units'
 import type { SessionSummaryRow } from '@core/db/workoutQueries'
 import type { Habit, HabitLog, SleepLog } from '@core/types'
+import type { WorkoutSession } from '@modules/health/shared/types'
 
 const workoutMmkv = createStorage('workout-store')
 
@@ -378,7 +379,7 @@ function StepsCard({ stepCount, goal, low, high, streak, onPress }: {
 // ─── Workout card ──────────────────────────────────────────────────────────────
 
 function WorkoutCard({ activeSession, todaySession, prExercises, onPress, onStart }: {
-  activeSession: ReturnType<typeof useWorkoutStore>['activeSession']
+  activeSession: WorkoutSession | null
   todaySession?: SessionSummaryRow
   prExercises: string[]
   onPress: () => void

@@ -87,8 +87,16 @@ class NativeStorage implements KVStore {
   constructor(id: string) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { MMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv')
-      this.store = new MMKV({ id })
+      const { createMMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv')
+      const mmkv = createMMKV({ id })
+      this.store = {
+        getString: (key) => mmkv.getString(key),
+        getBoolean: (key) => mmkv.getBoolean(key),
+        getNumber: (key) => mmkv.getNumber(key),
+        set: (key, value) => mmkv.set(key, value),
+        delete: (key) => { mmkv.remove(key) },
+        clearAll: () => mmkv.clearAll(),
+      }
     } catch {
       // Native module not ready (e.g. dev build cold start) — use memory fallback
       this.store = new MemoryStorage()

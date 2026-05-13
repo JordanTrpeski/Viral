@@ -32,13 +32,14 @@ export default function CategoryEditScreen() {
   }, [])
 
   if (!cat) return null
+  const category = cat
 
   const limit = parseFloat(limitText) || null
   const canSave = name.trim().length > 0
 
-  const spending = categorySpending[cat.id] ?? 0
+  const spending = categorySpending[category.id] ?? 0
   const pct      = limit && limit > 0 ? spending / limit : null
-  const barColor = pct == null ? cat.color : pct >= 1 ? colors.danger : pct >= 0.75 ? colors.warning : colors.success
+  const barColor = pct == null ? category.color : pct >= 1 ? colors.danger : pct >= 0.75 ? colors.warning : colors.success
 
   async function requestNotifPermission() {
     const { status } = await Notifications.requestPermissionsAsync()
@@ -47,23 +48,23 @@ export default function CategoryEditScreen() {
 
   function handleSave() {
     if (!canSave) return
-    updateCat(cat.id, name.trim(), emoji, color)
-    setCategoryLimit(cat.id, limit)
+    updateCat(category.id, name.trim(), emoji, color)
+    setCategoryLimit(category.id, limit)
     router.back()
   }
 
   function handleArchive() {
     Alert.alert(
-      cat.isArchived ? 'Unarchive category?' : 'Archive category?',
-      cat.isArchived
+      category.isArchived ? 'Unarchive category?' : 'Archive category?',
+      category.isArchived
         ? 'This category will appear again in pickers.'
         : 'This category will be hidden from pickers. Existing entries are kept.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: cat.isArchived ? 'Unarchive' : 'Archive',
+          text: category.isArchived ? 'Unarchive' : 'Archive',
           onPress: () => {
-            archiveCat(cat.id, !cat.isArchived)
+            archiveCat(category.id, !category.isArchived)
             router.back()
           },
         },
@@ -248,9 +249,9 @@ export default function CategoryEditScreen() {
             opacity: pressed ? 0.8 : 1,
           })}
         >
-          <Ionicons name={cat.isArchived ? 'archive-outline' : 'archive'} size={18} color={colors.textMuted} />
+          <Ionicons name={category.isArchived ? 'archive-outline' : 'archive'} size={18} color={colors.textMuted} />
           <Text style={{ color: colors.textMuted, fontSize: fontSize.body, fontWeight: '500' }}>
-            {cat.isArchived ? 'Unarchive Category' : 'Archive Category'}
+            {category.isArchived ? 'Unarchive Category' : 'Archive Category'}
           </Text>
         </Pressable>
 

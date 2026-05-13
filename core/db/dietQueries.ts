@@ -172,8 +172,11 @@ export function dbGetMacroHistory(fromDate: string, toDate: string): DayMacros[]
      ORDER BY m.date ASC`,
     [fromDate, toDate],
   ).map((r) => ({
-    date: r.date, calories: r.calories,
-    proteinG: r.protein_g, carbsG: r.carbs_g, fatG: r.fat_g,
+    date: r.date,
+    calories: r.calories,
+    proteinG: r.protein_g,
+    carbsG: r.carbs_g,
+    fatG: r.fat_g,
   }))
 }
 

@@ -90,26 +90,18 @@ export default function MealCard({ item, onAddFood, onDeleteEntry, onEditEntry, 
             borderBottomColor: colors.border,
           }}
         >
-          <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={() => onEditEntry(entry.entryId, entry.foodId, entry.amountGrams)}
+            style={{ flex: 1 }}
+          >
             <Text style={{ color: colors.text, fontSize: fontSize.body }} numberOfLines={1}>
               {entry.foodName}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
               {entry.amountGrams}g · {entry.calories} kcal
             </Text>
-          </View>
-          <Pressable
-            onPress={() => onEditEntry(entry.entryId, entry.foodId, entry.amountGrams)}
-            hitSlop={8}
-            style={{ padding: spacing.xs }}
-          >
-            <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
           </Pressable>
-          <Pressable
-            onPress={() => confirmDeleteEntry(entry.entryId, entry.foodName)}
-            hitSlop={8}
-            style={{ padding: spacing.xs }}
-          >
+          <Pressable onPress={() => confirmDeleteEntry(entry.entryId, entry.foodName)} hitSlop={8}>
             <Ionicons name="close" size={16} color={colors.textMuted} />
           </Pressable>
         </View>
