@@ -11,11 +11,12 @@ import type { ChecklistWithProgress } from '@core/db/checklistQueries'
 
 const BottomSheetTextInput = TextInput
 
-function ChecklistCard({ item, onPress, onRename, onDelete, onUseTemplate }: {
+function ChecklistCard({ item, onPress, onRename, onDelete, onToggleTemplate, onUseTemplate }: {
   item: ChecklistWithProgress
   onPress: () => void
   onRename: () => void
   onDelete: () => void
+  onToggleTemplate: () => void
   onUseTemplate: () => void
 }) {
   const progress = item.totalItems > 0 ? item.checkedItems / item.totalItems : 0
@@ -25,6 +26,7 @@ function ChecklistCard({ item, onPress, onRename, onDelete, onUseTemplate }: {
     <SwipeableRow
       rightActions={[
         { label: 'Rename', icon: 'pencil-outline', color: colors.checklist, onPress: onRename },
+        { label: item.isTemplate ? 'Normal' : 'Template', icon: 'copy-outline', color: colors.primary, onPress: onToggleTemplate },
         { label: 'Delete', icon: 'trash-outline', color: colors.danger, onPress: onDelete },
       ]}
     >
@@ -107,7 +109,7 @@ export default function ChecklistsScreen() {
       '',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', onPress: (name) => { if (name?.trim()) renameChecklist(id, name.trim()) } },
+        { text: 'Save', onPress: (name?: string) => { if (name?.trim()) renameChecklist(id, name.trim()) } },
       ],
       'plain-text',
       currentName,

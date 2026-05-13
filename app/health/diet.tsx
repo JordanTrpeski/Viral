@@ -113,7 +113,7 @@ export default function DietScreen() {
       'Give this meal a name:',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', onPress: (name) => { if (name?.trim()) saveMealAsTemplate(mealId, name.trim()) } },
+        { text: 'Save', onPress: (name?: string) => { if (name?.trim()) saveMealAsTemplate(mealId, name.trim()) } },
       ],
       'plain-text',
     )

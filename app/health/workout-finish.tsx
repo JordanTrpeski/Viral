@@ -28,7 +28,7 @@ export default function WorkoutFinishScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Save',
-          onPress: (name) => {
+          onPress: (name?: string) => {
             if (name?.trim()) saveAsTemplate(name.trim())
           },
         },

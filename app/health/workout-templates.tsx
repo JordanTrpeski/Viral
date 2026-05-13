@@ -113,7 +113,7 @@ export default function WorkoutTemplatesScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Save',
-          onPress: (name) => {
+          onPress: (name?: string) => {
             if (name?.trim() && name.trim() !== currentName) {
               renameTemplate(id, name.trim())
             }

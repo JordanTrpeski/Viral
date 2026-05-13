@@ -32,6 +32,7 @@ export default function TemplateEditScreen() {
   }, [id])
 
   if (!template) return null
+  const currentTemplate = template
 
   const total    = items.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
   const canSave  = name.trim().length > 0 && total > 0
@@ -50,7 +51,7 @@ export default function TemplateEditScreen() {
   function handleSave() {
     if (!canSave) return
     updateTemplate(
-      template.id,
+      currentTemplate.id,
       name.trim(),
       items
         .filter((r) => parseFloat(r.amount) > 0)
@@ -60,9 +61,9 @@ export default function TemplateEditScreen() {
   }
 
   function handleDelete() {
-    Alert.alert('Delete template?', `"${template.name}" will be permanently removed.`, [
+    Alert.alert('Delete template?', `"${currentTemplate.name}" will be permanently removed.`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { removeTemplate(template.id); router.back() } },
+      { text: 'Delete', style: 'destructive', onPress: () => { removeTemplate(currentTemplate.id); router.back() } },
     ])
   }
 
