@@ -1,18 +1,10 @@
-import { useEffect, useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useFocusEffect } from 'expo-router'
-import { useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
-import { useBodyWeightStore } from '@modules/health/shared/bodyWeightStore'
-import { useStepsStore } from '@modules/health/steps/stepsStore'
-import { useUserStore } from '@core/store/userStore'
-import { formatWeight, localDateStr } from '@core/utils/units'
-import { formatSteps, defaultGoal } from '@modules/health/steps/stepsUtils'
-import { dbGetLatestMeasurement } from '@core/db/measurementQueries'
-import type { BodyMeasurement } from '@modules/health/shared/types'
+
+// ─── Hub card definition ──────────────────────────────────────────────────────
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -22,116 +14,82 @@ interface HubCard {
   icon: IoniconsName
   color: string
   route: string
-  valueLabel?: string
-  available: boolean
 }
 
+const CARDS: HubCard[] = [
+  {
+    title: 'Workout',
+    subtitle: 'Log sessions, track PRs, build programs',
+    icon: 'barbell-outline',
+    color: colors.workout,
+    route: '/health/workout',
+  },
+  {
+    title: 'Nutrition',
+    subtitle: 'Log meals, track macros and calories',
+    icon: 'nutrition-outline',
+    color: colors.diet,
+    route: '/health/nutrition',
+  },
+  {
+    title: 'Steps',
+    subtitle: 'Daily step count and distance',
+    icon: 'footsteps-outline',
+    color: colors.steps,
+    route: '/health/steps',
+  },
+  {
+    title: 'Water',
+    subtitle: 'Daily hydration tracking',
+    icon: 'water-outline',
+    color: colors.water,
+    route: '/health/water',
+  },
+]
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function HealthScreen() {
-  const router  = useRouter()
-  const { units, profile } = useUserStore()
-  const { todayEntry, streak } = useBodyWeightStore()
-  const { todayEntry: stepsEntry } = useStepsStore()
-  const [latestMeasurement, setLatestMeasurement] = useState<BodyMeasurement | null>(null)
-
-  const today = localDateStr()
-  const dob = profile?.dateOfBirth ?? '1990-01-01'
-  const stepCount = stepsEntry?.stepCount ?? 0
-  const stepGoal = stepsEntry?.goal ?? defaultGoal(dob)
-
-  useFocusEffect(
-    useCallback(() => {
-      setLatestMeasurement(dbGetLatestMeasurement())
-    }, [])
-  )
-
-  const measurementSubtitle = (() => {
-    if (!latestMeasurement) return 'Log your measurements'
-    const date = latestMeasurement.date === today ? 'today' : latestMeasurement.date
-    return `Last logged ${date}`
-  })()
-
-  const cards: HubCard[] = [
-    {
-      title: 'Body Weight',
-      subtitle: todayEntry
-        ? `${formatWeight(todayEntry.weightKg, units)} · ${streak > 0 ? `${streak}d streak 🔥` : 'logged today'}`
-        : 'Log today\'s weight',
-      icon: 'scale-outline',
-      color: colors.primary,
-      route: '/health/body-weight',
-      available: true,
-    },
-    {
-      title: 'Measurements',
-      subtitle: measurementSubtitle,
-      icon: 'body-outline',
-      color: colors.primary,
-      route: '/health/measurements',
-      available: true,
-    },
-    {
-      title: 'Workout',
-      subtitle: 'Track training sessions',
-      icon: 'barbell-outline',
-      color: colors.workout,
-      route: '/health/workout',
-      available: true,
-    },
-    {
-      title: 'Diet',
-      subtitle: 'Log meals & calories',
-      icon: 'nutrition-outline',
-      color: colors.diet,
-      route: '/health/diet',
-      available: true,
-    },
-    {
-      title: 'Steps',
-      subtitle: stepCount > 0
-        ? `${formatSteps(stepCount)} / ${formatSteps(stepGoal)} steps`
-        : 'Track daily steps',
-      icon: 'footsteps-outline',
-      color: colors.steps,
-      route: '/health/steps',
-      available: true,
-    },
-    {
-      title: 'Sleep',
-      subtitle: 'Log sleep and bedtime reminders',
-      icon: 'moon-outline',
-      color: colors.sleep,
-      route: '/health/sleep',
-      available: true,
-    },
-    {
-      title: 'Water',
-      subtitle: 'Daily intake tracking',
-      icon: 'water-outline',
-      color: colors.water,
-      route: '/health/water',
-      available: true,
-    },
-  ]
+  const router = useRouter()
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}>
-        <Text style={{ color: colors.text, fontSize: fontSize.screenTitle, fontWeight: '700', fontFamily: `${fonts.ui}_700Bold` }}>
+      {/* Header */}
+      <View style={{
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
+      }}>
+        <Text style={{
+          color: colors.text,
+          fontSize: fontSize.screenTitle,
+          fontWeight: '700',
+          fontFamily: `${fonts.ui}_700Bold`,
+        }}>
           Health
+        </Text>
+        <Text style={{
+          color: colors.textMuted,
+          fontSize: fontSize.body,
+          marginTop: 4,
+          fontFamily: `${fonts.ui}_400Regular`,
+        }}>
+          Track what matters
         </Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}>
-        {cards.map((card) => (
+      {/* Cards */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+      >
+        {CARDS.map((card) => (
           <Pressable
             key={card.title}
-            onPress={() => card.available && router.push(card.route as never)}
-            disabled={!card.available}
-            style={({ pressed }) => ({
-              opacity: pressed && card.available ? 0.85 : card.available ? 1 : 0.5,
-            })}
+            onPress={() => router.push(card.route as never)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >
-            {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
+            {/* View wrapper — fixes new-arch Pressable style-fn bug */}
             <View style={{
               backgroundColor: colors.surface,
               borderRadius: radius.lg,
@@ -144,37 +102,38 @@ export default function HealthScreen() {
             }}>
               {/* Icon */}
               <View style={{
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 borderRadius: radius.md,
                 backgroundColor: `${card.color}22`,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: spacing.md,
               }}>
-                <Ionicons name={card.icon} size={22} color={card.color} />
+                <Ionicons name={card.icon} size={24} color={card.color} />
               </View>
 
-              {/* Title + Subtitle stacked in middle column */}
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold` }}>
+              {/* Text */}
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  color: colors.text,
+                  fontSize: fontSize.cardTitle,
+                  fontWeight: '600',
+                  fontFamily: `${fonts.ui}_600SemiBold`,
+                }}>
                   {card.title}
                 </Text>
-                {card.subtitle ? (
-                  <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginTop: 2 }} numberOfLines={1}>
-                    {card.subtitle}
-                  </Text>
-                ) : null}
+                <Text style={{
+                  color: colors.textMuted,
+                  fontSize: fontSize.label,
+                  marginTop: 2,
+                  fontFamily: `${fonts.ui}_400Regular`,
+                }} numberOfLines={1}>
+                  {card.subtitle}
+                </Text>
               </View>
 
-              {/* Action indicator */}
-              {card.available ? (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              ) : (
-                <View style={{ backgroundColor: colors.surface2, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
-                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontWeight: '600' }}>SOON</Text>
-                </View>
-              )}
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </Pressable>
         ))}
