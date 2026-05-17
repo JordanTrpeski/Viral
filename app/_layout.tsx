@@ -21,9 +21,9 @@ import {
 import { colors } from '@core/theme'
 import { initDatabase } from '@core/db/database'
 import { useUserStore } from '@core/store/userStore'
-import { seedExercisesIfNeeded } from '@modules/health/workout/exerciseSeed'
+import { seedExercisesIfNeeded } from '@modules/health/data/exerciseSeed'
 import { seedChecklistIfNeeded } from '@modules/checklist/checklistSeed'
-import { seedFoodsIfNeeded } from '@modules/health/diet/foodSeed'
+import { seedFoodsIfNeeded } from '@modules/health/data/foodSeed'
 import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
 import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
 
