@@ -1,3 +1,102 @@
+// ─── Exercise Library V2 ─────────────────────────────────────────────────────
+
+export type ExerciseCategory = 'strength' | 'cardio' | 'mobility'
+export type ExerciseEquipmentV2 = 'barbell' | 'dumbbell' | 'machine' | 'bodyweight' | 'cable' | 'band' | 'other'
+export type MovementPattern = 'push' | 'pull' | 'squat' | 'hinge' | 'carry' | 'core'
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
+
+export interface ExerciseV2 {
+  id: string
+  name: string
+  slug: string
+  category: ExerciseCategory
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
+  equipment: ExerciseEquipmentV2
+  movementPattern?: MovementPattern
+  description?: string
+  formCues: string[]
+  commonMistakes: string[]
+  difficulty: Difficulty
+  substituteIds: string[]
+  isUnilateral: boolean
+  createdAt: string
+}
+
+export interface ExercisePR {
+  id: string
+  exerciseId: string
+  date: string          // YYYY-MM-DD
+  weightKg: number
+  reps: number
+  estimatedOneRepMax: number
+  sessionId?: string
+  createdAt: string
+}
+
+// ─── Workout Session V2 ───────────────────────────────────────────────────────
+
+export interface WorkoutSessionV2 {
+  id: string
+  date: string          // YYYY-MM-DD
+  templateId?: string
+  durationSeconds?: number
+  perceivedDifficulty?: number  // 1-10
+  notes?: string
+  startedAt: string
+  endedAt?: string
+  createdAt: string
+}
+
+export interface WorkoutSetV2 {
+  id: string
+  sessionId: string
+  exerciseId: string
+  setNumber: number
+  targetReps?: number
+  performedReps?: number
+  targetWeight?: number
+  performedWeight?: number
+  rpe?: number          // Rate of Perceived Exertion 1-10
+  durationSeconds?: number
+  isWarmup: boolean
+  isFailed: boolean
+  tempo?: string        // e.g. "3-1-2-0"
+  notes?: string
+  completedAt?: string
+  createdAt: string
+}
+
+// ─── Workout Templates V2 ────────────────────────────────────────────────────
+
+export type GoalType = 'strength' | 'hypertrophy' | 'endurance' | 'general'
+
+export interface WorkoutTemplateV2 {
+  id: string
+  name: string
+  description?: string
+  goalType?: GoalType
+  durationWeeks?: number
+  daysPerWeek?: number
+  createdAt: string
+}
+
+export interface TemplateExerciseV2 {
+  id: string
+  templateId: string
+  exerciseId: string
+  dayNumber: number
+  orderIndex: number
+  sets: number
+  repMin?: number
+  repMax?: number
+  restSeconds?: number
+  isOptional: boolean
+  createdAt: string
+}
+
+// ─── Body Weight ─────────────────────────────────────────────────────────────
+
 // Body Weight
 export interface WeightEntry {
   id: string
