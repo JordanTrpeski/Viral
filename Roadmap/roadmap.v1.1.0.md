@@ -299,7 +299,7 @@ Premium features include:
 
 **Goal:** Build the exercise library screen where users can browse, search, and view exercise details.
 
-- [ ] **2.1 Create Exercise Library screen**
+- [x] **2.1 Create Exercise Library screen**
       File: `app/health/workout/exercises/index.tsx`
       
       Layout:
@@ -311,8 +311,8 @@ Premium features include:
       
       Use FlatList with search + filter logic. Pre-load all 50 exercises from SQLite on mount.
 
-- [ ] **2.2 Create Exercise Detail screen**
-      File: `app/health/workout/exercises/[id].tsx`
+- [x] **2.2 Create Exercise Detail screen**
+      File: `app/health/workout/exercises/[id]/index.tsx`
       
       Sections:
       - Exercise name (24px/700)
@@ -322,20 +322,19 @@ Premium features include:
       - "Form Cues" expandable section with bullet list
       - "Common Mistakes" expandable section with bullet list
       - "Alternatives" section showing substitute exercise cards (tap to navigate)
-      - Placeholder for demo video/image (show gray box with "Demo coming soon")
-      - "Exercise History" button → navigate to history for this exercise
+      - PR card (latest PR shown if exists)
+      - "View Progress" CTA → navigate to history for this exercise
       
       Match existing screen visual density. Use Card components for sections.
 
-- [ ] **2.3 Create Exercise History screen**
+- [x] **2.3 Create Exercise History screen**
       File: `app/health/workout/exercises/[id]/history.tsx`
       
       Shows all sets ever logged for this exercise:
-      - PR card at top (best weight × reps, date)
-      - Line graph: weight progression over time (last 10 sessions)
-      - List of sessions grouped by date, showing each set (weight, reps, RPE)
-      
-      Use same SVG chart pattern as body weight chart from old module.
+      - Tab bar: Volume chart / PRs / Session history
+      - Volume chart: bar chart with session dates (last 12 sessions)
+      - PR list: ranked by estimated 1RM with date
+      - Session history: date, top set, total volume, sets count
 
 **Section 2 checkpoint:** Exercise library browseable, detail screens show all info, history shows progression graph. Report completion before Section 3.
 
