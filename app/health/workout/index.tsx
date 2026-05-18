@@ -450,6 +450,11 @@ export default function WorkoutTodayScreen() {
             label="Nutrition"
             onPress={() => router.push('/health/nutrition')}
           />
+          <NavButton
+            icon="footsteps-outline"
+            label="Steps"
+            onPress={() => router.push('/health/steps')}
+          />
         </View>
 
         {/* Recent sessions */}
