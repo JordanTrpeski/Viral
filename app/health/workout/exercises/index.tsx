@@ -163,8 +163,8 @@ function ExerciseRow({ exercise, onPress, selectMode }: { exercise: ExerciseV2; 
 export default function ExerciseLibraryScreen() {
   const router = useRouter()
   const { mode } = useLocalSearchParams<{ mode?: string }>()
-  const isSelectMode = mode === 'select'
-  const { addExercise } = useWorkoutStoreV2()
+  const isSelectMode = mode === 'select' || mode === 'template'
+  const { addExercise, setPendingExercise } = useWorkoutStoreV2()
 
   const [exercises, setExercises] = useState<ExerciseV2[]>([])
   const [search, setSearch] = useState('')
@@ -189,7 +189,10 @@ export default function ExerciseLibraryScreen() {
   }, [exercises, search, categoryFilter, equipmentFilter])
 
   function handleSelect(ex: ExerciseV2) {
-    if (isSelectMode) {
+    if (mode === 'template') {
+      setPendingExercise(ex)
+      router.back()
+    } else if (mode === 'select') {
       addExercise(ex)
       router.back()
     } else {

@@ -393,7 +393,7 @@ Premium features include:
 
 **Goal:** Let users create custom templates and use pre-made programs.
 
-- [ ] **4.1 Create Templates screen**
+- [x] **4.1 Create Templates screen**
       File: `app/health/workout/templates/index.tsx`
       
       Sections:
@@ -407,7 +407,7 @@ Premium features include:
       
       Free tier limit: 3 custom templates. [PREMIUM] Unlimited.
 
-- [ ] **4.2 Create Template Builder screen**
+- [x] **4.2 Create Template Builder screen**
       File: `app/health/workout/templates/builder.tsx`
       
       Flow:
@@ -423,7 +423,7 @@ Premium features include:
       
       Stores in workout_templates + template_exercises tables.
 
-- [ ] **4.3 Seed 3 pre-made programs**
+- [x] **4.3 Seed 3 pre-made programs**
       Create `/modules/health/data/programSeed.ts`:
       
       **Program 1: Full Body Strength (3 days/week)**
@@ -445,7 +445,7 @@ Premium features include:
       
       Each program stored as workout_template with template_exercises. Sets/reps/rest defined.
 
-- [ ] **4.4 Create Program Detail screen**
+- [x] **4.4 Create Program Detail screen**
       File: `app/health/workout/programs/[id].tsx`
       
       Shows:
@@ -457,7 +457,7 @@ Premium features include:
       
       [PREMIUM] Access to full program library (future). Free: 3 curated programs only.
 
-- [ ] **4.5 Implement template progression rules**
+- [x] **4.5 Implement template progression rules**
       File: `core/utils/progressionRules.ts`
       
       Simple double progression:

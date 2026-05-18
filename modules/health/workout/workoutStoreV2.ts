@@ -83,6 +83,9 @@ interface WorkoutStoreV2State {
   restTimer: RestTimer | null
   sessionSummary: SessionSummaryV2 | null
 
+  // Template builder pick flow
+  pendingExercise: ExerciseV2 | null
+
   // History
   recentSessions: SessionSummaryRowV2[]
 
@@ -91,6 +94,7 @@ interface WorkoutStoreV2State {
   startSession: (templateId?: string) => void
   resumeTodaySession: () => boolean
   addExercise: (exercise: ExerciseV2) => void
+  setPendingExercise: (exercise: ExerciseV2 | null) => void
   removeExercise: (exerciseId: string) => void
   moveExercise: (exerciseId: string, direction: 'up' | 'down') => void
   addSet: (exerciseId: string) => void
@@ -115,6 +119,7 @@ export const useWorkoutStoreV2 = create<WorkoutStoreV2State>((set, get) => ({
   sessionExercises: [],
   restTimer: null,
   sessionSummary: null,
+  pendingExercise: null,
   recentSessions: [],
 
   startSession: (templateId) => {
@@ -146,6 +151,10 @@ export const useWorkoutStoreV2 = create<WorkoutStoreV2State>((set, get) => ({
       sets: [newPendingSet(1, prevPerformance ?? undefined)],
     }
     set((s) => ({ sessionExercises: [...s.sessionExercises, entry] }))
+  },
+
+  setPendingExercise: (exercise) => {
+    set({ pendingExercise: exercise })
   },
 
   removeExercise: (exerciseId) => {
