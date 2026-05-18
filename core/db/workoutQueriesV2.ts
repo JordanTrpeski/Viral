@@ -293,6 +293,164 @@ export function getWorkoutSessionById(id: string): WorkoutSessionV2 | null {
   }
 }
 
+// ─── Active session helpers ───────────────────────────────────────────────────
+
+export function getActiveSessionTodayV2(date: string): WorkoutSessionV2 | null {
+  const row = db.getFirstSync<{
+    id: string; date: string; template_id: string | null
+    duration_seconds: number | null; notes: string | null
+    perceived_difficulty: number | null
+    started_at: string; ended_at: string | null; created_at: string
+  }>(
+    'SELECT * FROM workout_sessions WHERE date = ? AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1',
+    [date],
+  )
+  if (!row) return null
+  return {
+    id: row.id, date: row.date,
+    templateId: row.template_id ?? undefined,
+    durationSeconds: row.duration_seconds ?? undefined,
+    notes: row.notes ?? undefined,
+    perceivedDifficulty: row.perceived_difficulty ?? undefined,
+    startedAt: row.started_at,
+    endedAt: row.ended_at ?? undefined,
+    createdAt: row.created_at,
+  }
+}
+
+export interface SessionSummaryRowV2 {
+  id: string; date: string; templateId: string | null
+  durationSeconds: number | null; startedAt: string; endedAt: string | null
+  createdAt: string; exerciseCount: number; totalSets: number; totalVolume: number
+}
+
+export function getRecentSessionsV2(limit: number): SessionSummaryRowV2[] {
+  const rows = db.getAllSync<{
+    id: string; date: string; template_id: string | null
+    duration_seconds: number | null; started_at: string; ended_at: string | null
+    created_at: string; exercise_count: number; total_sets: number; total_volume: number
+  }>(
+    `SELECT sess.id, sess.date, sess.template_id, sess.duration_seconds,
+            sess.started_at, sess.ended_at, sess.created_at,
+            COUNT(DISTINCT ws.exercise_id) AS exercise_count,
+            COUNT(ws.id) AS total_sets,
+            COALESCE(SUM(COALESCE(ws.performed_weight,0) * COALESCE(ws.performed_reps,0)), 0) AS total_volume
+     FROM workout_sessions sess
+     LEFT JOIN workout_sets ws ON ws.session_id = sess.id AND ws.is_warmup = 0
+     WHERE sess.ended_at IS NOT NULL
+     GROUP BY sess.id
+     ORDER BY sess.date DESC, sess.started_at DESC
+     LIMIT ?`,
+    [limit],
+  )
+  return rows.map((r) => ({
+    id: r.id, date: r.date, templateId: r.template_id,
+    durationSeconds: r.duration_seconds, startedAt: r.started_at,
+    endedAt: r.ended_at, createdAt: r.created_at,
+    exerciseCount: r.exercise_count, totalSets: r.total_sets, totalVolume: r.total_volume,
+  }))
+}
+
+export function getSessionPrimaryMusclesV2(sessionId: string): string[] {
+  const rows = db.getAllSync<{ primary_muscles: string }>(
+    `SELECT DISTINCT ex.primary_muscles FROM workout_sets ws
+     JOIN exercises ex ON ws.exercise_id = ex.id
+     WHERE ws.session_id = ?`,
+    [sessionId],
+  )
+  const all = new Set<string>()
+  for (const r of rows) {
+    try { (JSON.parse(r.primary_muscles ?? '[]') as string[]).forEach((m) => all.add(m)) } catch { /* skip */ }
+  }
+  return Array.from(all).slice(0, 4)
+}
+
+export function getLastPerformanceV2(exerciseId: string): { weightKg: number; reps: number } | null {
+  const row = db.getFirstSync<{ performed_weight: number; performed_reps: number }>(
+    `SELECT ws.performed_weight, ws.performed_reps
+     FROM workout_sets ws
+     JOIN workout_sessions sess ON ws.session_id = sess.id
+     WHERE ws.exercise_id = ? AND sess.ended_at IS NOT NULL
+       AND ws.performed_weight IS NOT NULL AND ws.is_warmup = 0
+     ORDER BY sess.date DESC, ws.set_number DESC
+     LIMIT 1`,
+    [exerciseId],
+  )
+  return row ? { weightKg: row.performed_weight, reps: row.performed_reps } : null
+}
+
+export function getPersonalBestV2(exerciseId: string, excludeSessionId: string): { weightKg: number } | null {
+  const row = db.getFirstSync<{ max_weight: number | null }>(
+    `SELECT MAX(performed_weight) AS max_weight FROM workout_sets
+     WHERE exercise_id = ? AND session_id != ? AND performed_weight IS NOT NULL AND is_warmup = 0`,
+    [exerciseId, excludeSessionId],
+  )
+  return row?.max_weight != null ? { weightKg: row.max_weight } : null
+}
+
+// ─── Session writes ───────────────────────────────────────────────────────────
+
+export function insertSessionV2(args: {
+  id: string; date: string; templateId?: string; startedAt: string; createdAt: string
+}): void {
+  db.runSync(
+    'INSERT INTO workout_sessions (id, date, template_id, started_at, created_at) VALUES (?, ?, ?, ?, ?)',
+    [args.id, args.date, args.templateId ?? null, args.startedAt, args.createdAt],
+  )
+}
+
+export function updateSessionV2(args: {
+  id: string; endedAt: string; durationSeconds: number; notes?: string; perceivedDifficulty?: number
+}): void {
+  db.runSync(
+    'UPDATE workout_sessions SET ended_at = ?, duration_seconds = ?, notes = ?, perceived_difficulty = ? WHERE id = ?',
+    [args.endedAt, args.durationSeconds, args.notes ?? null, args.perceivedDifficulty ?? null, args.id],
+  )
+}
+
+export function discardSessionV2(id: string): void {
+  db.runSync('DELETE FROM workout_sessions WHERE id = ?', [id])
+}
+
+// ─── Set writes ───────────────────────────────────────────────────────────────
+
+export function insertSetV2(args: {
+  id: string; sessionId: string; exerciseId: string; setNumber: number
+  performedReps?: number; performedWeight?: number; rpe?: number
+  isWarmup?: boolean; notes?: string; completedAt: string; createdAt: string
+}): void {
+  db.runSync(
+    `INSERT INTO workout_sets
+       (id, session_id, exercise_id, set_number, performed_reps, performed_weight,
+        rpe, is_warmup, is_failed, notes, completed_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+    [
+      args.id, args.sessionId, args.exerciseId, args.setNumber,
+      args.performedReps ?? null, args.performedWeight ?? null,
+      args.rpe ?? null, args.isWarmup ? 1 : 0,
+      args.notes ?? null, args.completedAt, args.createdAt,
+    ],
+  )
+}
+
+// ─── PR writes ────────────────────────────────────────────────────────────────
+
+export function upsertExercisePRV2(args: {
+  id: string; exerciseId: string; date: string
+  weightKg: number; reps: number; estimatedOneRepMax: number
+  sessionId: string; createdAt: string
+}): void {
+  db.runSync(
+    `INSERT OR REPLACE INTO exercise_prs
+       (id, exercise_id, date, weight_kg, reps, estimated_one_rep_max, session_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [args.id, args.exerciseId, args.date, args.weightKg, args.reps,
+     args.estimatedOneRepMax, args.sessionId, args.createdAt],
+  )
+}
+
+// ─── Session sets read ────────────────────────────────────────────────────────
+
 export function getSetsForSession(sessionId: string): WorkoutSetV2[] {
   const rows = db.getAllSync<{
     id: string
