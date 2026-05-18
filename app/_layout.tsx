@@ -22,6 +22,7 @@ import { colors } from '@core/theme'
 import { initDatabase } from '@core/db/database'
 import { useUserStore } from '@core/store/userStore'
 import { seedExercisesIfNeeded } from '@modules/health/data/exerciseSeed'
+import { seedProgramsIfNeeded } from '@modules/health/data/programSeed'
 import { seedChecklistIfNeeded } from '@modules/checklist/checklistSeed'
 import { seedFoodsIfNeeded } from '@modules/health/data/foodSeed'
 import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
@@ -74,6 +75,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     seedExercisesIfNeeded()
+    seedProgramsIfNeeded()
     seedChecklistIfNeeded()
     seedFoodsIfNeeded()
     seedBudgetCategoriesIfNeeded()

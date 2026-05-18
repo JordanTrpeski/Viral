@@ -304,6 +304,11 @@ export default function WorkoutTodayScreen() {
             onPress={() => router.push('/health/workout/exercises')}
           />
           <NavButton
+            icon="document-text-outline"
+            label="Templates"
+            onPress={() => router.push('/health/workout/templates')}
+          />
+          <NavButton
             icon="time-outline"
             label="History"
             onPress={() => router.push('/health/workout-history')}

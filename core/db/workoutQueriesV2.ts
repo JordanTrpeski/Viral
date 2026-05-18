@@ -4,6 +4,9 @@ import type {
   ExercisePR,
   WorkoutSessionV2,
   WorkoutSetV2,
+  WorkoutTemplateV2,
+  TemplateExerciseV2,
+  GoalType,
 } from '@modules/health/shared/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -447,6 +450,182 @@ export function upsertExercisePRV2(args: {
     [args.id, args.exerciseId, args.date, args.weightKg, args.reps,
      args.estimatedOneRepMax, args.sessionId, args.createdAt],
   )
+}
+
+// ─── Template V2 CRUD ─────────────────────────────────────────────────────────
+
+export interface TemplateWithMetaV2 {
+  template: WorkoutTemplateV2
+  exerciseCount: number
+  primaryMuscles: string[]
+  lastUsedDate: string | null
+}
+
+export interface TemplateExerciseWithDetails extends TemplateExerciseV2 {
+  exercise: ExerciseV2
+}
+
+function parseTemplateRow(r: {
+  id: string; name: string; description: string | null; goal_type: string | null
+  duration_weeks: number | null; days_per_week: number | null; created_at: string
+}): WorkoutTemplateV2 {
+  return {
+    id: r.id, name: r.name,
+    description: r.description ?? undefined,
+    goalType: r.goal_type ? (r.goal_type as GoalType) : undefined,
+    durationWeeks: r.duration_weeks ?? undefined,
+    daysPerWeek: r.days_per_week ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+export function getTemplatesV2(): WorkoutTemplateV2[] {
+  return db.getAllSync<{
+    id: string; name: string; description: string | null; goal_type: string | null
+    duration_weeks: number | null; days_per_week: number | null; created_at: string
+  }>('SELECT * FROM workout_templates ORDER BY created_at DESC').map(parseTemplateRow)
+}
+
+export function getTemplateByIdV2(id: string): WorkoutTemplateV2 | null {
+  const r = db.getFirstSync<{
+    id: string; name: string; description: string | null; goal_type: string | null
+    duration_weeks: number | null; days_per_week: number | null; created_at: string
+  }>('SELECT * FROM workout_templates WHERE id = ?', [id])
+  return r ? parseTemplateRow(r) : null
+}
+
+export function getTemplatesWithMetaV2(): TemplateWithMetaV2[] {
+  const templates = getTemplatesV2()
+  return templates.map((template) => {
+    const exercises = getTemplateExercisesV2(template.id)
+    const muscles = [...new Set(exercises.flatMap((e) => e.exercise.primaryMuscles))].slice(0, 4)
+    const lastUsed = db.getFirstSync<{ date: string | null }>(
+      `SELECT MAX(date) AS date FROM workout_sessions WHERE template_id = ? AND ended_at IS NOT NULL`,
+      [template.id],
+    )
+    return {
+      template,
+      exerciseCount: exercises.length,
+      primaryMuscles: muscles,
+      lastUsedDate: lastUsed?.date ?? null,
+    }
+  })
+}
+
+export function getTemplateExercisesV2(templateId: string): TemplateExerciseWithDetails[] {
+  const rows = db.getAllSync<{
+    te_id: string; te_template_id: string; te_exercise_id: string
+    te_day_number: number; te_order_index: number; te_sets: number
+    te_rep_min: number | null; te_rep_max: number | null
+    te_rest_seconds: number | null; te_is_optional: number; te_created_at: string
+    ex_id: string; ex_name: string; ex_slug: string; ex_category: string
+    ex_primary_muscles: string; ex_secondary_muscles: string; ex_equipment: string
+    ex_movement_pattern: string | null; ex_description: string | null
+    ex_form_cues: string; ex_common_mistakes: string; ex_difficulty: string
+    ex_substitute_ids: string; ex_is_unilateral: number; ex_created_at: string
+  }>(
+    `SELECT
+       te.id AS te_id, te.template_id AS te_template_id,
+       te.exercise_id AS te_exercise_id, te.day_number AS te_day_number,
+       te.order_index AS te_order_index, te.sets AS te_sets,
+       te.rep_min AS te_rep_min, te.rep_max AS te_rep_max,
+       te.rest_seconds AS te_rest_seconds, te.is_optional AS te_is_optional,
+       te.created_at AS te_created_at,
+       ex.id AS ex_id, ex.name AS ex_name, ex.slug AS ex_slug,
+       ex.category AS ex_category, ex.primary_muscles AS ex_primary_muscles,
+       ex.secondary_muscles AS ex_secondary_muscles, ex.equipment AS ex_equipment,
+       ex.movement_pattern AS ex_movement_pattern, ex.description AS ex_description,
+       ex.form_cues AS ex_form_cues, ex.common_mistakes AS ex_common_mistakes,
+       ex.difficulty AS ex_difficulty, ex.substitute_ids AS ex_substitute_ids,
+       ex.is_unilateral AS ex_is_unilateral, ex.created_at AS ex_created_at
+     FROM template_exercises te
+     JOIN exercises ex ON te.exercise_id = ex.id
+     WHERE te.template_id = ?
+     ORDER BY te.day_number ASC, te.order_index ASC`,
+    [templateId],
+  )
+  return rows.map((r) => ({
+    id: r.te_id,
+    templateId: r.te_template_id,
+    exerciseId: r.te_exercise_id,
+    dayNumber: r.te_day_number,
+    orderIndex: r.te_order_index,
+    sets: r.te_sets,
+    repMin: r.te_rep_min ?? undefined,
+    repMax: r.te_rep_max ?? undefined,
+    restSeconds: r.te_rest_seconds ?? undefined,
+    isOptional: r.te_is_optional === 1,
+    createdAt: r.te_created_at,
+    exercise: {
+      id: r.ex_id, name: r.ex_name, slug: r.ex_slug,
+      category: r.ex_category as ExerciseV2['category'],
+      primaryMuscles: JSON.parse(r.ex_primary_muscles ?? '[]'),
+      secondaryMuscles: JSON.parse(r.ex_secondary_muscles ?? '[]'),
+      equipment: r.ex_equipment as ExerciseV2['equipment'],
+      movementPattern: r.ex_movement_pattern ? (r.ex_movement_pattern as ExerciseV2['movementPattern']) : undefined,
+      description: r.ex_description ?? undefined,
+      formCues: JSON.parse(r.ex_form_cues ?? '[]'),
+      commonMistakes: JSON.parse(r.ex_common_mistakes ?? '[]'),
+      difficulty: r.ex_difficulty as ExerciseV2['difficulty'],
+      substituteIds: JSON.parse(r.ex_substitute_ids ?? '[]'),
+      isUnilateral: r.ex_is_unilateral === 1,
+      createdAt: r.ex_created_at,
+    },
+  }))
+}
+
+export function insertTemplateV2(args: {
+  id: string; name: string; description?: string; goalType?: GoalType
+  durationWeeks?: number; daysPerWeek?: number; createdAt: string
+}): void {
+  db.runSync(
+    `INSERT INTO workout_templates (id, name, description, goal_type, duration_weeks, days_per_week, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [args.id, args.name, args.description ?? null, args.goalType ?? null,
+     args.durationWeeks ?? null, args.daysPerWeek ?? null, args.createdAt],
+  )
+}
+
+export function insertTemplateExerciseV2(args: {
+  id: string; templateId: string; exerciseId: string
+  dayNumber: number; orderIndex: number; sets: number
+  repMin?: number; repMax?: number; restSeconds?: number; createdAt: string
+}): void {
+  db.runSync(
+    `INSERT INTO template_exercises
+       (id, template_id, exercise_id, day_number, order_index, sets, rep_min, rep_max, rest_seconds, is_optional, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+    [args.id, args.templateId, args.exerciseId, args.dayNumber, args.orderIndex,
+     args.sets, args.repMin ?? null, args.repMax ?? null, args.restSeconds ?? null, args.createdAt],
+  )
+}
+
+export function updateTemplateNameV2(id: string, name: string): void {
+  db.runSync('UPDATE workout_templates SET name = ? WHERE id = ?', [name, id])
+}
+
+export function updateTemplateV2(id: string, args: {
+  name: string; goalType?: GoalType; description?: string
+}): void {
+  db.runSync(
+    'UPDATE workout_templates SET name = ?, goal_type = ?, description = ? WHERE id = ?',
+    [args.name, args.goalType ?? null, args.description ?? null, id],
+  )
+}
+
+export function deleteTemplateV2(id: string): void {
+  db.runSync('DELETE FROM workout_templates WHERE id = ?', [id])
+}
+
+export function deleteTemplateExercisesV2(templateId: string): void {
+  db.runSync('DELETE FROM template_exercises WHERE template_id = ?', [templateId])
+}
+
+export function isProgramSeeded(): boolean {
+  const row = db.getFirstSync<{ c: number }>(
+    `SELECT COUNT(*) AS c FROM workout_templates WHERE duration_weeks IS NOT NULL`,
+  )
+  return (row?.c ?? 0) > 0
 }
 
 // ─── Session sets read ────────────────────────────────────────────────────────
