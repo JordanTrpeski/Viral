@@ -344,80 +344,34 @@ Premium features include:
 
 **Goal:** Build the in-workout logging screen — the most important screen in the entire module.
 
-- [ ] **3.1 Create Today screen (workout hub)**
+- [x] **3.1 Create Today screen (workout hub)**
       File: `app/health/workout/index.tsx`
       
-      Blocks:
-      - Greeting + current date
-      - "Today's Workout" card (if template scheduled) showing:
-        - Template name
-        - Estimated duration
-        - Target muscles
-        - "Start Workout" button (large, primary color)
-      - If no workout scheduled: "Rest Day" or "Create Workout" button
-      - Recent sessions list (last 5): date, template name, duration, volume
-      - "Templates" button → navigate to templates screen
-      - "History" button → navigate to all sessions
-      
-      This is the landing screen when user taps "Workout" in Health tab.
+      Greeting + date, today status card, Start/Resume/Exercises/History nav buttons,
+      recent sessions list with muscle tags and volume stats.
 
-- [ ] **3.2 Create active session screen**
+- [x] **3.2 Create active session screen**
       File: `app/health/workout/session/active.tsx`
       
-      **Critical UX requirements** (this screen must be FAST):
-      
-      Layout:
-      - Sticky header: elapsed timer, finish button, menu (add exercise, notes)
-      - Exercise cards in vertical list (order matches template)
-      - Each exercise card:
-        - Exercise name + muscle group
-        - "Last session" comparison visible (weight/reps from previous time)
-        - Set rows: each row shows set number, target reps, weight input, reps input, checkmark button
-        - Tapping checkmark completes set → auto-starts rest timer
-        - Long-press set row → options: mark warmup, mark failed, add note, delete set
-        - "Add Set" button below rows
-      - Swipe exercise card actions: skip exercise, swap exercise, view exercise detail
-      
-      **Input behavior:**
-      - Weight and reps fields pre-filled with last session values (if available)
-      - One-tap checkmark confirms set with pre-filled values
-      - If user changes weight/reps, tapping checkmark uses new values
-      - No keyboard unless user explicitly taps input field
-      - Fast, one-handed, thumb-friendly
-      
-      Store all set data in SQLite immediately on checkmark tap. No waiting for finish.
+      Elapsed timer in header, exercise blocks with last-session prefill, set rows
+      with weight/reps/RPE inputs, warmup toggle (W), checkmark confirms set to SQLite,
+      per-set options (RPE, note, delete), long-press weight → plate calculator modal,
+      Add Set button, Add Exercise FAB → exercise library in select mode.
 
-- [ ] **3.3 Implement rest timer**
-      When user completes a set:
-      - Bottom sheet appears showing countdown (default 90 seconds)
-      - Progress bar fills as time passes
-      - "Skip Rest" button
-      - "Add 30s" button
-      - Notification at 0 seconds if app is backgrounded
-      - Timer persists if user navigates away (stored in Zustand state)
-      - Returning to session shows timer still running
-      
-      Rest duration configurable in settings (60s, 90s, 120s, custom).
+- [x] **3.3 Implement rest timer**
+      Built into active session screen. Progress bar + countdown, Skip and +30s buttons,
+      timer stored in Zustand (persists across nav). Warmup sets get 30s timer.
 
-- [ ] **3.4 Create finish session screen**
+- [x] **3.4 Create finish session screen**
       File: `app/health/workout/session/finish.tsx`
       
-      Triggered when user taps "Finish" in active session header.
-      
-      Shows:
-      - Session summary card:
-        - Total duration
-        - Total sets
-        - Total volume (sets × reps × weight summed)
-        - Exercises completed
-      - Optional session name input
-      - Optional session notes text area
-      - PR detection: if any exercise hit a new PR (weight or reps), show highlighted card per PR
-      - "Save Workout" button → writes end time to session, navigates back to Today screen
+      Stats summary (duration, exercises, sets, volume), PR card with highlighted new PRs
+      and estimated 1RM, difficulty picker (6 levels), notes text area, Save button
+      triggers finishSession() → writes duration_seconds + notes + perceived_difficulty.
       
       [PREMIUM] PR detection with animation and "New PR!" badge.
 
-- [ ] **3.5 Implement plate calculator utility**
+- [x] **3.5 Implement plate calculator utility**
       File: `core/utils/plateCalculator.ts`
       
       Function: `calculatePlates(targetWeight: number, barType: string, unit: string)`

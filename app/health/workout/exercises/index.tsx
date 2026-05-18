@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, FlatList, Pressable, ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
@@ -11,6 +11,7 @@ import {
   getAllExercises,
   searchExercises,
 } from '@core/db/workoutQueriesV2'
+import { useWorkoutStoreV2 } from '@modules/health/workout/workoutStoreV2'
 import type { ExerciseV2, ExerciseCategory, ExerciseEquipmentV2 } from '@modules/health/shared/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -89,7 +90,7 @@ function MuscleTag({ label }: { label: string }) {
   )
 }
 
-function ExerciseRow({ exercise, onPress }: { exercise: ExerciseV2; onPress: () => void }) {
+function ExerciseRow({ exercise, onPress, selectMode }: { exercise: ExerciseV2; onPress: () => void; selectMode?: boolean }) {
   return (
     <Pressable
       onPress={onPress}
@@ -138,7 +139,7 @@ function ExerciseRow({ exercise, onPress }: { exercise: ExerciseV2; onPress: () 
           </View>
         </View>
 
-        {/* Difficulty dot + chevron */}
+        {/* Difficulty dot + action icon */}
         <View style={{ alignItems: 'center', gap: 4 }}>
           <View style={{
             width: 8,
@@ -146,7 +147,11 @@ function ExerciseRow({ exercise, onPress }: { exercise: ExerciseV2; onPress: () 
             borderRadius: 4,
             backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
           }} />
-          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          <Ionicons
+            name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
+            size={selectMode ? 20 : 16}
+            color={selectMode ? colors.primary : colors.textMuted}
+          />
         </View>
       </View>
     </Pressable>
@@ -157,6 +162,9 @@ function ExerciseRow({ exercise, onPress }: { exercise: ExerciseV2; onPress: () 
 
 export default function ExerciseLibraryScreen() {
   const router = useRouter()
+  const { mode } = useLocalSearchParams<{ mode?: string }>()
+  const isSelectMode = mode === 'select'
+  const { addExercise } = useWorkoutStoreV2()
 
   const [exercises, setExercises] = useState<ExerciseV2[]>([])
   const [search, setSearch] = useState('')
@@ -180,6 +188,15 @@ export default function ExerciseLibraryScreen() {
     return list
   }, [exercises, search, categoryFilter, equipmentFilter])
 
+  function handleSelect(ex: ExerciseV2) {
+    if (isSelectMode) {
+      addExercise(ex)
+      router.back()
+    } else {
+      router.push(`/health/workout/exercises/${ex.id}` as never)
+    }
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Header */}
@@ -202,7 +219,7 @@ export default function ExerciseLibraryScreen() {
           fontWeight: '700',
           fontFamily: `${fonts.ui}_700Bold`,
         }}>
-          Exercise Library
+          {isSelectMode ? 'Add Exercise' : 'Exercise Library'}
         </Text>
         <Text style={{
           color: colors.textMuted,
@@ -334,7 +351,8 @@ export default function ExerciseLibraryScreen() {
         renderItem={({ item }) => (
           <ExerciseRow
             exercise={item}
-            onPress={() => router.push(`/health/workout/exercises/${item.id}` as never)}
+            onPress={() => handleSelect(item)}
+            selectMode={isSelectMode}
           />
         )}
       />
