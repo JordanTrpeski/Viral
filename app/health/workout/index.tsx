@@ -445,6 +445,11 @@ export default function WorkoutTodayScreen() {
             label="Volume"
             onPress={() => router.push('/health/workout/progress/volume')}
           />
+          <NavButton
+            icon="nutrition-outline"
+            label="Nutrition"
+            onPress={() => router.push('/health/nutrition')}
+          />
         </View>
 
         {/* Recent sessions */}

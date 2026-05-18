@@ -592,7 +592,7 @@ Premium features include:
 
 **Goal:** Rebuild nutrition tracking with similar quality to workout module — fast logging, templates, analytics.
 
-- [ ] **7.1 Create Nutrition Hub screen**
+- [x] **7.1 Create Nutrition Hub screen**
       File: `app/health/nutrition/index.tsx`
       
       Layout:
@@ -613,7 +613,7 @@ Premium features include:
       
       This is the landing screen when user taps "Nutrition" in Health tab.
 
-- [ ] **7.2 Create food search & add screen**
+- [x] **7.2 Create food search & add screen**
       File: `app/health/nutrition/food-search.tsx`
       
       Search bar at top, results list below:
@@ -627,7 +627,7 @@ Premium features include:
       
       Search queries foods table, sorts by relevance.
 
-- [ ] **7.3 Create meal detail screen**
+- [x] **7.3 Create meal detail screen**
       File: `app/health/nutrition/meals/[mealId].tsx`
       
       Shows:
@@ -641,7 +641,7 @@ Premium features include:
       
       Editing grams: tap entry → bottom sheet with grams input, recalculates on save.
 
-- [ ] **7.4 Create custom food creation**
+- [x] **7.4 Create custom food creation**
       File: `app/health/nutrition/food-create.tsx`
       
       Form fields:
@@ -657,7 +657,7 @@ Premium features include:
       
       Custom foods appear in search with "Custom" badge.
 
-- [ ] **7.5 Barcode scanner placeholder** [AI Feature]
+- [x] **7.5 Barcode scanner placeholder** [AI Feature]
       File: `app/health/nutrition/barcode-scanner.tsx`
       
       Camera view with barcode overlay (use expo-camera).
@@ -668,7 +668,7 @@ Premium features include:
       
       Full implementation deferred to AI features phase.
 
-- [ ] **7.6 Meal templates system**
+- [x] **7.6 Meal templates system**
       Similar to workout templates:
       - Save any meal as a template (name + food list with amounts)
       - "My Meal Templates" screen shows saved templates
@@ -677,7 +677,7 @@ Premium features include:
       
       Free tier: 3 meal templates. [PREMIUM] Unlimited.
 
-- [ ] **7.7 Nutrition goals calculation**
+- [x] **7.7 Nutrition goals calculation**
       File: `core/utils/nutritionGoals.ts`
       
       Uses Mifflin-St Jeor formula:
@@ -690,7 +690,7 @@ Premium features include:
       Stores in nutrition_goals table per day.
       Recalculates when user profile changes.
 
-- [ ] **7.8 Nutrition history & analytics** [PREMIUM]
+- [x] **7.8 Nutrition history & analytics** [PREMIUM]
       File: `app/health/nutrition/history.tsx`
       
       Calendar view or list view:
