@@ -253,6 +253,7 @@ function StepsHubCard() {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HealthScreen() {
+  const router = useRouter()
   const today = localDateStr()
   const dateLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
@@ -264,8 +265,17 @@ export default function HealthScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Health</Text>
-        <Text style={styles.headerDate}>{dateLabel}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Health</Text>
+          <Text style={styles.headerDate}>{dateLabel}</Text>
+        </View>
+        <Pressable
+          onPress={() => router.push('/health/settings' as never)}
+          hitSlop={12}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <Ionicons name="settings-outline" size={20} color={colors.textMuted} />
+        </Pressable>
       </View>
 
       <ScrollView

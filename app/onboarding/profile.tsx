@@ -6,7 +6,7 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useOnboardingStore } from '@core/store/onboardingStore'
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 const CURRENT_STEP = 1  // 0-indexed → step 2 of 6
 
 export default function PhysicalStatsScreen() {

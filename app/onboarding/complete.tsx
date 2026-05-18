@@ -15,15 +15,17 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { Button } from '@core/components'
 import { useOnboardingStore } from '@core/store/onboardingStore'
 import { useUserStore } from '@core/store/userStore'
+import { useHealthSettingsStore } from '@core/store/healthSettingsStore'
 import { calculateTDEE, goalAdjustedCalories } from '@core/utils/tdee'
 
-const TOTAL_STEPS = 6
-const CURRENT_STEP = 5  // 0-indexed → step 6 of 6
+const TOTAL_STEPS = 7
+const CURRENT_STEP = 6  // 0-indexed → step 7 of 7
 
 export default function CompleteScreen() {
   const router = useRouter()
   const draft = useOnboardingStore()
   const { saveProfile, setUnits, completeOnboarding } = useUserStore()
+  const { setTrainingExperience, setTrainingGoal, setEquipment, setDaysPerWeek } = useHealthSettingsStore()
 
   // Calculate calorie goal silently from collected data
   const tdee = calculateTDEE(
@@ -82,6 +84,13 @@ export default function CompleteScreen() {
     })
 
     setUnits(draft.units)
+
+    // Persist health-specific onboarding answers to health settings store
+    setTrainingExperience(draft.trainingExperience)
+    setTrainingGoal(draft.trainingGoal)
+    setEquipment(draft.equipment)
+    setDaysPerWeek(draft.daysPerWeek)
+
     completeOnboarding()
     draft.reset()
 
