@@ -6,7 +6,7 @@ import { Button } from '@core/components'
 import { Input } from '@core/components'
 import { useOnboardingStore } from '@core/store/onboardingStore'
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 export default function WelcomeScreen() {
   const router = useRouter()

@@ -7,7 +7,7 @@ import { useOnboardingStore } from '@core/store/onboardingStore'
 import { ACTIVITY_LABELS, ACTIVITY_DESCRIPTIONS } from '@core/utils/tdee'
 import type { Sex, ActivityLevel } from '@core/types'
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 const CURRENT_STEP = 2  // 0-indexed → step 3 of 6
 
 const SEX_OPTIONS: { id: Sex; label: string; description: string }[] = [

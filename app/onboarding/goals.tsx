@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOnboardingStore, type OnboardingGoal } from '@core/store/onboardingStore'
 
-const TOTAL_STEPS = 6
-const CURRENT_STEP = 3  // 0-indexed → step 4 of 6
+const TOTAL_STEPS = 7
+const CURRENT_STEP = 3  // 0-indexed → step 4 of 7
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -121,7 +121,7 @@ export default function GoalsScreen() {
 
           {/* Continue button — prominent, full width */}
           <Pressable
-            onPress={() => { if (!goal) return; router.push('/onboarding/units') }}
+            onPress={() => { if (!goal) return; router.push('/onboarding/health') }}
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : goal ? 1 : 0.5 })}
           >
             {/* All visual + layout styles on View — fixes new-arch Pressable style-fn bug */}
