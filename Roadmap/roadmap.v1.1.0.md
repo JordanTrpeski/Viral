@@ -546,7 +546,7 @@ Premium features include:
 
 **Goal:** Add utility features that make the workout experience better — substitutions, warnings, deload planning.
 
-- [ ] **6.1 Exercise substitution system**
+- [x] **6.1 Exercise substitution system**
       File: `core/utils/exerciseSubstitutions.ts`
       
       When user long-presses an exercise in active session → "Swap Exercise":
@@ -560,14 +560,14 @@ Premium features include:
       
       Substitution mappings already in exercise seed data (substitute_ids field).
 
-- [ ] **6.2 Volume warnings**
+- [x] **6.2 Volume warnings**
       At end of week (Sunday night), check total sets per muscle group:
       - If any muscle > 25 sets: show notification "High volume on [muscle] this week - consider reducing next week"
       - If any muscle < 8 sets: show notification "Low volume on [muscle] - consider adding more exercises"
       
       Optional feature, can be disabled in settings.
 
-- [ ] **6.3 Deload week planner**
+- [x] **6.3 Deload week planner**
       Every 4 weeks, show notification on Today screen:
       - "You've been training hard for 4 weeks. Consider a deload week."
       - Tap notification → shows deload plan:
@@ -578,7 +578,7 @@ Premium features include:
       
       [PREMIUM] Automatic deload scheduling based on fatigue detection.
 
-- [ ] **6.4 Equipment preference system**
+- [x] **6.4 Equipment preference system**
       Settings screen option: "Available Equipment"
       - Checkboxes: Barbell, Dumbbell, Machine, Cable, Bodyweight, Bands, Kettlebell
       - When creating templates or swapping exercises, only show exercises matching available equipment

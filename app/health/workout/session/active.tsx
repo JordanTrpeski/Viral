@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, Pressable, TextInput,
-  Alert, KeyboardAvoidingView, Platform, Modal,
+  Alert, KeyboardAvoidingView, Platform, Modal, FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -14,6 +14,10 @@ import {
   type ActiveSet,
 } from '@modules/health/workout/workoutStoreV2'
 import { calculatePlates } from '@core/utils/plateCalculator'
+import { getAllExercises } from '@core/db/workoutQueriesV2'
+import { getSubstitutes } from '@core/utils/exerciseSubstitutions'
+import { useEquipmentStore } from '@core/store/equipmentStore'
+import type { ExerciseV2 } from '@modules/health/shared/types'
 
 // ─── Duration timer ───────────────────────────────────────────────────────────
 
@@ -459,10 +463,110 @@ function SetRow({
 
 // ─── Exercise block ───────────────────────────────────────────────────────────
 
+// ─── Swap modal ───────────────────────────────────────────────────────────────
+
+function SwapModal({ exercise, onSwap, onClose }: {
+  exercise: ExerciseV2
+  onSwap: (ex: ExerciseV2) => void
+  onClose: () => void
+}) {
+  const { available } = useEquipmentStore()
+  const substitutes = useMemo(() => {
+    const all = getAllExercises()
+    return getSubstitutes(exercise, all, available.length < 7 ? available : undefined)
+  }, [exercise, available])
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }} onPress={onClose}>
+        <Pressable onPress={() => {/* prevent bubble */}}>
+          <View style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+            paddingTop: spacing.md,
+            maxHeight: 480,
+          }}>
+            {/* Handle */}
+            <View style={{
+              width: 40, height: 4, borderRadius: 2,
+              backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.md,
+            }} />
+
+            <Text style={{
+              color: colors.text, fontSize: fontSize.cardTitle,
+              fontWeight: '700', fontFamily: `${fonts.ui}_700Bold`,
+              paddingHorizontal: spacing.lg, marginBottom: spacing.sm,
+            }}>
+              Swap "{exercise.name}"
+            </Text>
+
+            {substitutes.length === 0 ? (
+              <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+                <Text style={{
+                  color: colors.textMuted, fontSize: fontSize.body,
+                  fontFamily: `${fonts.ui}_400Regular`, textAlign: 'center',
+                }}>
+                  No substitutes found for current equipment.
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={substitutes}
+                keyExtractor={(e) => e.id}
+                contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => { onSwap(item); onClose() }}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, marginBottom: spacing.sm })}
+                  >
+                    <View style={{
+                      backgroundColor: colors.surface2,
+                      borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+                      padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                    }}>
+                      <View style={{
+                        width: 36, height: 36, borderRadius: radius.md,
+                        backgroundColor: `${colors.workout}18`,
+                        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        <Ionicons name="barbell-outline" size={16} color={colors.workout} />
+                      </View>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={{
+                          color: colors.text, fontSize: fontSize.body,
+                          fontWeight: '600', fontFamily: `${fonts.ui}_600SemiBold`,
+                        }}>
+                          {item.name}
+                        </Text>
+                        <Text style={{
+                          color: colors.textMuted, fontSize: fontSize.micro,
+                          fontFamily: `${fonts.ui}_400Regular`,
+                          textTransform: 'capitalize',
+                        }}>
+                          {item.equipment} · {item.primaryMuscles.slice(0, 2).join(', ')}
+                        </Text>
+                      </View>
+                      <Ionicons name="swap-horizontal-outline" size={18} color={colors.primary} />
+                    </View>
+                  </Pressable>
+                )}
+              />
+            )}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
+// ─── Exercise block ───────────────────────────────────────────────────────────
+
 function ExerciseBlock({
   ex, isFirst, isLast,
 }: { ex: SessionExerciseV2; isFirst: boolean; isLast: boolean }) {
-  const { updateSetInput, confirmSet, addSet, removeSet, removeExercise, moveExercise, toggleWarmup } = useWorkoutStoreV2()
+  const { updateSetInput, confirmSet, addSet, removeSet, removeExercise, moveExercise, toggleWarmup, swapExercise } = useWorkoutStoreV2()
+  const [showSwap, setShowSwap] = useState(false)
   const exId = ex.exercise.id
 
   return (
@@ -517,12 +621,27 @@ function ExerciseBlock({
         </View>
 
         <Pressable
+          onPress={() => setShowSwap(true)}
+          style={{ padding: spacing.xs }}
+          hitSlop={4}
+        >
+          <Ionicons name="swap-horizontal-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+        <Pressable
           onPress={() => removeExercise(exId)}
           style={{ padding: spacing.xs }}
         >
           <Ionicons name="close" size={18} color={colors.textMuted} />
         </Pressable>
       </View>
+
+      {showSwap && (
+        <SwapModal
+          exercise={ex.exercise}
+          onSwap={(newEx) => swapExercise(exId, newEx)}
+          onClose={() => setShowSwap(false)}
+        />
+      )}
 
       {/* Previous performance */}
       {ex.prevPerformance && (

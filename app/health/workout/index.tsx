@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -9,8 +9,10 @@ import { useWorkoutStoreV2 } from '@modules/health/workout/workoutStoreV2'
 import {
   getSessionPrimaryMusclesV2,
   getWorkoutStreakV2,
+  getWeeklyVolumeByMuscleV2,
   type SessionSummaryRowV2,
   type WorkoutStreakV2,
+  type WeeklyMuscleVolumeV2,
 } from '@core/db/workoutQueriesV2'
 import { localDateStr } from '@core/utils/units'
 
@@ -165,6 +167,7 @@ export default function WorkoutTodayScreen() {
   const router = useRouter()
   const { activeSession, recentSessions, loadRecentSessions, resumeTodaySession, startSession } = useWorkoutStoreV2()
   const [streak, setStreak] = useState<WorkoutStreakV2 | null>(null)
+  const [weekVolume, setWeekVolume] = useState<WeeklyMuscleVolumeV2[]>([])
 
   const today = localDateStr()
 
@@ -173,8 +176,17 @@ export default function WorkoutTodayScreen() {
       loadRecentSessions()
       resumeTodaySession()
       setStreak(getWorkoutStreakV2())
+      setWeekVolume(getWeeklyVolumeByMuscleV2(1))
     }, []),
   )
+
+  const volumeWarnings = useMemo(() => {
+    const high = weekVolume.filter((r) => r.sets > 25).map((r) => r.muscle)
+    const low = weekVolume.filter((r) => r.sets > 0 && r.sets < 8).map((r) => r.muscle)
+    return { high, low }
+  }, [weekVolume])
+
+  const showDeload = (streak?.currentStreakWeeks ?? 0) >= 4
 
   const todaySession = recentSessions.find((s) => s.date === today)
   const hasActive = !!activeSession
@@ -337,6 +349,66 @@ export default function WorkoutTodayScreen() {
                 {streak.thisWeekCount}/{streak.thisWeekTarget}
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Deload planner */}
+        {showDeload && (
+          <View style={{
+            backgroundColor: `${colors.warning}18`,
+            borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.warning}55`,
+            padding: spacing.md, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
+          }}>
+            <Ionicons name="battery-half-outline" size={20} color={colors.warning} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{
+                color: colors.warning, fontSize: fontSize.body,
+                fontWeight: '700', fontFamily: `${fonts.ui}_700Bold`,
+              }}>
+                Consider a deload week
+              </Text>
+              <Text style={{
+                color: colors.textMuted, fontSize: fontSize.micro,
+                fontFamily: `${fonts.ui}_400Regular`,
+              }}>
+                {streak!.currentStreakWeeks} consecutive weeks of training. Reducing weight 10% or volume 30% helps recovery.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Volume warnings */}
+        {(volumeWarnings.high.length > 0 || volumeWarnings.low.length > 0) && (
+          <View style={{
+            backgroundColor: colors.surface, borderRadius: radius.lg,
+            borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.xs,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2 }}>
+              <Ionicons name="warning-outline" size={14} color={colors.textMuted} />
+              <Text style={{
+                color: colors.textMuted, fontSize: fontSize.label,
+                fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8,
+                fontFamily: `${fonts.ui}_600SemiBold`,
+              }}>
+                This week
+              </Text>
+            </View>
+            {volumeWarnings.high.map((m) => (
+              <Text key={m} style={{
+                color: '#c0533a', fontSize: fontSize.micro,
+                fontFamily: `${fonts.ui}_400Regular`, textTransform: 'capitalize',
+              }}>
+                ▲ High volume on {m} — consider reducing next week
+              </Text>
+            ))}
+            {volumeWarnings.low.map((m) => (
+              <Text key={m} style={{
+                color: colors.warning, fontSize: fontSize.micro,
+                fontFamily: `${fonts.ui}_400Regular`, textTransform: 'capitalize',
+              }}>
+                ▼ Low volume on {m} — consider adding more sets
+              </Text>
+            ))}
           </View>
         )}
 
