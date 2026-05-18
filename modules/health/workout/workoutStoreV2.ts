@@ -94,6 +94,7 @@ interface WorkoutStoreV2State {
   startSession: (templateId?: string) => void
   resumeTodaySession: () => boolean
   addExercise: (exercise: ExerciseV2) => void
+  swapExercise: (oldExerciseId: string, newExercise: ExerciseV2) => void
   setPendingExercise: (exercise: ExerciseV2 | null) => void
   removeExercise: (exerciseId: string) => void
   moveExercise: (exerciseId: string, direction: 'up' | 'down') => void
@@ -151,6 +152,17 @@ export const useWorkoutStoreV2 = create<WorkoutStoreV2State>((set, get) => ({
       sets: [newPendingSet(1, prevPerformance ?? undefined)],
     }
     set((s) => ({ sessionExercises: [...s.sessionExercises, entry] }))
+  },
+
+  swapExercise: (oldExerciseId, newExercise) => {
+    const prevPerformance = getLastPerformanceV2(newExercise.id)
+    set((s) => ({
+      sessionExercises: s.sessionExercises.map((e) =>
+        e.exercise.id === oldExerciseId
+          ? { ...e, exercise: newExercise, prevPerformance }
+          : e,
+      ),
+    }))
   },
 
   setPendingExercise: (exercise) => {

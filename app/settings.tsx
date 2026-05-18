@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useMemo } from 'react'
 import * as Notifications from 'expo-notifications'
 import { sendTestBirthdayNotification } from '@modules/organizer/shared/notificationScheduler'
 import {
@@ -19,6 +19,7 @@ import { createStorage } from '@core/utils/storage'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { BottomSheet } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
+import { useEquipmentStore, ALL_EQUIPMENT } from '@core/store/equipmentStore'
 import { db } from '@core/db/database'
 import { kgToLbs, lbsToKg, cmToFtIn, ftInToCm } from '@core/utils/units'
 import type { OnboardingGoal } from '@core/store/onboardingStore'
@@ -145,6 +146,7 @@ function Card({ children }: { children: React.ReactNode }) {
 export default function SettingsScreen() {
   const router = useRouter()
   const { profile, units, updateProfile, setUnits } = useUserStore()
+  const { available: availableEquipment, toggle: toggleEquipment, setAll: setAllEquipment } = useEquipmentStore()
   const goalSheetRef     = useRef<GorhomBottomSheet>(null)
   const activitySheetRef = useRef<GorhomBottomSheet>(null)
 
@@ -468,6 +470,37 @@ export default function SettingsScreen() {
               />
             </>
           )}
+        </Card>
+
+        {/* ── Equipment ── */}
+        <SectionTitle title="Available Equipment" />
+        <Card>
+          {ALL_EQUIPMENT.map((eq, i) => {
+            const checked = availableEquipment.includes(eq)
+            const label = eq.charAt(0).toUpperCase() + eq.slice(1)
+            return (
+              <View key={eq}>
+                {i > 0 && <Divider />}
+                <Row
+                  icon={checked ? 'checkbox-outline' : 'square-outline'}
+                  label={label}
+                  onPress={() => toggleEquipment(eq)}
+                  rightElement={
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 4,
+                      backgroundColor: checked ? colors.workout : 'transparent',
+                      borderWidth: 1, borderColor: checked ? colors.workout : colors.border,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </View>
+                  }
+                />
+              </View>
+            )
+          })}
+          <Divider />
+          <Row icon="refresh-outline" label="Select all" onPress={setAllEquipment} />
         </Card>
 
         {/* ── Notifications ── */}
