@@ -712,7 +712,7 @@ Premium features include:
 
 **Goal:** Rebuild water and steps tracking with better UX and analytics.
 
-- [ ] **8.1 Rebuild Water tracking**
+- [x] **8.1 Rebuild Water tracking**
       Water is part of nutrition hub (see 7.1) but also has its own detail screen.
       
       File: `app/health/nutrition/water.tsx`
@@ -728,7 +728,7 @@ Premium features include:
       
       Stores in water_log table (one row per add event, query sum for daily total).
 
-- [ ] **8.2 Rebuild Steps tracking**
+- [x] **8.2 Rebuild Steps tracking**
       File: `app/health/steps/index.tsx`
       
       Layout:
@@ -748,7 +748,7 @@ Premium features include:
       
       Stores in steps_log table (one row per day).
 
-- [ ] **8.3 Steps goal auto-calculation**
+- [x] **8.3 Steps goal auto-calculation**
       Default goal based on age (from user profile):
       - < 30 years: 10,000 steps
       - 30-50 years: 9,000 steps

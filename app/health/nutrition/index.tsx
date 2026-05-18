@@ -135,6 +135,7 @@ function MealCard({ mealType, router }: { mealType: MealType; router: ReturnType
 
 function WaterCard() {
   const { waterMl, waterGoalMl, addWater } = useDietStore()
+  const router = useRouter()
   const pct = Math.min(1, waterGoalMl > 0 ? waterMl / waterGoalMl : 0)
 
   return (
@@ -144,10 +145,13 @@ function WaterCard() {
           <Ionicons name="water-outline" size={16} color={colors.water} />
           <Text style={styles.waterTitle}>Hydration</Text>
         </View>
-        <Text style={styles.waterAmount}>
+        <Pressable onPress={() => router.push('/health/nutrition/water')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={styles.waterAmount}>
           {waterMl >= 1000 ? `${(waterMl / 1000).toFixed(1)}L` : `${waterMl}ml`}
           <Text style={styles.waterGoalText}> / {waterGoalMl >= 1000 ? `${(waterGoalMl / 1000).toFixed(1)}L` : `${waterGoalMl}ml`}</Text>
         </Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        </Pressable>
       </View>
       <View style={styles.waterTrack}>
         <View style={[styles.waterFill, { width: `${Math.round(pct * 100)}%` as any }]} />
