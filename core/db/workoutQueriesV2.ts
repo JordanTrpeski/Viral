@@ -325,6 +325,7 @@ export interface SessionSummaryRowV2 {
   id: string; date: string; templateId: string | null
   durationSeconds: number | null; startedAt: string; endedAt: string | null
   createdAt: string; exerciseCount: number; totalSets: number; totalVolume: number
+  templateName?: string
 }
 
 export function getRecentSessionsV2(limit: number): SessionSummaryRowV2[] {
@@ -670,4 +671,292 @@ export function getSetsForSession(sessionId: string): WorkoutSetV2[] {
     completedAt: r.completed_at ?? undefined,
     createdAt: r.created_at,
   }))
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+
+export function getAllSessionsV2(): SessionSummaryRowV2[] {
+  const rows = db.getAllSync<{
+    id: string; date: string; template_id: string | null
+    duration_seconds: number | null; started_at: string; ended_at: string | null
+    created_at: string; exercise_count: number; total_sets: number; total_volume: number
+    template_name: string | null
+  }>(
+    `SELECT sess.id, sess.date, sess.template_id, sess.duration_seconds,
+            sess.started_at, sess.ended_at, sess.created_at,
+            COUNT(DISTINCT ws.exercise_id) AS exercise_count,
+            COUNT(ws.id) AS total_sets,
+            COALESCE(SUM(COALESCE(ws.performed_weight,0) * COALESCE(ws.performed_reps,0)), 0) AS total_volume,
+            wt.name AS template_name
+     FROM workout_sessions sess
+     LEFT JOIN workout_sets ws ON ws.session_id = sess.id AND ws.is_warmup = 0
+     LEFT JOIN workout_templates wt ON wt.id = sess.template_id
+     WHERE sess.ended_at IS NOT NULL
+     GROUP BY sess.id
+     ORDER BY sess.date DESC, sess.started_at DESC`,
+  )
+  return rows.map((r) => ({
+    id: r.id, date: r.date, templateId: r.template_id,
+    durationSeconds: r.duration_seconds, startedAt: r.started_at,
+    endedAt: r.ended_at, createdAt: r.created_at,
+    exerciseCount: r.exercise_count, totalSets: r.total_sets, totalVolume: r.total_volume,
+    templateName: r.template_name ?? undefined,
+  }))
+}
+
+export interface SessionDetailV2 {
+  session: WorkoutSessionV2
+  templateName: string | null
+  exercises: {
+    exercise: ExerciseV2
+    sets: WorkoutSetV2[]
+  }[]
+  totalVolumeKg: number
+}
+
+export function getSessionDetailV2(sessionId: string): SessionDetailV2 | null {
+  const sessionRow = db.getFirstSync<{
+    id: string; date: string; template_id: string | null
+    duration_seconds: number | null; notes: string | null; perceived_difficulty: number | null
+    started_at: string; ended_at: string | null; created_at: string
+    template_name: string | null
+  }>(
+    `SELECT sess.*, wt.name AS template_name
+     FROM workout_sessions sess
+     LEFT JOIN workout_templates wt ON wt.id = sess.template_id
+     WHERE sess.id = ?`,
+    [sessionId],
+  )
+  if (!sessionRow) return null
+
+  const session: WorkoutSessionV2 = {
+    id: sessionRow.id, date: sessionRow.date,
+    templateId: sessionRow.template_id ?? undefined,
+    durationSeconds: sessionRow.duration_seconds ?? undefined,
+    notes: sessionRow.notes ?? undefined,
+    perceivedDifficulty: sessionRow.perceived_difficulty ?? undefined,
+    startedAt: sessionRow.started_at,
+    endedAt: sessionRow.ended_at ?? undefined,
+    createdAt: sessionRow.created_at,
+  }
+
+  const setRows = db.getAllSync<{
+    id: string; session_id: string; exercise_id: string; set_number: number
+    performed_reps: number | null; performed_weight: number | null
+    rpe: number | null; duration_seconds: number | null
+    is_warmup: number; is_failed: number; notes: string | null
+    completed_at: string | null; created_at: string
+    ex_id: string; ex_name: string; ex_slug: string; ex_category: string
+    ex_primary_muscles: string; ex_secondary_muscles: string; ex_equipment: string
+    ex_movement_pattern: string | null; ex_description: string | null
+    ex_form_cues: string; ex_common_mistakes: string; ex_difficulty: string
+    ex_substitute_ids: string; ex_is_unilateral: number; ex_created_at: string
+  }>(
+    `SELECT ws.id, ws.session_id, ws.exercise_id, ws.set_number,
+            ws.performed_reps, ws.performed_weight, ws.rpe, ws.duration_seconds,
+            ws.is_warmup, ws.is_failed, ws.notes, ws.completed_at, ws.created_at,
+            ex.id AS ex_id, ex.name AS ex_name, ex.slug AS ex_slug,
+            ex.category AS ex_category, ex.primary_muscles AS ex_primary_muscles,
+            ex.secondary_muscles AS ex_secondary_muscles, ex.equipment AS ex_equipment,
+            ex.movement_pattern AS ex_movement_pattern, ex.description AS ex_description,
+            ex.form_cues AS ex_form_cues, ex.common_mistakes AS ex_common_mistakes,
+            ex.difficulty AS ex_difficulty, ex.substitute_ids AS ex_substitute_ids,
+            ex.is_unilateral AS ex_is_unilateral, ex.created_at AS ex_created_at
+     FROM workout_sets ws
+     JOIN exercises ex ON ws.exercise_id = ex.id
+     WHERE ws.session_id = ?
+     ORDER BY ws.exercise_id, ws.set_number ASC`,
+    [sessionId],
+  )
+
+  const exerciseMap = new Map<string, { exercise: ExerciseV2; sets: WorkoutSetV2[] }>()
+  const exerciseOrder: string[] = []
+
+  for (const r of setRows) {
+    if (!exerciseMap.has(r.ex_id)) {
+      exerciseOrder.push(r.ex_id)
+      exerciseMap.set(r.ex_id, {
+        exercise: {
+          id: r.ex_id, name: r.ex_name, slug: r.ex_slug,
+          category: r.ex_category as ExerciseV2['category'],
+          primaryMuscles: JSON.parse(r.ex_primary_muscles ?? '[]'),
+          secondaryMuscles: JSON.parse(r.ex_secondary_muscles ?? '[]'),
+          equipment: r.ex_equipment as ExerciseV2['equipment'],
+          movementPattern: r.ex_movement_pattern ? (r.ex_movement_pattern as ExerciseV2['movementPattern']) : undefined,
+          description: r.ex_description ?? undefined,
+          formCues: JSON.parse(r.ex_form_cues ?? '[]'),
+          commonMistakes: JSON.parse(r.ex_common_mistakes ?? '[]'),
+          difficulty: r.ex_difficulty as ExerciseV2['difficulty'],
+          substituteIds: JSON.parse(r.ex_substitute_ids ?? '[]'),
+          isUnilateral: r.ex_is_unilateral === 1,
+          createdAt: r.ex_created_at,
+        },
+        sets: [],
+      })
+    }
+    exerciseMap.get(r.ex_id)!.sets.push({
+      id: r.id, sessionId: r.session_id, exerciseId: r.exercise_id,
+      setNumber: r.set_number,
+      performedReps: r.performed_reps ?? undefined,
+      performedWeight: r.performed_weight ?? undefined,
+      rpe: r.rpe ?? undefined,
+      durationSeconds: r.duration_seconds ?? undefined,
+      isWarmup: r.is_warmup === 1, isFailed: r.is_failed === 1,
+      notes: r.notes ?? undefined, completedAt: r.completed_at ?? undefined,
+      createdAt: r.created_at,
+    })
+  }
+
+  const exercises = exerciseOrder.map((id) => exerciseMap.get(id)!)
+  const totalVolumeKg = exercises.flatMap((e) => e.sets)
+    .filter((s) => !s.isWarmup)
+    .reduce((sum, s) => sum + (s.performedWeight ?? 0) * (s.performedReps ?? 0), 0)
+
+  return { session, templateName: sessionRow.template_name, exercises, totalVolumeKg }
+}
+
+export function getLastSessionByTemplateV2(templateId: string, excludeSessionId: string): SessionDetailV2 | null {
+  const row = db.getFirstSync<{ id: string }>(
+    `SELECT id FROM workout_sessions
+     WHERE template_id = ? AND ended_at IS NOT NULL AND id != ?
+     ORDER BY date DESC, started_at DESC LIMIT 1`,
+    [templateId, excludeSessionId],
+  )
+  return row ? getSessionDetailV2(row.id) : null
+}
+
+// ─── PRs ──────────────────────────────────────────────────────────────────────
+
+export interface PRRowV2 {
+  exerciseId: string
+  exerciseName: string
+  weightKg: number
+  reps: number
+  estimatedOneRM: number
+  date: string
+  sessionId: string
+}
+
+export function getAllPRsV2(): PRRowV2[] {
+  return db.getAllSync<{
+    exercise_id: string; name: string; weight_kg: number; reps: number
+    estimated_one_rep_max: number; date: string; session_id: string
+  }>(
+    `SELECT ep.exercise_id, ex.name, ep.weight_kg, ep.reps,
+            ep.estimated_one_rep_max, ep.date, ep.session_id
+     FROM exercise_prs ep
+     JOIN exercises ex ON ex.id = ep.exercise_id
+     ORDER BY ep.estimated_one_rep_max DESC`,
+  ).map((r) => ({
+    exerciseId: r.exercise_id, exerciseName: r.name,
+    weightKg: r.weight_kg, reps: r.reps,
+    estimatedOneRM: r.estimated_one_rep_max,
+    date: r.date, sessionId: r.session_id,
+  }))
+}
+
+// ─── Volume analytics ─────────────────────────────────────────────────────────
+
+export interface WeeklyMuscleVolumeV2 {
+  weekStart: string
+  muscle: string
+  sets: number
+}
+
+export function getWeeklyVolumeByMuscleV2(weeksBack: number): WeeklyMuscleVolumeV2[] {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - weeksBack * 7)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+
+  const rows = db.getAllSync<{
+    week_start: string; primary_muscles: string; set_count: number
+  }>(
+    `SELECT
+       date(sess.date, 'weekday 0', '-6 days') AS week_start,
+       ex.primary_muscles,
+       COUNT(ws.id) AS set_count
+     FROM workout_sets ws
+     JOIN workout_sessions sess ON ws.session_id = sess.id
+     JOIN exercises ex ON ws.exercise_id = ex.id
+     WHERE sess.ended_at IS NOT NULL AND ws.is_warmup = 0 AND sess.date >= ?
+     GROUP BY week_start, ex.id`,
+    [cutoffStr],
+  )
+
+  const result: WeeklyMuscleVolumeV2[] = []
+  for (const r of rows) {
+    let muscles: string[] = []
+    try { muscles = JSON.parse(r.primary_muscles ?? '[]') } catch { /* skip */ }
+    for (const muscle of muscles) {
+      const existing = result.find((x) => x.weekStart === r.week_start && x.muscle === muscle)
+      if (existing) {
+        existing.sets += r.set_count
+      } else {
+        result.push({ weekStart: r.week_start, muscle, sets: r.set_count })
+      }
+    }
+  }
+  return result
+}
+
+// ─── Streak ───────────────────────────────────────────────────────────────────
+
+export interface WorkoutStreakV2 {
+  currentStreakWeeks: number
+  longestStreakWeeks: number
+  thisWeekCount: number
+  thisWeekTarget: number
+}
+
+export function getWorkoutStreakV2(minPerWeek: number = 2): WorkoutStreakV2 {
+  const rows = db.getAllSync<{ date: string }>(
+    `SELECT DISTINCT date FROM workout_sessions WHERE ended_at IS NOT NULL ORDER BY date DESC`,
+  )
+
+  const today = new Date()
+  const monday = (d: Date) => {
+    const dt = new Date(d)
+    const day = dt.getDay()
+    dt.setDate(dt.getDate() - ((day + 6) % 7))
+    dt.setHours(0, 0, 0, 0)
+    return dt
+  }
+  const weekKey = (d: Date) => monday(d).toISOString().slice(0, 10)
+
+  const weekCounts = new Map<string, number>()
+  for (const r of rows) {
+    const k = weekKey(new Date(r.date))
+    weekCounts.set(k, (weekCounts.get(k) ?? 0) + 1)
+  }
+
+  const thisWeek = weekKey(today)
+  const thisWeekCount = weekCounts.get(thisWeek) ?? 0
+
+  // Current streak: walk backwards from current week
+  let current = 0
+  let wk = monday(today)
+  while (true) {
+    const k = wk.toISOString().slice(0, 10)
+    if ((weekCounts.get(k) ?? 0) >= minPerWeek) {
+      current++
+      wk.setDate(wk.getDate() - 7)
+    } else {
+      break
+    }
+  }
+
+  // Longest streak: scan all weeks in order
+  const allWeeks = [...weekCounts.keys()].sort()
+  let longest = 0
+  let run = 0
+  for (const k of allWeeks) {
+    if ((weekCounts.get(k) ?? 0) >= minPerWeek) {
+      run++
+      longest = Math.max(longest, run)
+    } else {
+      run = 0
+    }
+  }
+
+  return { currentStreakWeeks: current, longestStreakWeeks: longest, thisWeekCount, thisWeekTarget: minPerWeek }
 }

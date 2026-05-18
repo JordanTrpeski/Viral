@@ -475,7 +475,7 @@ Premium features include:
 
 **Goal:** Show meaningful progress metrics — PRs, volume trends, muscle group balance.
 
-- [ ] **5.1 Create Workout History screen**
+- [x] **5.1 Create Workout History screen**
       File: `app/health/workout/history/index.tsx`
       
       Calendar view or list view toggle:
@@ -486,7 +486,7 @@ Premium features include:
       
       Filter by template, date range.
 
-- [ ] **5.2 Create Session Detail screen**
+- [x] **5.2 Create Session Detail screen**
       File: `app/health/workout/history/[sessionId].tsx`
       
       Shows completed session breakdown:
@@ -497,7 +497,7 @@ Premium features include:
       - "Repeat This Workout" button → starts new session with same exercises
       - "vs Last Time" comparison if this template was done before
 
-- [ ] **5.3 Implement PR tracking**
+- [x] **5.3 Implement PR tracking**
       After each session, scan all completed sets:
       - Check if any set is a new max weight for that exercise (at any rep count)
       - Check if any set is a new max reps at a given weight
@@ -509,7 +509,7 @@ Premium features include:
       - List of all PRs grouped by exercise
       - Each shows: exercise, PR type, value, date achieved
 
-- [ ] **5.4 Create volume analytics screen** [PREMIUM]
+- [x] **5.4 Create volume analytics screen** [PREMIUM]
       File: `app/health/workout/progress/volume.tsx`
       
       Weekly volume per muscle group:
@@ -520,7 +520,7 @@ Premium features include:
       
       This helps users balance their training.
 
-- [ ] **5.5 Create workout streak tracker**
+- [x] **5.5 Create workout streak tracker**
       Show on Today screen:
       - Current streak (consecutive weeks with ≥2 workouts)
       - Longest streak
@@ -528,7 +528,7 @@ Premium features include:
       
       Use same streak calculation pattern as Habits module.
 
-- [ ] **5.6 Session comparison feature**
+- [x] **5.6 Session comparison feature**
       On session finish screen, if this template was done before:
       - Show "vs Last Time" card comparing:
         - Volume (total, and per exercise)
