@@ -764,75 +764,42 @@ Premium features include:
 
 **Goal:** Tie all Health sub-sections together, update dashboard with new cards, remove old Health content.
 
-- [ ] **9.1 Create Health Hub screen**
-      File: `app/health/index.tsx`
+- [x] **9.1 Create Health Hub screen**
+      File: `app/(tabs)/health.tsx` (rebuilt — was the bottom tab screen)
       
-      This is the landing screen when user taps "Health" in bottom nav.
-      
-      Layout:
-      - Greeting + date
-      - Sub-section cards (4 cards in 2×2 grid or vertical list):
-        - **Workout** card: shows today's workout or "Rest Day", tap → workout hub
-        - **Nutrition** card: shows today's calorie progress, tap → nutrition hub
-        - **Water** card: shows today's intake progress, tap → water detail
-        - **Steps** card: shows today's step count, tap → steps detail
-      - Each card uses existing Card component, matches Budget/Organizer card styling
-      
-      This replaces the old Health hub that had body weight, measurements, sleep, etc.
+      Rebuilt as live-data hub with 4 sub-section cards:
+      - WorkoutHubCard: active/done/rest-day status, stat pills, resume button
+      - NutritionHubCard: calorie bar + macro items (P/C/F)
+      - WaterHubCard: mini SVG ring + intake/goal text
+      - StepsHubCard: mini SVG ring + step count + calorie range
+      Each card loads independently via useFocusEffect.
 
-- [ ] **9.2 Remove old Health dashboard cards**
+- [x] **9.2 Remove old Health dashboard cards**
       File: `app/(tabs)/index.tsx`
       
-      Delete these cards from home dashboard:
-      - Old workout card
-      - Old diet card
-      - Old body weight card
-      - Old steps card
-      - Old water card (if it was inline)
-      - Old sleep card
-      
-      These will be replaced with new cards in next task.
+      Removed: old WorkoutCard (V1 store), WeightCard, SleepDashboardCard
+      Removed imports: useBodyWeightStore, useWorkoutStore, useSleepStore
+      Removed: formatVolume, formatDuration, SessionSummaryRow, WorkoutSession, SleepLog
+      Removed: quick log weight tab, workoutMmkv storage, prExercises state
+      DayOverviewCard: dropped sleep ring (5th), now 4-ring layout
 
-- [ ] **9.3 Add new Health dashboard cards**
+- [x] **9.3 Add new Health dashboard cards**
       File: `app/(tabs)/index.tsx`
       
-      Add 4 new cards to dashboard (after Budget card, before Organizer card):
-      
-      **Workout card:**
-      - If workout scheduled today: shows template name, "Start Workout" button
-      - If workout in progress: shows "Resume Workout", elapsed time
-      - If workout completed: shows "Done ✓", total volume, duration
-      - If rest day: shows "Rest Day" with next workout date
-      
-      **Nutrition card:**
-      - Shows today's calorie progress: X / Y kcal
-      - Macro pills: P/C/F with mini bars
-      - Tap → nutrition hub
-      
-      **Water card:**
-      - Mini ring (60px) showing intake vs goal
-      - "X.XL / Y.YL" text
-      - Tap → water detail
-      
-      **Steps card:**
-      - Mini ring (60px) showing steps vs goal
-      - "X,XXX / Y,YYY" text
-      - Tap → steps detail
-      
-      Use same card styling as existing dashboard cards. Match visual density.
+      Updated WorkoutCard to use useWorkoutStoreV2 + SessionSummaryRowV2
+      Routes updated: /health/workout, /health/workout/session/active
+      WaterCard route fixed: /health/water → /health/nutrition/water
+      StepsCard route was already correct: /health/steps
+      Existing WaterCard and StepsCard components retained (already V2-compatible)
 
-- [ ] **9.4 Update dashboard data loading**
-      Refactor dashboard loadAll() to include new Health queries:
-      - Today's workout session (if any)
-      - Today's nutrition totals
-      - Today's water total
-      - Today's step count
-      
-      Each card loads its own data independently (no shared query blocking).
+- [x] **9.4 Update dashboard data loading**
+      loadAll() updated: removed loadWeight, loadWeightHistory, loadSleep
+      useWorkoutStoreV2.loadRecentSessions() replaces V1 equivalent
+      todaySession computed with camelCase endedAt (V2 schema)
+      WeeklyStrip recentSessions type updated to SessionSummaryRowV2
 
-- [ ] **9.5 Update bottom nav Health icon**
-      If Health icon needs to change or if Health tab behavior changed, update here.
-      Ensure tapping "Health" tab navigates to new Health hub screen.
+- [x] **9.5 Update bottom nav Health icon**
+      Health tab already navigates to app/(tabs)/health.tsx (rebuilt hub) — no change needed.
 
 **Section 9 checkpoint:** Health hub works with 4 sub-sections, dashboard shows 4 new Health cards, old cards removed. Report completion before Section 10.
 
