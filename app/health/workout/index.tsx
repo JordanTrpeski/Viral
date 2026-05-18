@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -6,7 +6,12 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { useWorkoutStoreV2 } from '@modules/health/workout/workoutStoreV2'
-import { getSessionPrimaryMusclesV2, type SessionSummaryRowV2 } from '@core/db/workoutQueriesV2'
+import {
+  getSessionPrimaryMusclesV2,
+  getWorkoutStreakV2,
+  type SessionSummaryRowV2,
+  type WorkoutStreakV2,
+} from '@core/db/workoutQueriesV2'
 import { localDateStr } from '@core/utils/units'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -159,6 +164,7 @@ function SessionCard({ session, onPress }: { session: SessionSummaryRowV2; onPre
 export default function WorkoutTodayScreen() {
   const router = useRouter()
   const { activeSession, recentSessions, loadRecentSessions, resumeTodaySession, startSession } = useWorkoutStoreV2()
+  const [streak, setStreak] = useState<WorkoutStreakV2 | null>(null)
 
   const today = localDateStr()
 
@@ -166,6 +172,7 @@ export default function WorkoutTodayScreen() {
     useCallback(() => {
       loadRecentSessions()
       resumeTodaySession()
+      setStreak(getWorkoutStreakV2())
     }, []),
   )
 
@@ -290,8 +297,51 @@ export default function WorkoutTodayScreen() {
           )}
         </View>
 
+        {/* Streak widget */}
+        {streak && (streak.currentStreakWeeks > 0 || streak.thisWeekCount > 0) && (
+          <View style={{
+            backgroundColor: colors.surface, borderRadius: radius.lg,
+            borderWidth: 1, borderColor: `${colors.workout}44`,
+            padding: spacing.md,
+            flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+          }}>
+            <View style={{
+              width: 44, height: 44, borderRadius: radius.md,
+              backgroundColor: `${colors.workout}18`,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="flame-outline" size={22} color={colors.workout} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{
+                color: colors.text, fontSize: fontSize.cardTitle,
+                fontWeight: '700', fontFamily: `${fonts.ui}_700Bold`,
+              }}>
+                {streak.currentStreakWeeks > 0
+                  ? `${streak.currentStreakWeeks} week streak`
+                  : 'Keep going!'}
+              </Text>
+              <Text style={{
+                color: colors.textMuted, fontSize: fontSize.micro,
+                fontFamily: `${fonts.ui}_400Regular`,
+              }}>
+                {streak.thisWeekCount}/{streak.thisWeekTarget} workouts this week
+                {streak.longestStreakWeeks > 1 ? ` · Best: ${streak.longestStreakWeeks}wk` : ''}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 2 }}>
+              <Text style={{
+                color: colors.workout, fontSize: 20,
+                fontWeight: '700', fontFamily: `${fonts.mono}_700Bold`,
+              }}>
+                {streak.thisWeekCount}/{streak.thisWeekTarget}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Quick nav */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <NavButton
             icon="barbell-outline"
             label="Start"
@@ -311,7 +361,17 @@ export default function WorkoutTodayScreen() {
           <NavButton
             icon="time-outline"
             label="History"
-            onPress={() => router.push('/health/workout-history')}
+            onPress={() => router.push('/health/workout/history')}
+          />
+          <NavButton
+            icon="trophy-outline"
+            label="PRs"
+            onPress={() => router.push('/health/workout/progress/prs')}
+          />
+          <NavButton
+            icon="bar-chart-outline"
+            label="Volume"
+            onPress={() => router.push('/health/workout/progress/volume')}
           />
         </View>
 

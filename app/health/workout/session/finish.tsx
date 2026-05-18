@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import { useWorkoutStoreV2, type SessionSummaryV2 } from '@modules/health/workout/workoutStoreV2'
+import { getLastSessionByTemplateV2, type SessionDetailV2 } from '@core/db/workoutQueriesV2'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ function fmtDuration(seconds: number): string {
 }
 
 function fmtVolume(kg: number): string {
-  return kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${kg} kg`
+  return kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${Math.round(kg)} kg`
 }
 
 // ─── Difficulty picker ────────────────────────────────────────────────────────
@@ -198,6 +199,12 @@ export default function FinishSessionScreen() {
   const [notes, setNotes] = useState('')
   const [difficulty, setDifficulty] = useState(5)
 
+  // Last session for same template — for comparison
+  const lastSession = useMemo<SessionDetailV2 | null>(() => {
+    if (!activeSession?.templateId) return null
+    return getLastSessionByTemplateV2(activeSession.templateId, activeSession.id)
+  }, [activeSession?.templateId, activeSession?.id])
+
   // Preview stats from current session state (before finishSession is called)
   const confirmedSets = sessionExercises.flatMap((e) => e.sets.filter((s) => s.confirmed && !s.isWarmup))
   const previewVolume = Math.round(
@@ -308,6 +315,61 @@ export default function FinishSessionScreen() {
             }),
           }} />
         )}
+
+        {/* vs Last Time comparison */}
+        {lastSession && (() => {
+          const lastVol = lastSession.totalVolumeKg
+          const diff = previewVolume - lastVol
+          const pct = lastVol > 0 ? Math.abs(diff / lastVol * 100) : 0
+          const up = diff > 0
+          const same = Math.abs(diff) < 1
+          return (
+            <View style={{
+              backgroundColor: colors.surface, borderRadius: radius.lg,
+              borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.sm,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Ionicons name="git-compare-outline" size={16} color={colors.textMuted} />
+                <Text style={{
+                  color: colors.textMuted, fontSize: fontSize.label,
+                  fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8,
+                  fontFamily: `${fonts.ui}_600SemiBold`,
+                }}>
+                  vs Last Time · {lastSession.session.date}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontFamily: `${fonts.ui}_400Regular` }}>
+                    Today
+                  </Text>
+                  <Text style={{ color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>
+                    {fmtVolume(previewVolume)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontFamily: `${fonts.ui}_400Regular` }}>
+                    Last time
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.cardTitle, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>
+                    {fmtVolume(lastVol)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, gap: 2, alignItems: 'flex-end' }}>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, fontFamily: `${fonts.ui}_400Regular` }}>
+                    Change
+                  </Text>
+                  <Text style={{
+                    fontSize: fontSize.cardTitle, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold`,
+                    color: same ? colors.textMuted : up ? colors.success : '#c0533a',
+                  }}>
+                    {same ? '=' : up ? `+${pct.toFixed(0)}%` : `-${pct.toFixed(0)}%`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )
+        })()}
 
         {/* Difficulty picker */}
         <View style={{
