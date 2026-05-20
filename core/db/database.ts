@@ -104,9 +104,11 @@ export function initDatabase(): void {
       rep_max      INTEGER,
       rest_seconds INTEGER DEFAULT 90,
       notes        TEXT,
-      is_optional  INTEGER DEFAULT 0
+      is_optional  INTEGER DEFAULT 0,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
+  try { db.execSync(`ALTER TABLE template_exercises ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`) } catch { /* already exists */ }
 
   db.execSync(`
     CREATE TABLE IF NOT EXISTS workout_sessions (
