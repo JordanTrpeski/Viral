@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert, AppState } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Circle } from 'react-native-svg'
-import GorhomBottomSheet from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
-import { Button, BottomSheet, ProgressBar } from '@core/components'
+import { Button, ProgressBar } from '@core/components'
 import { useUserStore } from '@core/store/userStore'
 import { useWorkoutStoreV2 } from '@modules/health/workout/workoutStoreV2'
 import { useDietStore } from '@modules/health/diet/dietStore'
@@ -15,11 +14,7 @@ import { formatSteps, estimateCalories, defaultGoal } from '@modules/health/step
 import { dbGetStepsStreak } from '@core/db/stepsQueries'
 import { useChecklistStore } from '@modules/checklist/checklistStore'
 import { dbGetChecklistItems, type ChecklistItem } from '@core/db/checklistQueries'
-import {
-  dbGetCurrentMonthSummary, dbGetCategoriesByType,
-  dbInsertExpense, dbInsertExpenseItem,
-  type BudgetCategory,
-} from '@core/db/budgetQueries'
+import { dbGetCurrentMonthSummary } from '@core/db/budgetQueries'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { todayStr } from '@modules/health/workout/workoutUtils'
@@ -681,14 +676,6 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
 
-  // Quick log sheet
-  const quickLogSheetRef = useRef<GorhomBottomSheet>(null)
-  const [quickTab, setQuickTab] = useState<'expense' | 'water'>('expense')
-  const [quickExpenseAmt, setQuickExpenseAmt] = useState('')
-  const [quickExpenseCatId, setQuickExpenseCatId] = useState<string | null>(null)
-  const [quickExpenseCategories, setQuickExpenseCategories] = useState<BudgetCategory[]>([])
-  const [quickWaterMl, setQuickWaterMl] = useState('')
-
   const today = todayStr()
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
@@ -944,176 +931,6 @@ export default function HomeScreen() {
         <OrganizerCard onPress={() => router.push('/(tabs)/organizer' as never)} />
 
       </ScrollView>
-
-      {/* Quick log FAB */}
-      <Pressable
-        onPress={() => {
-          setQuickExpenseCategories(dbGetCategoriesByType('expense'))
-          quickLogSheetRef.current?.expand()
-        }}
-        style={({ pressed }) => ({
-          position: 'absolute', bottom: 24, right: spacing.lg,
-          width: 52, height: 52, borderRadius: 26,
-          backgroundColor: colors.primary,
-          alignItems: 'center', justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-          shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
-        })}
-      >
-        <Ionicons name="add" size={26} color="#fff" />
-      </Pressable>
-
-      {/* Quick log sheet */}
-      <BottomSheet ref={quickLogSheetRef} snapPoints={['55%']}>
-        <View style={{ padding: spacing.lg, flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginBottom: spacing.md }}>
-            Quick Log
-          </Text>
-
-          {/* Tab selector */}
-          <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md }}>
-            {(['expense', 'water'] as const).map((tab) => (
-              <Pressable
-                key={tab}
-                onPress={() => setQuickTab(tab)}
-                style={{
-                  flex: 1, paddingVertical: 8, borderRadius: radius.full, alignItems: 'center',
-                  backgroundColor: quickTab === tab ? colors.primary : colors.surface2,
-                }}
-              >
-                <Text style={{
-                  color: quickTab === tab ? '#fff' : colors.textMuted,
-                  fontSize: fontSize.label, fontWeight: '600', textTransform: 'capitalize',
-                }}>
-                  {tab === 'expense' ? 'Expense' : 'Water'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Expense tab */}
-          {quickTab === 'expense' && (
-            <View style={{ gap: spacing.sm }}>
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: colors.surface2, borderRadius: radius.md,
-                borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md,
-              }}>
-                <Text style={{ color: colors.textMuted, fontSize: fontSize.body, marginRight: 4 }}>€</Text>
-                <TextInput
-                  value={quickExpenseAmt}
-                  onChangeText={setQuickExpenseAmt}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ flex: 1, color: colors.text, fontSize: 24, fontWeight: '700', paddingVertical: spacing.sm }}
-                  selectionColor={colors.primary}
-                />
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.xs }}>
-                <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                  {quickExpenseCategories.map((cat) => (
-                    <Pressable
-                      key={cat.id}
-                      onPress={() => setQuickExpenseCatId(cat.id)}
-                      style={{
-                        flexDirection: 'row', alignItems: 'center', gap: 4,
-                        paddingHorizontal: spacing.sm, paddingVertical: 6,
-                        borderRadius: radius.full,
-                        backgroundColor: quickExpenseCatId === cat.id ? cat.color : colors.surface2,
-                        borderWidth: 1, borderColor: quickExpenseCatId === cat.id ? cat.color : colors.border,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14 }}>{cat.emoji}</Text>
-                      <Text style={{
-                        color: quickExpenseCatId === cat.id ? '#fff' : colors.textMuted,
-                        fontSize: fontSize.label, fontWeight: '500',
-                      }}>
-                        {cat.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-              <Button
-                label="Save Expense"
-                onPress={() => {
-                  const amt = parseFloat(quickExpenseAmt)
-                  if (amt > 0 && quickExpenseCatId) {
-                    const expId = dbInsertExpense(null, today, quickExpenseCatId, null, null, null)
-                    dbInsertExpenseItem(expId, 'Quick expense', amt)
-                    setQuickExpenseAmt('')
-                    setQuickExpenseCatId(null)
-                    quickLogSheetRef.current?.close()
-                    setCurrentMonthBudget(dbGetCurrentMonthSummary())
-                  }
-                }}
-                fullWidth
-              />
-            </View>
-          )}
-
-          {/* Water tab */}
-          {quickTab === 'water' && (
-            <View style={{ gap: spacing.sm }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                {[150, 250, 330, 500, 750, 1000].map((ml) => (
-                  <Pressable
-                    key={ml}
-                    onPress={() => {
-                      addWater(ml)
-                      quickLogSheetRef.current?.close()
-                    }}
-                    style={({ pressed }) => ({
-                      flex: 1, minWidth: '28%',
-                      backgroundColor: pressed ? colors.water : `${colors.water}22`,
-                      borderRadius: radius.md, paddingVertical: spacing.sm, alignItems: 'center',
-                    })}
-                  >
-                    {({ pressed }) => (
-                      <Text style={{ color: pressed ? '#fff' : colors.water, fontSize: fontSize.body, fontWeight: '700' }}>
-                        +{ml}ml
-                      </Text>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: colors.surface2, borderRadius: radius.md,
-                borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, gap: spacing.sm,
-              }}>
-                <TextInput
-                  value={quickWaterMl}
-                  onChangeText={setQuickWaterMl}
-                  keyboardType="number-pad"
-                  placeholder="Custom ml"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ flex: 1, color: colors.text, fontSize: fontSize.body, paddingVertical: spacing.sm }}
-                  selectionColor={colors.primary}
-                />
-                <Pressable
-                  onPress={() => {
-                    const ml = parseInt(quickWaterMl)
-                    if (ml > 0) {
-                      addWater(ml)
-                      setQuickWaterMl('')
-                      quickLogSheetRef.current?.close()
-                    }
-                  }}
-                  style={({ pressed }) => ({
-                    backgroundColor: colors.water, borderRadius: radius.sm,
-                    paddingHorizontal: spacing.md, paddingVertical: 6, opacity: pressed ? 0.8 : 1,
-                  })}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: fontSize.label }}>Add</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
-        </View>
-      </BottomSheet>
     </SafeAreaView>
   )
 }
