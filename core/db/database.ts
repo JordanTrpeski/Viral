@@ -333,33 +333,6 @@ export function initDatabase(): void {
     );
   `)
 
-  // ── Habits ────────────────────────────────────────────────────────────────
-
-  db.execSync(`
-    CREATE TABLE IF NOT EXISTS habits (
-      id            TEXT PRIMARY KEY,
-      name          TEXT NOT NULL,
-      icon          TEXT NOT NULL,
-      color         TEXT NOT NULL,
-      frequency     TEXT NOT NULL,
-      custom_days   TEXT,
-      reminder_time TEXT,
-      sort_order    INTEGER DEFAULT 0,
-      is_archived   INTEGER DEFAULT 0,
-      created_at    TEXT NOT NULL
-    );
-  `)
-
-  db.execSync(`
-    CREATE TABLE IF NOT EXISTS habit_logs (
-      id           TEXT PRIMARY KEY,
-      habit_id     TEXT NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
-      date         TEXT NOT NULL,
-      completed_at TEXT NOT NULL,
-      UNIQUE(habit_id, date)
-    );
-  `)
-
   // ── Budget ────────────────────────────────────────────────────────────────
 
   db.execSync(`

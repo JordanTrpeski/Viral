@@ -23,10 +23,7 @@ import {
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import { getPersonDaysUntilBirthday } from '@modules/organizer/shared/organizerUtils'
 import { todayStr } from '@modules/health/workout/workoutUtils'
-import { useHabitStore } from '@modules/habits/habitStore'
-import { isHabitScheduledOn } from '@modules/habits/habitUtils'
 import { localDateStr } from '@core/utils/units'
-import type { Habit, HabitLog } from '@core/types'
 import type { WorkoutSessionV2 } from '@modules/health/shared/types'
 import type { SessionSummaryRowV2 } from '@core/db/workoutQueriesV2'
 
@@ -665,60 +662,6 @@ function OrganizerCard({ onPress }: { onPress: () => void }) {
   )
 }
 
-function HabitsDashboardCard({
-  habits,
-  logs,
-  today,
-  onToggle,
-  onPress,
-}: {
-  habits: Habit[]
-  logs: HabitLog[]
-  today: string
-  onToggle: (habitId: string) => void
-  onPress: () => void
-}) {
-  const scheduled = habits.filter((h) => isHabitScheduledOn(h, today))
-  const completed = new Set(logs.filter((l) => l.date === today).map((l) => l.habitId))
-
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-      <View style={{
-        backgroundColor: colors.surface, borderRadius: radius.lg,
-        borderWidth: 1, borderColor: colors.border, padding: spacing.md,
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
-          <Ionicons name="checkmark-circle-outline" size={14} color={colors.habits} />
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, marginLeft: 4, flex: 1 }}>Habits</Text>
-          <Text style={{ color: colors.habits, fontSize: fontSize.label, fontWeight: '700' }}>
-            {completed.size}/{scheduled.length}
-          </Text>
-        </View>
-        {scheduled.length === 0 ? (
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>No habits scheduled today</Text>
-        ) : (
-          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-            {scheduled.slice(0, 8).map((habit) => {
-              const done = completed.has(habit.id)
-              return (
-                <Pressable key={habit.id} onPress={() => onToggle(habit.id)}>
-                  <View style={{
-                    width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: done ? colors.success : colors.surface2,
-                    borderWidth: 1, borderColor: done ? colors.success : colors.borderAccent,
-                  }}>
-                    <Text style={{ fontSize: 15 }}>{done ? '✓' : habit.icon}</Text>
-                  </View>
-                </Pressable>
-              )
-            })}
-          </View>
-        )}
-      </View>
-    </Pressable>
-  )
-}
-
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -734,7 +677,6 @@ export default function HomeScreen() {
   const [currentMonthBudget, setCurrentMonthBudget] = useState({ totalIncome: 0, totalSpending: 0, year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
   const { loadReminders: loadOrgReminders, loadPeople: loadOrgPeople, loadNotes: loadOrgNotes } = useOrganizerStore()
   const { todayEntry: stepsEntry, todaySessions, loadToday: loadSteps, loadSessions: loadStepSessions } = useStepsStore()
-  const { habits, logs: habitLogs, loadHabits, toggleLog: toggleHabitLog } = useHabitStore()
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
@@ -769,7 +711,6 @@ export default function HomeScreen() {
     loadOrgReminders()
     loadOrgPeople()
     loadOrgNotes()
-    loadHabits()
   }
 
   // Re-run loadAll every time this screen comes into focus (covers returning
@@ -850,7 +791,7 @@ export default function HomeScreen() {
   const budgetMonthLabel = `${MONTH_NAMES[currentMonthBudget.month - 1]} ${currentMonthBudget.year}`
 
   // Empty state check — no data at all yet
-  const hasAnyData = totalCalories > 0 || waterMl > 0 || stepCount > 0 || habits.length > 0
+  const hasAnyData = totalCalories > 0 || waterMl > 0 || stepCount > 0
     || recentSessions.length > 0
     || currentMonthBudget.totalIncome > 0 || currentMonthBudget.totalSpending > 0
 
@@ -942,14 +883,6 @@ export default function HomeScreen() {
           workoutDone={!!todaySession && !activeSession}
           workoutInProgress={!!activeSession}
           onPress={() => router.push('/health/nutrition' as never)}
-        />
-
-        <HabitsDashboardCard
-          habits={habits}
-          logs={habitLogs}
-          today={today}
-          onToggle={(habitId) => toggleHabitLog(habitId, today)}
-          onPress={() => router.push('/(tabs)/habits' as never)}
         />
 
         {/* Water */}

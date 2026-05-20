@@ -115,13 +115,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <OrganizerTabIcon color={color} focused={focused} />,
         }}
       />
-      <Tabs.Screen
-        name="habits"
-        options={{
-          title: 'Habits',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="checkmark-circle" color={color} focused={focused} />,
-        }}
-      />
     </Tabs>
   )
 }

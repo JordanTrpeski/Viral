@@ -148,28 +148,6 @@ export interface OrganizerNoteTag {
   tagId: string
 }
 
-export type HabitFrequency = 'daily' | 'weekdays' | 'weekends' | 'custom'
-
-export interface Habit {
-  id: string
-  name: string
-  icon: string
-  color: string
-  frequency: HabitFrequency
-  customDays: number[]
-  reminderTime: string | null
-  sortOrder: number
-  isArchived: boolean
-  createdAt: string
-}
-
-export interface HabitLog {
-  id: string
-  habitId: string
-  date: string
-  completedAt: string
-}
-
 export interface SleepLog {
   id: string
   date: string
