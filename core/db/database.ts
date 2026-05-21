@@ -379,8 +379,6 @@ export function initDatabase(): void {
       created_at     TEXT NOT NULL
     );
   `)
-  try { db.execSync(`ALTER TABLE budget_expenses ADD COLUMN receipt_photo TEXT`) } catch { /* already exists */ }
-
   db.execSync(`
     CREATE TABLE IF NOT EXISTS budget_expense_items (
       id         TEXT PRIMARY KEY,

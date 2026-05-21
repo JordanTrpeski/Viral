@@ -10,8 +10,6 @@ import {
   dbGetMonthDailySpending,
   dbGetBiggestExpenseForMonth,
   dbGetAnnualOverview,
-  dbGetMonthlyIncomeTotals,
-  dbGetMonthlyExpenseTotals,
   ExpenseEntryWithCategory,
 } from '@core/db/budgetQueries'
 import { localDateStr } from '@core/utils/units'
@@ -199,11 +197,11 @@ export default function MonthlyScreen() {
   const nowYear  = parseInt(today.slice(0, 4), 10)
   const nowMonth = parseInt(today.slice(5, 7), 10)
 
-  const [dailySpend, setDailySpend]   = useState<{ day: number; total: number }[]>([])
-  const [bigExpense, setBigExpense]   = useState<ExpenseEntryWithCategory | null>(null)
-  const [annualData, setAnnualData]   = useState<{ month: number; income: number; spending: number }[]>([])
-  const [prevIncome, setPrevIncome]   = useState(0)
-  const [prevSpend, setPrevSpend]     = useState(0)
+  const [dailySpend, setDailySpend] = useState<{ day: number; total: number }[]>([])
+  const [bigExpense, setBigExpense] = useState<ExpenseEntryWithCategory | null>(null)
+  const [annualData, setAnnualData] = useState<{ month: number; income: number; spending: number }[]>([])
+  const [prevIncome, setPrevIncome] = useState(0)
+  const [prevSpend, setPrevSpend]   = useState(0)
 
   const isCurrentMonth = viewYear === nowYear && viewMonth === nowMonth
 
@@ -215,32 +213,27 @@ export default function MonthlyScreen() {
   useEffect(() => {
     setDailySpend(dbGetMonthDailySpending(viewYear, viewMonth))
     setBigExpense(dbGetBiggestExpenseForMonth(viewYear, viewMonth))
-    setAnnualData(dbGetAnnualOverview(viewYear))
+    const annual = dbGetAnnualOverview(viewYear)
+    setAnnualData(annual)
 
-    // Previous month for delta
-    const prevM = viewMonth === 1 ? 12 : viewMonth - 1
-    const prevY = viewMonth === 1 ? viewYear - 1 : viewYear
-    const prevPrefix = `${prevY}-${String(prevM).padStart(2, '0')}`
-    const pInc = db_getPrevIncome(prevPrefix)
-    const pSpd = db_getPrevSpend(prevPrefix)
-    setPrevIncome(pInc)
-    setPrevSpend(pSpd)
+    // Previous month for MoM deltas — handle January cross-year case
+    if (viewMonth === 1) {
+      const prevAnnual = dbGetAnnualOverview(viewYear - 1)
+      const dec = prevAnnual.find((d) => d.month === 12)
+      setPrevIncome(dec?.income ?? 0)
+      setPrevSpend(dec?.spending ?? 0)
+    } else {
+      const prev = annual.find((d) => d.month === viewMonth - 1)
+      setPrevIncome(prev?.income ?? 0)
+      setPrevSpend(prev?.spending ?? 0)
+    }
   }, [viewYear, viewMonth])
 
-  function db_getPrevIncome(prefix: string): number {
-    const { dbGetMonthlyIncomeTotals: _ } = require('@core/db/budgetQueries')
-    // Use inline query via the imported function family
-    return 0 // placeholder — actual data from annualData
-  }
-  function db_getPrevSpend(prefix: string): number { return 0 }
-
-  // Compute deltas from annualData
-  const prevMNum = viewMonth === 1 ? 12 : viewMonth - 1
-  const prevMData = annualData.find((d) => d.month === prevMNum)
-  const incDelta  = prevMData && prevMData.income   > 0
-    ? ((totalIncome   - prevMData.income)   / prevMData.income)   * 100 : null
-  const spdDelta  = prevMData && prevMData.spending > 0
-    ? ((totalSpending - prevMData.spending) / prevMData.spending) * 100 : null
+  // Compute MoM deltas from prev state
+  const incDelta = prevIncome > 0
+    ? ((totalIncome   - prevIncome) / prevIncome)   * 100 : null
+  const spdDelta = prevSpend  > 0
+    ? ((totalSpending - prevSpend)  / prevSpend)    * 100 : null
 
   function prevMonth() {
     const m = viewMonth === 1 ? 12 : viewMonth - 1

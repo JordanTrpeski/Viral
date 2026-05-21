@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { View, Text, TextInput, ScrollView, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native'
+import { useState, useEffect } from 'react'
+import { View, Text, TextInput, ScrollView, Pressable, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { dbGetIncomeById } from '@core/db/budgetQueries'
 import { localDateStr } from '@core/utils/units'
 
 type RecurrencePeriod = 'daily' | 'weekly' | 'monthly'
@@ -83,32 +84,44 @@ function RecurrenceChip({ label, selected, onPress }: { label: string; selected:
 
 export default function AddIncomeScreen() {
   const router = useRouter()
-  const { date: dateParam } = useLocalSearchParams<{ date?: string }>()
-  const { incomeCategories, addIncome } = useBudgetStore()
+  const { date: dateParam, editId } = useLocalSearchParams<{ date?: string; editId?: string }>()
+  const { incomeCategories, addIncome, updateIncome } = useBudgetStore()
 
-  const today = localDateStr()
-  const [sourceName, setSourceName] = useState('')
-  const [amountText, setAmountText] = useState('')
-  const [date, setDate] = useState(dateParam ?? today)
-  const [categoryId, setCategoryId] = useState(incomeCategories[0]?.id ?? '')
-  const [note, setNote] = useState('')
+  const today  = localDateStr()
+  const isEdit = !!editId
+
+  const [sourceName, setSourceName]   = useState('')
+  const [amountText, setAmountText]   = useState('')
+  const [date, setDate]               = useState(dateParam ?? today)
+  const [categoryId, setCategoryId]   = useState(incomeCategories[0]?.id ?? '')
+  const [note, setNote]               = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurrencePeriod, setRecurrencePeriod] = useState<RecurrencePeriod>('monthly')
 
-  const amount = parseFloat(amountText) || 0
-  const canSave = sourceName.trim().length > 0 && amount > 0 && categoryId
+  // Pre-fill when editing an existing income entry
+  useEffect(() => {
+    if (!editId) return
+    const entry = dbGetIncomeById(editId)
+    if (!entry) return
+    setSourceName(entry.sourceName)
+    setAmountText(String(entry.amount))
+    setDate(entry.date)
+    setCategoryId(entry.categoryId)
+    setNote(entry.note ?? '')
+    setIsRecurring(entry.isRecurring)
+    if (entry.recurrencePeriod) setRecurrencePeriod(entry.recurrencePeriod)
+  }, [editId])
+
+  const amount  = parseFloat(amountText) || 0
+  const canSave = sourceName.trim().length > 0 && amount > 0 && !!categoryId
 
   function handleSave() {
     if (!canSave) return
-    addIncome(
-      sourceName.trim(),
-      amount,
-      date,
-      categoryId,
-      note.trim() || null,
-      isRecurring,
-      isRecurring ? recurrencePeriod : null,
-    )
+    if (isEdit && editId) {
+      updateIncome(editId, sourceName.trim(), amount, date, categoryId, note.trim() || null, isRecurring, isRecurring ? recurrencePeriod : null)
+    } else {
+      addIncome(sourceName.trim(), amount, date, categoryId, note.trim() || null, isRecurring, isRecurring ? recurrencePeriod : null)
+    }
     router.back()
   }
 
@@ -125,7 +138,7 @@ export default function AddIncomeScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
-            Add Income
+            {isEdit ? 'Edit Income' : 'Add Income'}
           </Text>
           <Pressable
             onPress={handleSave}
@@ -133,7 +146,7 @@ export default function AddIncomeScreen() {
             style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}
           >
             <Text style={{ color: canSave ? colors.success : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
-              Save
+              {isEdit ? 'Update' : 'Save'}
             </Text>
           </Pressable>
         </View>
@@ -294,7 +307,7 @@ export default function AddIncomeScreen() {
             })}
           >
             <Text style={{ color: canSave ? '#fff' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
-              Save Income
+              {isEdit ? 'Update Income' : 'Save Income'}
             </Text>
           </Pressable>
 

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { dbGetExpenseWithItemsById } from '@core/db/budgetQueries'
 import { localDateStr } from '@core/utils/units'
 
 type Mode = 'quick' | 'full'
@@ -148,12 +149,13 @@ function FullItemRow({ item, index, onChange, onRemove, isLast }: {
 
 export default function AddExpenseScreen() {
   const router = useRouter()
-  const { templateId, date: dateParam } = useLocalSearchParams<{ templateId?: string; date?: string }>()
-  const { expenseCategories, addExpense, saveAsTemplate, recordUse, getTemplateItems, templates, loadTemplates } = useBudgetStore()
+  const { templateId, date: dateParam, editId } = useLocalSearchParams<{ templateId?: string; date?: string; editId?: string }>()
+  const { expenseCategories, addExpense, updateExpense, saveAsTemplate, recordUse, getTemplateItems, templates, loadTemplates } = useBudgetStore()
   const today      = localDateStr()
   const firstCatId = expenseCategories[0]?.id ?? ''
+  const isEdit     = !!editId
 
-  const [mode, setMode]                 = useState<Mode>(templateId ? 'full' : 'quick')
+  const [mode, setMode]                 = useState<Mode>(templateId || isEdit ? 'full' : 'quick')
   const [quickAmount, setQuickAmount]   = useState('')
   const [merchantName, setMerchantName] = useState('')
   const [items, setItems]               = useState<ItemRow[]>([{ name: '', price: '' }])
@@ -161,8 +163,26 @@ export default function AddExpenseScreen() {
   const [date, setDate]                 = useState(dateParam ?? today)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
   const [receiptPhoto, setReceiptPhoto] = useState<string | null>(null)
+  const [note, setNote]                 = useState('')
   const [saveTemplate, setSaveTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
+
+  // Pre-fill when editing an existing expense
+  useEffect(() => {
+    if (!editId) return
+    const entry = dbGetExpenseWithItemsById(editId)
+    if (!entry) return
+    setMerchantName(entry.merchantName ?? '')
+    setDate(entry.date)
+    setCategoryId(entry.categoryId)
+    setPaymentMethod(entry.paymentMethod)
+    setNote(entry.note ?? '')
+    setReceiptPhoto(entry.receiptPhoto)
+    setItems(entry.items.length > 0
+      ? entry.items.map((i) => ({ name: i.itemName, price: String(i.amount) }))
+      : [{ name: '', price: '' }],
+    )
+  }, [editId])
 
   // Pre-fill from template when templateId param is present
   useEffect(() => {
@@ -245,24 +265,23 @@ export default function AddExpenseScreen() {
           .filter((r) => parseFloat(r.price) > 0)
           .map((r) => ({ name: r.name.trim() || 'Item', amount: parseFloat(r.price) }))
 
-    addExpense(
-      mode === 'full' && merchantName.trim() ? merchantName.trim() : null,
-      date,
-      categoryId,
-      paymentMethod,
-      null,
-      expenseItems,
-      receiptPhoto,
-    )
+    const merchant = mode === 'full' && merchantName.trim() ? merchantName.trim() : null
+    const noteVal  = note.trim() || null
 
-    // Record template use if loaded from a template
-    if (templateId) {
-      recordUse(templateId, null, total)
-    }
+    if (isEdit && editId) {
+      updateExpense(editId, merchant, date, categoryId, paymentMethod, noteVal, expenseItems)
+    } else {
+      addExpense(merchant, date, categoryId, paymentMethod, noteVal, expenseItems, receiptPhoto)
 
-    // Save as new template if toggled
-    if (saveTemplate && templateName.trim() && mode === 'full') {
-      saveAsTemplate(templateName.trim(), categoryId, expenseItems)
+      // Record template use if loaded from a template
+      if (templateId) {
+        recordUse(templateId, null, total)
+      }
+
+      // Save as new template if toggled
+      if (saveTemplate && templateName.trim() && mode === 'full') {
+        saveAsTemplate(templateName.trim(), categoryId, expenseItems)
+      }
     }
 
     router.back()
@@ -282,35 +301,37 @@ export default function AddExpenseScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
-            Add Expense
+            {isEdit ? 'Edit Expense' : 'Add Expense'}
           </Text>
           <Pressable onPress={handleSave} disabled={!canSave} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
             <Text style={{ color: canSave ? colors.budget : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>Save</Text>
           </Pressable>
         </View>
 
-        {/* Mode toggle */}
-        <View style={{
-          flexDirection: 'row', backgroundColor: colors.surface2,
-          margin: spacing.md, borderRadius: radius.sm, padding: 2,
-        }}>
-          {(['quick', 'full'] as Mode[]).map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => setMode(m)}
-              style={{
-                flex: 1, paddingVertical: spacing.xs + 2,
-                borderRadius: radius.sm - 2,
-                backgroundColor: mode === m ? colors.surface : 'transparent',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: mode === m ? colors.text : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>
-                {m === 'quick' ? 'Quick' : 'Full Entry'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {/* Mode toggle — hidden in edit mode */}
+        {!isEdit && (
+          <View style={{
+            flexDirection: 'row', backgroundColor: colors.surface2,
+            margin: spacing.md, borderRadius: radius.sm, padding: 2,
+          }}>
+            {(['quick', 'full'] as Mode[]).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => setMode(m)}
+                style={{
+                  flex: 1, paddingVertical: spacing.xs + 2,
+                  borderRadius: radius.sm - 2,
+                  backgroundColor: mode === m ? colors.surface : 'transparent',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: mode === m ? colors.text : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>
+                  {m === 'quick' ? 'Quick' : 'Full Entry'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg }}>
 
@@ -395,6 +416,27 @@ export default function AddExpenseScreen() {
                 </Text>
               </View>
 
+              {/* Note */}
+              <View style={{ gap: spacing.xs }}>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>Note (optional)</Text>
+                <TextInput
+                  value={note}
+                  onChangeText={setNote}
+                  placeholder="Add a note…"
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderRadius: radius.md,
+                    borderWidth: 1, borderColor: colors.border,
+                    color: colors.text, fontSize: fontSize.body,
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
+                    minHeight: 64, textAlignVertical: 'top',
+                  }}
+                  selectionColor={colors.budget}
+                />
+              </View>
+
               {/* Receipt photo */}
               <View style={{ gap: spacing.sm }}>
                 <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>Receipt (optional)</Text>
@@ -474,8 +516,8 @@ export default function AddExpenseScreen() {
             </View>
           </View>
 
-          {/* Save as template (full mode only) */}
-          {mode === 'full' && (
+          {/* Save as template (full mode only, not when editing) */}
+          {mode === 'full' && !isEdit && (
             <View style={{
               backgroundColor: colors.surface, borderRadius: radius.lg,
               borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.md,
@@ -529,7 +571,7 @@ export default function AddExpenseScreen() {
             })}
           >
             <Text style={{ color: canSave ? '#000' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
-              Save Expense {canSave ? `· €${total.toFixed(2)}` : ''}
+              {isEdit ? 'Update Expense' : `Save Expense${canSave ? ` · €${total.toFixed(2)}` : ''}`}
             </Text>
           </Pressable>
 

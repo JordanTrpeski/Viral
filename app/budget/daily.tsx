@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   View, Text, ScrollView, Pressable, Alert, Image,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Swipeable } from 'react-native-gesture-handler'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
@@ -38,23 +39,41 @@ function shiftDate(date: string, days: number): string {
   return localDateStr(d)
 }
 
-// ── Swipe-to-delete wrapper ───────────────────────────────────────────────────
+// ── Swipe actions wrapper ─────────────────────────────────────────────────────
 
-function SwipeRow({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
+function SwipeRow({ onDelete, onEdit, children }: {
+  onDelete: () => void
+  onEdit?: () => void
+  children: React.ReactNode
+}) {
   const swipeRef = useRef<Swipeable>(null)
 
   function renderRight() {
     return (
-      <Pressable
-        onPress={() => { swipeRef.current?.close(); onDelete() }}
-        style={{
-          backgroundColor: colors.danger,
-          justifyContent: 'center', alignItems: 'center',
-          width: 72, borderRadius: radius.md, marginLeft: spacing.xs,
-        }}
-      >
-        <Ionicons name="trash-outline" size={20} color="#fff" />
-      </Pressable>
+      <View style={{ flexDirection: 'row', gap: spacing.xs, paddingLeft: spacing.xs }}>
+        {onEdit && (
+          <Pressable
+            onPress={() => { swipeRef.current?.close(); onEdit() }}
+            style={{
+              backgroundColor: colors.primary,
+              justifyContent: 'center', alignItems: 'center',
+              width: 56, borderRadius: radius.md,
+            }}
+          >
+            <Ionicons name="pencil-outline" size={18} color="#000" />
+          </Pressable>
+        )}
+        <Pressable
+          onPress={() => { swipeRef.current?.close(); onDelete() }}
+          style={{
+            backgroundColor: colors.danger,
+            justifyContent: 'center', alignItems: 'center',
+            width: 56, borderRadius: radius.md,
+          }}
+        >
+          <Ionicons name="trash-outline" size={20} color="#fff" />
+        </Pressable>
+      </View>
     )
   }
 
@@ -67,7 +86,7 @@ function SwipeRow({ onDelete, children }: { onDelete: () => void; children: Reac
 
 // ── Income entry row ──────────────────────────────────────────────────────────
 
-function IncomeRow({ entry, onDelete }: { entry: IncomeEntryWithCategory; onDelete: () => void }) {
+function IncomeRow({ entry, onDelete, onEdit }: { entry: IncomeEntryWithCategory; onDelete: () => void; onEdit: () => void }) {
   function confirm() {
     Alert.alert('Delete income?', `${entry.sourceName} — €${entry.amount.toFixed(2)}`, [
       { text: 'Cancel', style: 'cancel' },
@@ -75,7 +94,7 @@ function IncomeRow({ entry, onDelete }: { entry: IncomeEntryWithCategory; onDele
     ])
   }
   return (
-    <SwipeRow onDelete={confirm}>
+    <SwipeRow onDelete={confirm} onEdit={onEdit}>
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
         backgroundColor: colors.surface, borderRadius: radius.md,
@@ -102,11 +121,12 @@ function IncomeRow({ entry, onDelete }: { entry: IncomeEntryWithCategory; onDele
 
 const PAYMENT_ICONS: Record<string, string> = { cash: '💵', card: '💳', online: '🌐' }
 
-function ExpenseCard({ expense, expanded, onToggle, onDelete }: {
+function ExpenseCard({ expense, expanded, onToggle, onDelete, onEdit }: {
   expense: ExpenseWithItems
   expanded: boolean
   onToggle: () => void
   onDelete: () => void
+  onEdit: () => void
 }) {
   function confirm() {
     Alert.alert(
@@ -120,7 +140,7 @@ function ExpenseCard({ expense, expanded, onToggle, onDelete }: {
   }
 
   return (
-    <SwipeRow onDelete={confirm}>
+    <SwipeRow onDelete={confirm} onEdit={onEdit}>
       <View style={{
         backgroundColor: colors.surface, borderRadius: radius.md,
         borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
@@ -221,6 +241,8 @@ export default function DailyScreen() {
 
   useEffect(() => { reload() }, [date])
 
+  useFocusEffect(useCallback(() => { reload() }, [date]))
+
   function navigate(days: number) {
     const next = shiftDate(date, days)
     if (next <= today) setDate(next)
@@ -242,6 +264,14 @@ export default function DailyScreen() {
   function handleDeleteExpense(id: string) {
     removeExpense(id)
     reload()
+  }
+
+  function handleEditIncome(id: string) {
+    router.push(`/budget/add-income?editId=${id}` as never)
+  }
+
+  function handleEditExpense(id: string) {
+    router.push(`/budget/add-expense?editId=${id}` as never)
   }
 
   const totalIncome   = income.reduce((s, e) => s + e.amount, 0)
@@ -291,7 +321,12 @@ export default function DailyScreen() {
             <SectionHeader label="INCOME" total={totalIncome} color={colors.success} />
             <View style={{ gap: spacing.xs }}>
               {income.map((e) => (
-                <IncomeRow key={e.id} entry={e} onDelete={() => handleDeleteIncome(e.id)} />
+                <IncomeRow
+                  key={e.id}
+                  entry={e}
+                  onDelete={() => handleDeleteIncome(e.id)}
+                  onEdit={() => handleEditIncome(e.id)}
+                />
               ))}
             </View>
           </View>
@@ -309,6 +344,7 @@ export default function DailyScreen() {
                   expanded={expanded.has(e.id)}
                   onToggle={() => toggleExpanded(e.id)}
                   onDelete={() => handleDeleteExpense(e.id)}
+                  onEdit={() => handleEditExpense(e.id)}
                 />
               ))}
             </View>

@@ -34,6 +34,8 @@ import {
   dbRenameTemplate,
   dbDeleteTemplateItems,
   dbRecordTemplateUse,
+  dbUpdateIncome,
+  dbUpdateExpense,
 } from '@core/db/budgetQueries'
 
 // ── Pending recurring helpers ──────────────────────────────────────────────────
@@ -107,6 +109,16 @@ interface BudgetStore {
     isRecurring: boolean,
     recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null,
   ) => void
+  updateIncome: (
+    id: string,
+    sourceName: string,
+    amount: number,
+    date: string,
+    categoryId: string,
+    note: string | null,
+    isRecurring: boolean,
+    recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null,
+  ) => void
   addExpense: (
     merchantName: string | null,
     date: string,
@@ -115,6 +127,15 @@ interface BudgetStore {
     note: string | null,
     items: { name: string; amount: number }[],
     receiptPhoto?: string | null,
+  ) => void
+  updateExpense: (
+    id: string,
+    merchantName: string | null,
+    date: string,
+    categoryId: string,
+    paymentMethod: 'cash' | 'card' | 'online' | null,
+    note: string | null,
+    items: { name: string; amount: number }[],
   ) => void
   removeIncome: (id: string) => void
   removeExpense: (id: string) => void
@@ -296,6 +317,25 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     const summaries = dbGetRecurringIncomeSummaries()
     const pending = summaries.filter((s) => isDue(s, today))
     set({ pendingRecurring: pending })
+
+    if (Platform.OS !== 'web' && pending.length > 0) {
+      Notifications.getPermissionsAsync().then(({ status }) => {
+        if (status !== 'granted') return
+        const key = alertKey('__recurring__')
+        if (alertMmkv.getBoolean(key)) return
+        alertMmkv.set(key, true)
+        const total = pending.reduce((s, p) => s + p.amount, 0)
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🔄 Recurring income due',
+            body: pending.length === 1
+              ? `€${pending[0].amount.toFixed(2)} from ${pending[0].sourceName} is ready to confirm.`
+              : `${pending.length} recurring entries totalling €${total.toFixed(2)} are ready.`,
+          },
+          trigger: null,
+        })
+      })
+    }
   },
 
   confirmRecurring(summary, date) {
@@ -349,6 +389,12 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     get().loadPendingRecurring()
   },
 
+  updateIncome(id, sourceName, amount, date, categoryId, note, isRecurring, recurrencePeriod) {
+    dbUpdateIncome(id, sourceName, amount, date, categoryId, note, isRecurring, recurrencePeriod)
+    get().loadMonth()
+    get().loadPendingRecurring()
+  },
+
   addExpense(merchantName, date, categoryId, paymentMethod, note, items, receiptPhoto = null) {
     const expenseId = dbInsertExpense(merchantName, date, categoryId, paymentMethod, note, receiptPhoto)
     items.forEach(({ name, amount }) => dbInsertExpenseItem(expenseId, name, amount))
@@ -356,6 +402,11 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     // Check limit breach after state updated
     const { expenseCategories, categorySpending, totalIncome } = get()
     maybeNotifyLimitBreach(categoryId, expenseCategories, categorySpending, totalIncome)
+  },
+
+  updateExpense(id, merchantName, date, categoryId, paymentMethod, note, items) {
+    dbUpdateExpense(id, merchantName, date, categoryId, paymentMethod, note, items)
+    get().loadMonth()
   },
 
   removeIncome(id) {

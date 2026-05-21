@@ -193,6 +193,30 @@ export function dbGetExpensesForDate(date: string): ExpenseWithItems[] {
      ORDER BY e.created_at ASC`,
     [date],
   )
+  if (rows.length === 0) return []
+
+  const expenseIds = rows.map((r) => r.id as string)
+  const placeholders = expenseIds.map(() => '?').join(',')
+  const itemRows = db.getAllSync<Record<string, unknown>>(
+    `SELECT id, expense_id, item_name, amount, created_at
+     FROM budget_expense_items
+     WHERE expense_id IN (${placeholders})
+     ORDER BY expense_id, created_at ASC`,
+    expenseIds,
+  )
+  const itemsMap: Record<string, ExpenseItem[]> = {}
+  itemRows.forEach((item) => {
+    const eid = item.expense_id as string
+    if (!itemsMap[eid]) itemsMap[eid] = []
+    itemsMap[eid].push({
+      id: item.id as string,
+      expenseId: eid,
+      itemName: item.item_name as string,
+      amount: item.amount as number,
+      createdAt: item.created_at as string,
+    })
+  })
+
   return rows.map((r) => ({
     id: r.id as string,
     merchantName: r.merchant_name as string | null,
@@ -206,11 +230,7 @@ export function dbGetExpensesForDate(date: string): ExpenseWithItems[] {
     categoryName: r.category_name as string,
     categoryEmoji: r.category_emoji as string,
     categoryColor: r.category_color as string,
-    items: db.getAllSync<ExpenseItem>(
-      `SELECT id, expense_id as expenseId, item_name as itemName, amount, created_at as createdAt
-       FROM budget_expense_items WHERE expense_id = ? ORDER BY created_at ASC`,
-      [r.id as string],
-    ),
+    items: itemsMap[r.id as string] ?? [],
   }))
 }
 
@@ -261,6 +281,47 @@ export function dbInsertIncome(
 
 export function dbDeleteIncome(id: string): void {
   db.runSync(`DELETE FROM budget_income WHERE id = ?`, [id])
+}
+
+export function dbUpdateIncome(
+  id: string,
+  sourceName: string,
+  amount: number,
+  date: string,
+  categoryId: string,
+  note: string | null,
+  isRecurring: boolean,
+  recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null,
+): void {
+  db.runSync(
+    `UPDATE budget_income SET source_name=?, amount=?, date=?, category_id=?, note=?, is_recurring=?, recurrence_period=? WHERE id=?`,
+    [sourceName, amount, date, categoryId, note, isRecurring ? 1 : 0, recurrencePeriod, id],
+  )
+}
+
+export function dbGetIncomeById(id: string): IncomeEntryWithCategory | null {
+  const r = db.getFirstSync<Record<string, unknown>>(
+    `SELECT i.*, c.name as category_name, c.emoji as category_emoji, c.color as category_color
+     FROM budget_income i
+     JOIN budget_categories c ON c.id = i.category_id
+     WHERE i.id = ?`,
+    [id],
+  )
+  if (!r) return null
+  return {
+    id: r.id as string,
+    sourceName: r.source_name as string,
+    amount: r.amount as number,
+    date: r.date as string,
+    categoryId: r.category_id as string,
+    note: r.note as string | null,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
+    createdAt: r.created_at as string,
+    categoryName: r.category_name as string,
+    categoryEmoji: r.category_emoji as string,
+    categoryColor: r.category_color as string,
+  }
 }
 
 export function dbGetMonthlyIncomeTotals(months: number): { month: string; total: number }[] {
@@ -448,6 +509,62 @@ export function dbDeleteExpense(id: string): void {
 
 export function dbUpdateExpenseCategory(expenseId: string, categoryId: string): void {
   db.runSync(`UPDATE budget_expenses SET category_id = ? WHERE id = ?`, [categoryId, expenseId])
+}
+
+export function dbUpdateExpense(
+  id: string,
+  merchantName: string | null,
+  date: string,
+  categoryId: string,
+  paymentMethod: 'cash' | 'card' | 'online' | null,
+  note: string | null,
+  items: { name: string; amount: number }[],
+): void {
+  db.runSync(
+    `UPDATE budget_expenses SET merchant_name=?, date=?, category_id=?, payment_method=?, note=? WHERE id=?`,
+    [merchantName, date, categoryId, paymentMethod, note, id],
+  )
+  db.runSync(`DELETE FROM budget_expense_items WHERE expense_id=?`, [id])
+  items.forEach(({ name, amount }) => dbInsertExpenseItem(id, name, amount))
+}
+
+export function dbGetExpenseWithItemsById(id: string): ExpenseWithItems | null {
+  const r = db.getFirstSync<Record<string, unknown>>(
+    `SELECT e.*,
+            COALESCE((SELECT SUM(ei.amount) FROM budget_expense_items ei WHERE ei.expense_id = e.id), 0) as total,
+            c.name as category_name, c.emoji as category_emoji, c.color as category_color
+     FROM budget_expenses e
+     JOIN budget_categories c ON c.id = e.category_id
+     WHERE e.id = ?`,
+    [id],
+  )
+  if (!r) return null
+  const itemRows = db.getAllSync<Record<string, unknown>>(
+    `SELECT id, expense_id, item_name, amount, created_at
+     FROM budget_expense_items WHERE expense_id = ? ORDER BY created_at ASC`,
+    [id],
+  )
+  return {
+    id: r.id as string,
+    merchantName: r.merchant_name as string | null,
+    date: r.date as string,
+    categoryId: r.category_id as string,
+    paymentMethod: (r.payment_method as 'cash' | 'card' | 'online' | null) ?? null,
+    note: r.note as string | null,
+    receiptPhoto: r.receipt_photo as string | null,
+    total: r.total as number,
+    createdAt: r.created_at as string,
+    categoryName: r.category_name as string,
+    categoryEmoji: r.category_emoji as string,
+    categoryColor: r.category_color as string,
+    items: itemRows.map((item) => ({
+      id: item.id as string,
+      expenseId: item.expense_id as string,
+      itemName: item.item_name as string,
+      amount: item.amount as number,
+      createdAt: item.created_at as string,
+    })),
+  }
 }
 
 export function dbGetMonthlyExpenseTotals(months: number): { month: string; total: number }[] {

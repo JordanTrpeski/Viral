@@ -1,23 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, Pressable, TextInput, Alert } from 'react-native'
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
+import { COLOR_PALETTE } from '@modules/budget/constants'
 import type { BudgetCategory } from '@core/db/budgetQueries'
-
-const BottomSheetTextInput = TextInput
-
-// ── Predefined color palette ───────────────────────────────────────────────────
-
-const COLOR_PALETTE = [
-  '#FF453A', '#FF9F0A', '#FFD60A', '#30D158', '#34C759',
-  '#64D2FF', '#0A84FF', '#5E5CE6', '#6C63FF', '#BF5AF2',
-  '#FF6B9D', '#FF6B00', '#FF2D55', '#5AC8FA', '#4CD964',
-  '#8E8E93', '#636366', '#48484A', '#007AFF', '#FF9500',
-]
 
 // ── Category row ──────────────────────────────────────────────────────────────
 

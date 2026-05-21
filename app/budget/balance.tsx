@@ -166,7 +166,7 @@ function GoalEditor({
 
 export default function BalanceScreen() {
   const router = useRouter()
-  const { viewYear, viewMonth, totalIncome, totalSpending, projectedIncome } = useBudgetStore()
+  const { viewYear, viewMonth, totalIncome, totalSpending, projectedIncome, loadMonth } = useBudgetStore()
 
   const [allTimeIncome,   setAllTimeIncome]   = useState(0)
   const [allTimeSpending, setAllTimeSpending] = useState(0)
@@ -189,7 +189,10 @@ export default function BalanceScreen() {
     setNetHistory(hist.map(h => ({ month: h.month, net: h.net })))
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    loadMonth()
+  }, [load])
 
   function saveGoal(type: 'fixed' | 'percent', amount: number) {
     mmkv.set(KEY_GOAL_TYPE, type)
