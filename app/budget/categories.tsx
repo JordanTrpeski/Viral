@@ -1,13 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
 import { COLOR_PALETTE } from '@modules/budget/constants'
 import type { BudgetCategory } from '@core/db/budgetQueries'
+
+// BottomSheetTextInput from @gorhom/bottom-sheet v5 uses NativeViewGestureHandler
+// (old RNGH API) which crashes on RNGH 2.28. Plain TextInput works fine here.
+const BottomSheetTextInput = TextInput
 
 // ── Category row ──────────────────────────────────────────────────────────────
 
