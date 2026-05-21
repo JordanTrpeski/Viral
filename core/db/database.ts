@@ -145,15 +145,19 @@ export function initDatabase(): void {
 
   db.execSync(`
     CREATE TABLE IF NOT EXISTS exercise_prs (
-      id          TEXT PRIMARY KEY,
-      exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
-      metric_type TEXT NOT NULL,
-      value       REAL NOT NULL,
-      reps        INTEGER,
-      date        TEXT NOT NULL,
-      session_id  TEXT REFERENCES workout_sessions(id)
+      id                   TEXT PRIMARY KEY,
+      exercise_id          TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      date                 TEXT NOT NULL,
+      weight_kg            REAL NOT NULL DEFAULT 0,
+      reps                 INTEGER NOT NULL DEFAULT 0,
+      estimated_one_rep_max REAL NOT NULL DEFAULT 0,
+      session_id           TEXT REFERENCES workout_sessions(id),
+      created_at           TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
+  try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN weight_kg REAL NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN estimated_one_rep_max REAL NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`) } catch { /* already exists */ }
 
   // ── Nutrition tables (v1.1.0 schema) ─────────────────────────────────────
 
