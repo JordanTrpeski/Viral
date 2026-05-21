@@ -47,24 +47,25 @@ function FilterChip({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+    >
+      <View style={{
         backgroundColor: active ? colors.primary : colors.surface2,
         borderRadius: radius.full,
         paddingHorizontal: spacing.md,
         paddingVertical: 5,
-        opacity: pressed ? 0.75 : 1,
         borderWidth: 1,
-        borderColor: active ? colors.primary : colors.border,
-      })}
-    >
-      <Text style={{
-        color: active ? '#fff' : colors.textMuted,
-        fontSize: fontSize.label,
-        fontWeight: '600',
-        fontFamily: `${fonts.ui}_600SemiBold`,
+        borderColor: active ? colors.primary : colors.borderAccent,
       }}>
-        {label}
-      </Text>
+        <Text style={{
+          color: active ? '#fff' : colors.text,
+          fontSize: fontSize.label,
+          fontWeight: '600',
+          fontFamily: `${fonts.ui}_600SemiBold`,
+        }}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   )
 }
@@ -321,7 +322,7 @@ export default function ExerciseLibraryScreen() {
           <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: DIFFICULTY_COLOR[d] }} />
             <Text style={{
-              color: colors.textMuted,
+              color: colors.text,
               fontSize: fontSize.micro,
               textTransform: 'capitalize',
               fontFamily: `${fonts.ui}_400Regular`,
