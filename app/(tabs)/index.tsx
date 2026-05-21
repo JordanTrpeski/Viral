@@ -835,18 +835,19 @@ export default function HomeScreen() {
               <Pressable
                 key={label}
                 onPress={() => router.push(route as never)}
-                style={({ pressed }) => ({
+                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              >
+                <View style={{
                   flexDirection: 'row', alignItems: 'center', gap: spacing.md,
                   backgroundColor: colors.surface2, borderRadius: radius.md,
-                  borderWidth: 1, borderColor: colors.border,
-                  padding: spacing.md, opacity: pressed ? 0.8 : 1,
-                })}
-              >
-                <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: `${color}22`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={icon as never} size={18} color={color} />
+                  borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+                }}>
+                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: `${color}22`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={icon as never} size={18} color={color} />
+                  </View>
+                  <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500', flex: 1 }}>{label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </View>
-                <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500', flex: 1 }}>{label}</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </Pressable>
             ))}
           </View>
