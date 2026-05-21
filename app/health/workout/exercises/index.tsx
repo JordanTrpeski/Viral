@@ -47,13 +47,13 @@ function FilterChip({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1, marginRight: spacing.xs })}
     >
       <View style={{
         backgroundColor: active ? colors.primary : colors.surface2,
         borderRadius: radius.full,
         paddingHorizontal: spacing.md,
-        paddingVertical: 5,
+        paddingVertical: 6,
         borderWidth: 1,
         borderColor: active ? colors.primary : colors.borderAccent,
       }}>
@@ -274,10 +274,11 @@ export default function ExerciseLibraryScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexShrink: 0 }}
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
-          gap: spacing.xs,
+          alignItems: 'center',
         }}
       >
         {CATEGORIES.map((c) => (
@@ -294,10 +295,11 @@ export default function ExerciseLibraryScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexShrink: 0 }}
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingBottom: spacing.sm,
-          gap: spacing.xs,
+          alignItems: 'center',
         }}
       >
         {EQUIPMENT.map((e) => (
