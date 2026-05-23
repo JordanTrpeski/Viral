@@ -134,22 +134,24 @@ function ExerciseRow({ exercise, onPress, selectMode }: { exercise: ExerciseV2; 
             {exercise.primaryMuscles.slice(0, 2).map((m) => (
               <MuscleTag key={m} label={m} />
             ))}
-            <View style={{
-              width: 6, height: 6, borderRadius: 3,
-              backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
-            }} />
             <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
-              {exercise.equipment}
+              · {exercise.equipment}
             </Text>
           </View>
         </View>
 
-        {/* Action icon */}
-        <Ionicons
-          name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
-          size={selectMode ? 20 : 16}
-          color={selectMode ? colors.primary : colors.textMuted}
-        />
+        {/* Difficulty dot + action icon */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{
+            width: 8, height: 8, borderRadius: 4,
+            backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
+          }} />
+          <Ionicons
+            name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
+            size={selectMode ? 20 : 16}
+            color={selectMode ? colors.primary : colors.textMuted}
+          />
+        </View>
       </View>
     </Pressable>
   )

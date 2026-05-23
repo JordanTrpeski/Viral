@@ -446,10 +446,10 @@ export function upsertExercisePRV2(args: {
 }): void {
   db.runSync(
     `INSERT OR REPLACE INTO exercise_prs
-       (id, exercise_id, date, weight_kg, reps, estimated_one_rep_max, session_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, exercise_id, date, weight_kg, reps, estimated_one_rep_max, session_id, created_at, metric_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [args.id, args.exerciseId, args.date, args.weightKg, args.reps,
-     args.estimatedOneRepMax, args.sessionId, args.createdAt],
+     args.estimatedOneRepMax, args.sessionId, args.createdAt, 'max_weight'],
   )
 }
 
