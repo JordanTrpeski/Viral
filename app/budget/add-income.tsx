@@ -42,22 +42,26 @@ function CategoryChip({ emoji, name, color, selected, onPress }: {
   emoji: string; name: string; color: string; selected: boolean; onPress: () => void
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-        backgroundColor: selected ? `${color}22` : colors.surface2,
-        borderRadius: radius.full,
-        borderWidth: 1.5,
-        borderColor: selected ? color : 'transparent',
-        paddingHorizontal: spacing.sm + 2,
-        paddingVertical: spacing.xs,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ fontSize: 14 }}>{emoji}</Text>
-      <Text style={{ color: selected ? color : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>{name}</Text>
-    </Pressable>
+    <View style={{
+      backgroundColor: selected ? `${color}22` : colors.surface2,
+      borderRadius: radius.full,
+      borderWidth: 1.5,
+      borderColor: selected ? color : 'transparent',
+      overflow: 'hidden',
+    }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+          paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs,
+        }}>
+          <Text style={{ fontSize: 14 }}>{emoji}</Text>
+          <Text style={{ color: selected ? color : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>{name}</Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
@@ -65,18 +69,20 @@ function CategoryChip({ emoji, name, color, selected, onPress }: {
 
 function RecurrenceChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: radius.full,
-        backgroundColor: selected ? colors.success : colors.surface2,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ color: selected ? '#fff' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
+    <View style={{
+      backgroundColor: selected ? colors.success : colors.surface2,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+          <Text style={{ color: selected ? '#fff' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>{label}</Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
@@ -295,21 +301,23 @@ export default function AddIncomeScreen() {
           </View>
 
           {/* Save button */}
-          <Pressable
-            onPress={handleSave}
-            disabled={!canSave}
-            style={({ pressed }) => ({
-              backgroundColor: canSave ? colors.success : colors.surface2,
-              borderRadius: radius.md,
-              paddingVertical: spacing.md,
-              alignItems: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text style={{ color: canSave ? '#fff' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
-              {isEdit ? 'Update Income' : 'Save Income'}
-            </Text>
-          </Pressable>
+          <View style={{
+            backgroundColor: canSave ? colors.success : colors.surface2,
+            borderRadius: radius.md,
+            overflow: 'hidden',
+          }}>
+            <Pressable
+              onPress={handleSave}
+              disabled={!canSave}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <View style={{ paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: canSave ? '#fff' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
+                  {isEdit ? 'Update Income' : 'Save Income'}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
 
         </ScrollView>
       </KeyboardAvoidingView>

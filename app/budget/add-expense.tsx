@@ -48,22 +48,26 @@ function CategoryChip({ emoji, name, color, selected, onPress }: {
   emoji: string; name: string; color: string; selected: boolean; onPress: () => void
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-        backgroundColor: selected ? `${color}22` : colors.surface2,
-        borderRadius: radius.full,
-        borderWidth: 1.5,
-        borderColor: selected ? color : 'transparent',
-        paddingHorizontal: spacing.sm + 2,
-        paddingVertical: spacing.xs,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ fontSize: 14 }}>{emoji}</Text>
-      <Text style={{ color: selected ? color : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>{name}</Text>
-    </Pressable>
+    <View style={{
+      backgroundColor: selected ? `${color}22` : colors.surface2,
+      borderRadius: radius.full,
+      borderWidth: 1.5,
+      borderColor: selected ? color : 'transparent',
+      overflow: 'hidden',
+    }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+          paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs,
+        }}>
+          <Text style={{ fontSize: 14 }}>{emoji}</Text>
+          <Text style={{ color: selected ? color : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>{name}</Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
@@ -73,23 +77,28 @@ const PAYMENT_ICONS: Record<PaymentMethod, string> = { cash: '💵', card: '💳
 
 function PaymentChip({ method, selected, onPress }: { method: PaymentMethod; selected: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs,
-        borderRadius: radius.full,
-        backgroundColor: selected ? `${colors.budget}22` : colors.surface2,
-        borderWidth: 1.5,
-        borderColor: selected ? colors.budget : 'transparent',
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ fontSize: 13 }}>{PAYMENT_ICONS[method]}</Text>
-      <Text style={{ color: selected ? colors.budget : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>
-        {method.charAt(0).toUpperCase() + method.slice(1)}
-      </Text>
-    </Pressable>
+    <View style={{
+      backgroundColor: selected ? `${colors.budget}22` : colors.surface2,
+      borderRadius: radius.full,
+      borderWidth: 1.5,
+      borderColor: selected ? colors.budget : 'transparent',
+      overflow: 'hidden',
+    }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: 4,
+          paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs,
+        }}>
+          <Text style={{ fontSize: 13 }}>{PAYMENT_ICONS[method]}</Text>
+          <Text style={{ color: selected ? colors.budget : colors.textMuted, fontSize: fontSize.label, fontWeight: '500' }}>
+            {method.charAt(0).toUpperCase() + method.slice(1)}
+          </Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
@@ -97,18 +106,20 @@ function PaymentChip({ method, selected, onPress }: { method: PaymentMethod; sel
 
 function RecurrenceChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: radius.full,
-        backgroundColor: selected ? colors.budget : colors.surface2,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ color: selected ? '#000' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
+    <View style={{
+      backgroundColor: selected ? colors.budget : colors.surface2,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+          <Text style={{ color: selected ? '#000' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>{label}</Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
@@ -418,13 +429,12 @@ export default function AddExpenseScreen() {
                 ))}
                 <Pressable
                   onPress={addItem}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-                    paddingVertical: spacing.xs, opacity: pressed ? 0.7 : 1,
-                  })}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                 >
-                  <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontSize: fontSize.label, fontWeight: '500' }}>Add item</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs }}>
+                    <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+                    <Text style={{ color: colors.primary, fontSize: fontSize.label, fontWeight: '500' }}>Add item</Text>
+                  </View>
                 </Pressable>
               </View>
 
@@ -479,18 +489,21 @@ export default function AddExpenseScreen() {
                     </Pressable>
                   </View>
                 ) : (
-                  <Pressable
-                    onPress={showPhotoOptions}
-                    style={({ pressed }) => ({
-                      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                      gap: spacing.sm, backgroundColor: colors.surface2, borderRadius: radius.md,
-                      borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
-                      paddingVertical: spacing.md, opacity: pressed ? 0.8 : 1,
-                    })}
-                  >
-                    <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
-                    <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>Attach receipt photo</Text>
-                  </Pressable>
+                  <View style={{
+                    backgroundColor: colors.surface2, borderRadius: radius.md,
+                    borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
+                    overflow: 'hidden',
+                  }}>
+                    <Pressable
+                      onPress={showPhotoOptions}
+                      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md }}>
+                        <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
+                        <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>Attach receipt photo</Text>
+                      </View>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             </View>
@@ -623,21 +636,23 @@ export default function AddExpenseScreen() {
           )}
 
           {/* Save button */}
-          <Pressable
-            onPress={handleSave}
-            disabled={!canSave}
-            style={({ pressed }) => ({
-              backgroundColor: canSave ? colors.budget : colors.surface2,
-              borderRadius: radius.md,
-              paddingVertical: spacing.md,
-              alignItems: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text style={{ color: canSave ? '#000' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
-              {isEdit ? 'Update Expense' : `Save Expense${canSave ? ` · €${total.toFixed(2)}` : ''}`}
-            </Text>
-          </Pressable>
+          <View style={{
+            backgroundColor: canSave ? colors.budget : colors.surface2,
+            borderRadius: radius.md,
+            overflow: 'hidden',
+          }}>
+            <Pressable
+              onPress={handleSave}
+              disabled={!canSave}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <View style={{ paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: canSave ? '#000' : colors.textMuted, fontSize: fontSize.body, fontWeight: '700' }}>
+                  {isEdit ? 'Update Expense' : `Save Expense${canSave ? ` · €${total.toFixed(2)}` : ''}`}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
