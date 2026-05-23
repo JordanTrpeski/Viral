@@ -78,18 +78,20 @@ import { useDietStore } from '@modules/health/diet/dietStore'
 ## Modules
 
 ### Health
-Screens: workout session lifecycle, exercise library, diet/meal logging, food search, body weight, water intake, steps.
+Screens: workout session lifecycle, exercise library (search + category/equipment filters), exercise detail (form cues, common mistakes, history, PR tracking), diet/meal logging, food search, body weight, water intake, steps.
 
-Stores: `workoutStore`, `dietStore`, `bodyWeightStore`, `stepsStore`
+Stores: `workoutStoreV2`, `dietStore`, `bodyWeightStore`, `stepsStore`
 
 Calorie/macro goals computed from `UserProfile` via Mifflin-St Jeor TDEE (`core/utils/tdee.ts`) — never stored.
 
-Seed data: 50+ exercises (`exerciseSeed.ts`), food database (`foodSeed.ts`). Idempotent, runs once on first launch.
+Active workout session: inline "Add Exercise" card renders below the last exercise block; rest timer overlays at the bottom; plate calculator accessible via long-press on any weight input; exercise swap modal respects available equipment.
+
+Seed data: 70+ exercises (`exerciseSeed.ts`) across strength, cardio, mobility, and band categories; food database (`foodSeed.ts`). Seed function is incremental — inserts only missing exercise IDs on each launch so existing users receive new exercises without a data wipe.
 
 ### Budget
-Screens: add expense/income, daily/weekly/monthly views, categories, category drill-down, balance, templates.
+Screens: add/edit expense/income, daily (swipe-to-edit/delete), weekly, monthly, categories, category drill-down, balance, templates.
 
-Store: `budgetStore` — tracks entries, categories, limits, recurring income, templates. Sends a push notification at 80% of a category's monthly limit.
+Store: `budgetStore` — tracks entries, categories, limits, recurring income, templates. Expense and income entries support full edit mode (pre-filled form, UPDATE query, reload on focus return). Sends a push notification when spending hits 80% of a category's monthly limit and when recurring income is due.
 
 ### Checklist
 Screens: checklist hub, individual list with swipe-to-delete.
