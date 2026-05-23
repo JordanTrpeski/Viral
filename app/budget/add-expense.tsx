@@ -14,6 +14,7 @@ import { localDateStr } from '@core/utils/units'
 
 type Mode = 'quick' | 'full'
 type PaymentMethod = 'cash' | 'card' | 'online'
+type RecurrencePeriod = 'daily' | 'weekly' | 'monthly'
 
 // ── Date picker ───────────────────────────────────────────────────────────────
 
@@ -92,6 +93,25 @@ function PaymentChip({ method, selected, onPress }: { method: PaymentMethod; sel
   )
 }
 
+// ── Recurrence chip ───────────────────────────────────────────────────────────
+
+function RecurrenceChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
+        backgroundColor: selected ? colors.budget : colors.surface2,
+        opacity: pressed ? 0.8 : 1,
+      })}
+    >
+      <Text style={{ color: selected ? '#000' : colors.textMuted, fontSize: fontSize.label, fontWeight: '600' }}>{label}</Text>
+    </Pressable>
+  )
+}
+
 // ── Full mode: item row ───────────────────────────────────────────────────────
 
 interface ItemRow { name: string; price: string }
@@ -166,6 +186,8 @@ export default function AddExpenseScreen() {
   const [note, setNote]                 = useState('')
   const [saveTemplate, setSaveTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurrencePeriod, setRecurrencePeriod] = useState<RecurrencePeriod>('monthly')
 
   // Pre-fill when editing an existing expense
   useEffect(() => {
@@ -182,6 +204,8 @@ export default function AddExpenseScreen() {
       ? entry.items.map((i) => ({ name: i.itemName, price: String(i.amount) }))
       : [{ name: '', price: '' }],
     )
+    setIsRecurring(entry.isRecurring)
+    if (entry.recurrencePeriod) setRecurrencePeriod(entry.recurrencePeriod)
   }, [editId])
 
   // Pre-fill from template when templateId param is present
@@ -269,9 +293,9 @@ export default function AddExpenseScreen() {
     const noteVal  = note.trim() || null
 
     if (isEdit && editId) {
-      updateExpense(editId, merchant, date, categoryId, paymentMethod, noteVal, expenseItems)
+      updateExpense(editId, merchant, date, categoryId, paymentMethod, noteVal, expenseItems, isRecurring, isRecurring ? recurrencePeriod : null)
     } else {
-      addExpense(merchant, date, categoryId, paymentMethod, noteVal, expenseItems, receiptPhoto)
+      addExpense(merchant, date, categoryId, paymentMethod, noteVal, expenseItems, receiptPhoto, isRecurring, isRecurring ? recurrencePeriod : null)
 
       // Record template use if loaded from a template
       if (templateId) {
@@ -515,6 +539,46 @@ export default function AddExpenseScreen() {
               ))}
             </View>
           </View>
+
+          {/* Recurring toggle */}
+          {!isEdit && (
+            <View style={{
+              backgroundColor: colors.surface, borderRadius: radius.lg,
+              borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.md,
+            }}>
+              <Pressable
+                onPress={() => setIsRecurring((v) => !v)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <Ionicons name="repeat" size={20} color={isRecurring ? colors.budget : colors.textMuted} />
+                  <Text style={{ color: colors.text, fontSize: fontSize.body, fontWeight: '500' }}>Recurring</Text>
+                </View>
+                <View style={{
+                  width: 44, height: 26, borderRadius: 13,
+                  backgroundColor: isRecurring ? colors.budget : colors.surface2,
+                  justifyContent: 'center', paddingHorizontal: 2,
+                }}>
+                  <View style={{
+                    width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+                    transform: [{ translateX: isRecurring ? 18 : 0 }],
+                  }} />
+                </View>
+              </Pressable>
+              {isRecurring && (
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {(['daily', 'weekly', 'monthly'] as RecurrencePeriod[]).map((p) => (
+                    <RecurrenceChip
+                      key={p}
+                      label={p.charAt(0).toUpperCase() + p.slice(1)}
+                      selected={recurrencePeriod === p}
+                      onPress={() => setRecurrencePeriod(p)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Save as template (full mode only, not when editing) */}
           {mode === 'full' && !isEdit && (

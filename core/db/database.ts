@@ -370,16 +370,20 @@ export function initDatabase(): void {
 
   db.execSync(`
     CREATE TABLE IF NOT EXISTS budget_expenses (
-      id             TEXT PRIMARY KEY,
-      merchant_name  TEXT,
-      date           TEXT NOT NULL,
-      category_id    TEXT NOT NULL REFERENCES budget_categories(id),
-      payment_method TEXT CHECK(payment_method IN ('cash','card','online')),
-      note           TEXT,
-      receipt_photo  TEXT,
-      created_at     TEXT NOT NULL
+      id                TEXT PRIMARY KEY,
+      merchant_name     TEXT,
+      date              TEXT NOT NULL,
+      category_id       TEXT NOT NULL REFERENCES budget_categories(id),
+      payment_method    TEXT CHECK(payment_method IN ('cash','card','online')),
+      note              TEXT,
+      receipt_photo     TEXT,
+      is_recurring      INTEGER NOT NULL DEFAULT 0,
+      recurrence_period TEXT CHECK(recurrence_period IN ('daily','weekly','monthly')),
+      created_at        TEXT NOT NULL
     );
   `)
+  try { db.execSync(`ALTER TABLE budget_expenses ADD COLUMN is_recurring INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE budget_expenses ADD COLUMN recurrence_period TEXT CHECK(recurrence_period IN ('daily','weekly','monthly'))`) } catch { /* already exists */ }
   db.execSync(`
     CREATE TABLE IF NOT EXISTS budget_expense_items (
       id         TEXT PRIMARY KEY,

@@ -43,6 +43,8 @@ export interface ExpenseEntry {
   note: string | null
   receiptPhoto: string | null
   total: number
+  isRecurring: boolean
+  recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null
   createdAt: string
 }
 
@@ -226,6 +228,8 @@ export function dbGetExpensesForDate(date: string): ExpenseWithItems[] {
     note: r.note as string | null,
     receiptPhoto: r.receipt_photo as string | null,
     total: r.total as number,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
     createdAt: r.created_at as string,
     categoryName: r.category_name as string,
     categoryEmoji: r.category_emoji as string,
@@ -459,6 +463,8 @@ export function dbGetExpensesForMonth(year: number, month: number): ExpenseEntry
     note: r.note as string | null,
     receiptPhoto: r.receipt_photo as string | null,
     total: r.total as number,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
     createdAt: r.created_at as string,
     categoryName: r.category_name as string,
     categoryEmoji: r.category_emoji as string,
@@ -473,13 +479,15 @@ export function dbInsertExpense(
   paymentMethod: 'cash' | 'card' | 'online' | null,
   note: string | null,
   receiptPhoto: string | null = null,
+  isRecurring: boolean = false,
+  recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null = null,
 ): string {
   const id = Crypto.randomUUID()
   const now = new Date().toISOString()
   db.runSync(
-    `INSERT INTO budget_expenses (id, merchant_name, date, category_id, payment_method, note, receipt_photo, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, merchantName, date, categoryId, paymentMethod, note, receiptPhoto, now],
+    `INSERT INTO budget_expenses (id, merchant_name, date, category_id, payment_method, note, receipt_photo, is_recurring, recurrence_period, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, merchantName, date, categoryId, paymentMethod, note, receiptPhoto, isRecurring ? 1 : 0, recurrencePeriod, now],
   )
   return id
 }
@@ -519,10 +527,12 @@ export function dbUpdateExpense(
   paymentMethod: 'cash' | 'card' | 'online' | null,
   note: string | null,
   items: { name: string; amount: number }[],
+  isRecurring: boolean = false,
+  recurrencePeriod: 'daily' | 'weekly' | 'monthly' | null = null,
 ): void {
   db.runSync(
-    `UPDATE budget_expenses SET merchant_name=?, date=?, category_id=?, payment_method=?, note=? WHERE id=?`,
-    [merchantName, date, categoryId, paymentMethod, note, id],
+    `UPDATE budget_expenses SET merchant_name=?, date=?, category_id=?, payment_method=?, note=?, is_recurring=?, recurrence_period=? WHERE id=?`,
+    [merchantName, date, categoryId, paymentMethod, note, isRecurring ? 1 : 0, recurrencePeriod, id],
   )
   db.runSync(`DELETE FROM budget_expense_items WHERE expense_id=?`, [id])
   items.forEach(({ name, amount }) => dbInsertExpenseItem(id, name, amount))
@@ -553,6 +563,8 @@ export function dbGetExpenseWithItemsById(id: string): ExpenseWithItems | null {
     note: r.note as string | null,
     receiptPhoto: r.receipt_photo as string | null,
     total: r.total as number,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
     createdAt: r.created_at as string,
     categoryName: r.category_name as string,
     categoryEmoji: r.category_emoji as string,
@@ -579,6 +591,123 @@ export function dbGetMonthlyExpenseTotals(months: number): { month: string; tota
     [months],
   )
   return rows
+}
+
+export interface RecurringExpenseSummary {
+  merchantName: string | null
+  amount: number
+  categoryId: string
+  categoryName: string
+  categoryEmoji: string
+  categoryColor: string
+  recurrencePeriod: 'daily' | 'weekly' | 'monthly'
+  lastDate: string
+}
+
+export function dbGetRecurringExpenseSummaries(): RecurringExpenseSummary[] {
+  const rows = db.getAllSync<Record<string, unknown>>(
+    `SELECT e.merchant_name, e.category_id, e.recurrence_period, e.date as last_date,
+            COALESCE((SELECT SUM(ei.amount) FROM budget_expense_items ei WHERE ei.expense_id = e.id), 0) as amount,
+            c.name as category_name, c.emoji as category_emoji, c.color as category_color
+     FROM budget_expenses e
+     JOIN budget_categories c ON c.id = e.category_id
+     WHERE e.is_recurring = 1
+       AND e.date = (
+         SELECT MAX(e2.date) FROM budget_expenses e2
+         WHERE e2.is_recurring = 1
+           AND COALESCE(e2.merchant_name, '') = COALESCE(e.merchant_name, '')
+           AND e2.category_id = e.category_id
+           AND e2.recurrence_period = e.recurrence_period
+       )
+     GROUP BY COALESCE(e.merchant_name, ''), e.category_id, e.recurrence_period`,
+  )
+  return rows.map((r) => ({
+    merchantName: (r.merchant_name as string | null) ?? null,
+    amount: r.amount as number,
+    categoryId: r.category_id as string,
+    categoryName: r.category_name as string,
+    categoryEmoji: r.category_emoji as string,
+    categoryColor: r.category_color as string,
+    recurrencePeriod: r.recurrence_period as 'daily' | 'weekly' | 'monthly',
+    lastDate: r.last_date as string,
+  }))
+}
+
+export function dbCancelRecurringExpense(
+  merchantName: string | null,
+  categoryId: string,
+  recurrencePeriod: string,
+): void {
+  if (merchantName === null) {
+    db.runSync(
+      `UPDATE budget_expenses SET is_recurring = 0, recurrence_period = NULL
+       WHERE merchant_name IS NULL AND category_id = ? AND recurrence_period = ? AND is_recurring = 1`,
+      [categoryId, recurrencePeriod],
+    )
+  } else {
+    db.runSync(
+      `UPDATE budget_expenses SET is_recurring = 0, recurrence_period = NULL
+       WHERE merchant_name = ? AND category_id = ? AND recurrence_period = ? AND is_recurring = 1`,
+      [merchantName, categoryId, recurrencePeriod],
+    )
+  }
+}
+
+export function dbGetExpenseHistory(
+  categoryId: string | null,
+  fromDate: string,
+): ExpenseEntryWithCategory[] {
+  const rows = db.getAllSync<Record<string, unknown>>(
+    `SELECT e.*,
+            COALESCE((SELECT SUM(ei.amount) FROM budget_expense_items ei WHERE ei.expense_id = e.id), 0) as total,
+            c.name as category_name, c.emoji as category_emoji, c.color as category_color
+     FROM budget_expenses e
+     JOIN budget_categories c ON c.id = e.category_id
+     WHERE e.date >= ?
+       ${categoryId ? 'AND e.category_id = ?' : ''}
+     ORDER BY e.date DESC, e.created_at DESC`,
+    categoryId ? [fromDate, categoryId] : [fromDate],
+  )
+  return rows.map((r) => ({
+    id: r.id as string,
+    merchantName: r.merchant_name as string | null,
+    date: r.date as string,
+    categoryId: r.category_id as string,
+    paymentMethod: (r.payment_method as 'cash' | 'card' | 'online' | null) ?? null,
+    note: r.note as string | null,
+    receiptPhoto: r.receipt_photo as string | null,
+    total: r.total as number,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
+    createdAt: r.created_at as string,
+    categoryName: r.category_name as string,
+    categoryEmoji: r.category_emoji as string,
+    categoryColor: r.category_color as string,
+  }))
+}
+
+export function dbGetExpenseCategoryBreakdown(
+  year: number,
+  month: number,
+): { categoryId: string; categoryName: string; categoryEmoji: string; categoryColor: string; total: number }[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`
+  return db.getAllSync<Record<string, unknown>>(
+    `SELECT e.category_id, c.name as category_name, c.emoji as category_emoji,
+            c.color as category_color, SUM(ei.amount) as total
+     FROM budget_expenses e
+     JOIN budget_expense_items ei ON ei.expense_id = e.id
+     JOIN budget_categories c ON c.id = e.category_id
+     WHERE e.date LIKE ?
+     GROUP BY e.category_id
+     ORDER BY total DESC`,
+    [`${prefix}%`],
+  ).map((r) => ({
+    categoryId: r.category_id as string,
+    categoryName: r.category_name as string,
+    categoryEmoji: r.category_emoji as string,
+    categoryColor: r.category_color as string,
+    total: r.total as number,
+  }))
 }
 
 // ── Weekly queries ─────────────────────────────────────────────────────────────
@@ -686,6 +815,8 @@ export function dbGetBiggestExpenseForMonth(year: number, month: number): Expens
     note: row.note as string | null,
     receiptPhoto: row.receipt_photo as string | null,
     total: row.total as number,
+    isRecurring: (row.is_recurring as number) === 1,
+    recurrencePeriod: (row.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
     createdAt: row.created_at as string,
     categoryName: row.category_name as string,
     categoryEmoji: row.category_emoji as string,
@@ -821,6 +952,8 @@ export function dbGetCategoryTransactions(
     note: r.note as string | null,
     receiptPhoto: r.receipt_photo as string | null,
     total: r.total as number,
+    isRecurring: (r.is_recurring as number) === 1,
+    recurrencePeriod: (r.recurrence_period as 'daily' | 'weekly' | 'monthly' | null) ?? null,
     createdAt: r.created_at as string,
     categoryName: r.category_name as string,
     categoryEmoji: r.category_emoji as string,

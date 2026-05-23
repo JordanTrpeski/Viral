@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useBudgetStore } from '@modules/budget/budgetStore'
 import { dbGetDailyTotals } from '@core/db/budgetQueries'
-import type { RecurringIncomeSummary } from '@core/db/budgetQueries'
+import type { RecurringIncomeSummary, RecurringExpenseSummary } from '@core/db/budgetQueries'
 import { localDateStr } from '@core/utils/units'
 
 // ── Month header ───────────────────────────────────────────────────────────────
@@ -107,6 +107,7 @@ export default function BudgetScreen() {
     totalIncome, totalSpending, netBalance, projectedIncome,
     incomeEntries, expenseEntries, expenseCategories, categorySpending,
     pendingRecurring, confirmRecurring,
+    pendingRecurringExpenses, confirmRecurringExpense,
     loadCategories, loadMonth, loadPendingRecurring,
   } = useBudgetStore()
 
@@ -133,6 +134,17 @@ export default function BudgetScreen() {
       setWeekSpending(daily.reduce((s, d) => s + d.spending, 0))
     }, [])
   )
+
+  function handleConfirmRecurringExpense(summary: RecurringExpenseSummary) {
+    Alert.alert(
+      `Confirm ${summary.recurrencePeriod} expense`,
+      `${summary.merchantName ?? summary.categoryName} — €${summary.amount.toFixed(2)}\nLog for today?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm', onPress: () => confirmRecurringExpense(summary, today) },
+      ],
+    )
+  }
 
   function handleConfirmRecurring(summary: RecurringIncomeSummary) {
     Alert.alert(
@@ -227,26 +239,39 @@ export default function BudgetScreen() {
           </View>
         </View>
 
-        {/* Income history link — single horizontal row on all platforms */}
-        <Pressable
-          onPress={() => router.push('/budget/income-history' as never)}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-        >
-          <View style={{
-            backgroundColor: colors.surface,
-            borderRadius: radius.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-          }}>
-            <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income history</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-          </View>
-        </Pressable>
+        {/* History links */}
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Pressable
+            onPress={() => router.push('/budget/income-history' as never)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, flex: 1 })}
+          >
+            <View style={{
+              backgroundColor: colors.surface, borderRadius: radius.md,
+              borderWidth: 1, borderColor: colors.border,
+              flexDirection: 'row', alignItems: 'center',
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+            }}>
+              <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/budget/expense-history' as never)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, flex: 1 })}
+          >
+            <View style={{
+              backgroundColor: colors.surface, borderRadius: radius.md,
+              borderWidth: 1, borderColor: colors.border,
+              flexDirection: 'row', alignItems: 'center',
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+            }}>
+              <Ionicons name="receipt-outline" size={16} color={colors.budget} style={{ marginRight: spacing.xs }} />
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Expenses</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            </View>
+          </Pressable>
+        </View>
 
         {/* Pending recurring banners */}
         {pendingRecurring.map((p) => (
@@ -271,6 +296,33 @@ export default function BudgetScreen() {
                 </Text>
               </View>
               <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
+            </View>
+          </Pressable>
+        ))}
+
+        {/* Pending recurring expense banners */}
+        {pendingRecurringExpenses.map((p) => (
+          <Pressable
+            key={`${p.merchantName}-${p.categoryId}`}
+            onPress={() => handleConfirmRecurringExpense(p)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            <View style={{
+              backgroundColor: `${colors.budget}18`,
+              borderRadius: radius.md,
+              borderWidth: 1, borderColor: `${colors.budget}44`,
+              flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md,
+            }}>
+              <Text style={{ fontSize: 20 }}>{p.categoryEmoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.budget, fontSize: fontSize.label, fontWeight: '700' }}>
+                  {p.merchantName ?? p.categoryName} is due today
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                  €{p.amount.toFixed(2)} · {p.recurrencePeriod} — tap to confirm
+                </Text>
+              </View>
+              <Ionicons name="checkmark-circle-outline" size={22} color={colors.budget} />
             </View>
           </Pressable>
         ))}

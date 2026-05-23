@@ -10,6 +10,7 @@ import {
   IncomeEntryWithCategory,
   ExpenseEntryWithCategory,
   RecurringIncomeSummary,
+  RecurringExpenseSummary,
   dbGetCategories,
   dbGetCategoriesByType,
   dbGetIncomeForMonth,
@@ -21,6 +22,7 @@ import {
   dbDeleteExpense,
   dbGetCategorySpendingForMonth,
   dbGetRecurringIncomeSummaries,
+  dbGetRecurringExpenseSummaries,
   dbInsertCategory,
   dbUpdateCategory,
   dbUpdateCategoryLimit,
@@ -40,7 +42,7 @@ import {
 
 // ── Pending recurring helpers ──────────────────────────────────────────────────
 
-function isDue(summary: RecurringIncomeSummary, today: string): boolean {
+function isDue(summary: { lastDate: string; recurrencePeriod: string }, today: string): boolean {
   const last = new Date(summary.lastDate + 'T12:00:00')
   const now  = new Date(today + 'T12:00:00')
   if (summary.recurrencePeriod === 'daily') {
@@ -72,6 +74,7 @@ interface BudgetStore {
   expenseEntries: ExpenseEntryWithCategory[]
   categorySpending: Record<string, number>
   pendingRecurring: RecurringIncomeSummary[]
+  pendingRecurringExpenses: RecurringExpenseSummary[]
 
   totalIncome: number
   totalSpending: number
@@ -96,10 +99,8 @@ interface BudgetStore {
   removeTemplate: (id: string) => void
   recordUse: (templateId: string, expenseId: string | null, total: number) => void
   getTemplateItems: (templateId: string) => BudgetTemplateItem[]
-  confirmRecurring: (
-    summary: RecurringIncomeSummary,
-    date: string,
-  ) => void
+  confirmRecurring: (summary: RecurringIncomeSummary, date: string) => void
+  confirmRecurringExpense: (summary: RecurringExpenseSummary, date: string) => void
   addIncome: (
     sourceName: string,
     amount: number,
@@ -127,6 +128,8 @@ interface BudgetStore {
     note: string | null,
     items: { name: string; amount: number }[],
     receiptPhoto?: string | null,
+    isRecurring?: boolean,
+    recurrencePeriod?: 'daily' | 'weekly' | 'monthly' | null,
   ) => void
   updateExpense: (
     id: string,
@@ -136,6 +139,8 @@ interface BudgetStore {
     paymentMethod: 'cash' | 'card' | 'online' | null,
     note: string | null,
     items: { name: string; amount: number }[],
+    isRecurring?: boolean,
+    recurrencePeriod?: 'daily' | 'weekly' | 'monthly' | null,
   ) => void
   removeIncome: (id: string) => void
   removeExpense: (id: string) => void
@@ -234,6 +239,7 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
   expenseEntries: [],
   categorySpending: {},
   pendingRecurring: [],
+  pendingRecurringExpenses: [],
 
   totalIncome: 0,
   totalSpending: 0,
@@ -314,9 +320,11 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
 
   loadPendingRecurring() {
     const today = todayStr()
-    const summaries = dbGetRecurringIncomeSummaries()
-    const pending = summaries.filter((s) => isDue(s, today))
-    set({ pendingRecurring: pending })
+    const incomeSummaries = dbGetRecurringIncomeSummaries()
+    const pending = incomeSummaries.filter((s) => isDue(s, today))
+    const expenseSummaries = dbGetRecurringExpenseSummaries()
+    const pendingExpenses = expenseSummaries.filter((s) => isDue(s, today))
+    set({ pendingRecurring: pending, pendingRecurringExpenses: pendingExpenses })
 
     if (Platform.OS !== 'web' && pending.length > 0) {
       Notifications.getPermissionsAsync().then(({ status }) => {
@@ -336,6 +344,25 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
         })
       })
     }
+
+    if (Platform.OS !== 'web' && pendingExpenses.length > 0) {
+      Notifications.getPermissionsAsync().then(({ status }) => {
+        if (status !== 'granted') return
+        const key = alertKey('__recurring_expense__')
+        if (alertMmkv.getBoolean(key)) return
+        alertMmkv.set(key, true)
+        const total = pendingExpenses.reduce((s, p) => s + p.amount, 0)
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: '💸 Recurring expense due',
+            body: pendingExpenses.length === 1
+              ? `${pendingExpenses[0].merchantName ?? pendingExpenses[0].categoryName} (€${pendingExpenses[0].amount.toFixed(2)}) is ready to log.`
+              : `${pendingExpenses.length} recurring expenses totalling €${total.toFixed(2)} are ready.`,
+          },
+          trigger: null,
+        })
+      })
+    }
   },
 
   confirmRecurring(summary, date) {
@@ -350,6 +377,24 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     )
     get().loadMonth()
     get().loadPendingRecurring()
+  },
+
+  confirmRecurringExpense(summary, date) {
+    const expenseId = dbInsertExpense(
+      summary.merchantName,
+      date,
+      summary.categoryId,
+      null,
+      null,
+      null,
+      true,
+      summary.recurrencePeriod,
+    )
+    dbInsertExpenseItem(expenseId, summary.merchantName ?? summary.categoryName, summary.amount)
+    get().loadMonth()
+    get().loadPendingRecurring()
+    const { expenseCategories, categorySpending, totalIncome } = get()
+    maybeNotifyLimitBreach(summary.categoryId, expenseCategories, categorySpending, totalIncome)
   },
 
   loadMonth(year, month) {
@@ -395,18 +440,19 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     get().loadPendingRecurring()
   },
 
-  addExpense(merchantName, date, categoryId, paymentMethod, note, items, receiptPhoto = null) {
-    const expenseId = dbInsertExpense(merchantName, date, categoryId, paymentMethod, note, receiptPhoto)
+  addExpense(merchantName, date, categoryId, paymentMethod, note, items, receiptPhoto = null, isRecurring = false, recurrencePeriod = null) {
+    const expenseId = dbInsertExpense(merchantName, date, categoryId, paymentMethod, note, receiptPhoto, isRecurring, recurrencePeriod)
     items.forEach(({ name, amount }) => dbInsertExpenseItem(expenseId, name, amount))
     get().loadMonth()
-    // Check limit breach after state updated
+    if (isRecurring) get().loadPendingRecurring()
     const { expenseCategories, categorySpending, totalIncome } = get()
     maybeNotifyLimitBreach(categoryId, expenseCategories, categorySpending, totalIncome)
   },
 
-  updateExpense(id, merchantName, date, categoryId, paymentMethod, note, items) {
-    dbUpdateExpense(id, merchantName, date, categoryId, paymentMethod, note, items)
+  updateExpense(id, merchantName, date, categoryId, paymentMethod, note, items, isRecurring = false, recurrencePeriod = null) {
+    dbUpdateExpense(id, merchantName, date, categoryId, paymentMethod, note, items, isRecurring, recurrencePeriod)
     get().loadMonth()
+    get().loadPendingRecurring()
   },
 
   removeIncome(id) {
