@@ -335,12 +335,11 @@ export default function ExerciseLibraryScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(ex) => ex.id}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl, flexGrow: 1 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
+          <View style={{ alignItems: 'center', paddingVertical: spacing.xl, minHeight: 260 }}>
             <Ionicons name="barbell-outline" size={48} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
             <Text style={{
               color: colors.textMuted,
