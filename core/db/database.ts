@@ -155,6 +155,7 @@ export function initDatabase(): void {
       created_at           TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
+  try { db.execSync(`ALTER TABLE workout_sets ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`) } catch { /* already exists */ }
   try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN weight_kg REAL NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN estimated_one_rep_max REAL NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   try { db.execSync(`ALTER TABLE exercise_prs ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`) } catch { /* already exists */ }

@@ -828,20 +828,6 @@ export default function ActiveSessionScreen() {
           contentContainerStyle={{ padding: spacing.md, paddingBottom: hasTimer ? 110 : 90 }}
           keyboardShouldPersistTaps="handled"
         >
-          {sessionExercises.length === 0 && (
-            <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
-              <Ionicons name="barbell-outline" size={48} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
-              <Text style={{
-                color: colors.textMuted,
-                fontSize: fontSize.body,
-                textAlign: 'center',
-                fontFamily: `${fonts.ui}_400Regular`,
-              }}>
-                Tap + to add your first exercise
-              </Text>
-            </View>
-          )}
-
           {sessionExercises.map((ex, idx) => (
             <ExerciseBlock
               key={ex.exercise.id}
@@ -850,32 +836,43 @@ export default function ActiveSessionScreen() {
               isLast={idx === sessionExercises.length - 1}
             />
           ))}
+
+          {/* Add exercise — inline below last card */}
+          <Pressable
+            onPress={() => router.push('/health/workout/exercises?mode=select' as never)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, marginBottom: spacing.md })}
+          >
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              backgroundColor: colors.surface,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: `${colors.primary}44`,
+              borderStyle: 'dashed',
+              paddingVertical: spacing.lg,
+            }}>
+              <View style={{
+                width: 30, height: 30, borderRadius: 15,
+                backgroundColor: `${colors.primary}1A`,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Ionicons name="add" size={20} color={colors.primary} />
+              </View>
+              <Text style={{
+                color: colors.primary,
+                fontSize: fontSize.body,
+                fontWeight: '600',
+                fontFamily: `${fonts.ui}_600SemiBold`,
+              }}>
+                {sessionExercises.length === 0 ? 'Add Your First Exercise' : 'Add Exercise'}
+              </Text>
+            </View>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Add exercise FAB */}
-      <Pressable
-        onPress={() => router.push('/health/workout/exercises?mode=select' as never)}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          bottom: hasTimer ? 90 : 24,
-          right: spacing.lg,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
-          elevation: 8,
-        })}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </Pressable>
 
       {/* Rest timer */}
       {hasTimer && restTimer && (

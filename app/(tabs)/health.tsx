@@ -254,10 +254,6 @@ function StepsHubCard() {
 
 export default function HealthScreen() {
   const router = useRouter()
-  const today = localDateStr()
-  const dateLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric',
-  })
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -265,16 +261,13 @@ export default function HealthScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Health</Text>
-          <Text style={styles.headerDate}>{dateLabel}</Text>
-        </View>
+        <Text style={styles.headerTitle}>Health</Text>
         <Pressable
           onPress={() => router.push('/health/settings' as never)}
           hitSlop={12}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
-          <Ionicons name="settings-outline" size={20} color={colors.textMuted} />
+          <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -298,14 +291,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
   header: {
-    paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   headerTitle: {
     fontFamily: `${fonts.ui}_700Bold`, fontSize: fontSize.screenTitle, color: colors.text,
-  },
-  headerDate: {
-    fontFamily: `${fonts.ui}_400Regular`, fontSize: fontSize.label, color: colors.textMuted, marginTop: 2,
   },
 
   scroll: { padding: spacing.md, gap: spacing.sm },

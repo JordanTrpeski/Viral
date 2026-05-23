@@ -134,26 +134,22 @@ function ExerciseRow({ exercise, onPress, selectMode }: { exercise: ExerciseV2; 
             {exercise.primaryMuscles.slice(0, 2).map((m) => (
               <MuscleTag key={m} label={m} />
             ))}
+            <View style={{
+              width: 6, height: 6, borderRadius: 3,
+              backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
+            }} />
             <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
-              · {exercise.equipment}
+              {exercise.equipment}
             </Text>
           </View>
         </View>
 
-        {/* Difficulty dot + action icon */}
-        <View style={{ alignItems: 'center', gap: 4 }}>
-          <View style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
-          }} />
-          <Ionicons
-            name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
-            size={selectMode ? 20 : 16}
-            color={selectMode ? colors.primary : colors.textMuted}
-          />
-        </View>
+        {/* Action icon */}
+        <Ionicons
+          name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
+          size={selectMode ? 20 : 16}
+          color={selectMode ? colors.primary : colors.textMuted}
+        />
       </View>
     </Pressable>
   )
@@ -339,7 +335,8 @@ export default function ExerciseLibraryScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(ex) => ex.id}
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={

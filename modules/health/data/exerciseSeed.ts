@@ -1322,40 +1322,600 @@ const EXERCISES: SeedExercise[] = [
     substituteIds: ['ex_treadmill_run', 'ex_stationary_bike', 'ex_rowing_machine'],
   },
 
+  // ── Band ──────────────────────────────────────────────────────────────────
+
+  {
+    id: 'ex_band_pull_apart',
+    name: 'Band Pull-Apart',
+    slug: 'band-pull-apart',
+    category: 'strength',
+    primaryMuscles: ['rear deltoids', 'upper back'],
+    secondaryMuscles: ['rotator cuff', 'rhomboids'],
+    equipment: 'band',
+    movementPattern: 'pull',
+    description: 'A scapular health staple. Pull a resistance band apart horizontally at chest height to strengthen the rear delts and upper back.',
+    formCues: [
+      'Start with arms extended straight in front of you at chest height',
+      'Pull the band apart by driving your elbows and hands back — not just your hands',
+      'Squeeze your shoulder blades together at the end of each rep',
+      'Keep your core braced and avoid arching your lower back',
+    ],
+    commonMistakes: [
+      'Shrugging the shoulders up — keep them depressed throughout',
+      'Using a band that\'s too light — you should feel it in the rear delts, not just the forearms',
+      'Rushing the movement — slow the eccentric (return) down for more benefit',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_face_pull', 'ex_cable_row'],
+  },
+
+  {
+    id: 'ex_banded_glute_bridge',
+    name: 'Banded Glute Bridge',
+    slug: 'banded-glute-bridge',
+    category: 'strength',
+    primaryMuscles: ['glutes'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: 'band',
+    movementPattern: 'hinge',
+    description: 'A glute bridge with a resistance band placed just above the knees. The band adds lateral tension that increases glute activation.',
+    formCues: [
+      'Band sits just above the knees — press outward against it throughout the set',
+      'Drive through your heels, not your toes',
+      'Squeeze your glutes hard at the top — hold for 1-2 seconds',
+      'Keep your ribs down — don\'t flare them to extend the range of motion',
+    ],
+    commonMistakes: [
+      'Knees caving inward — actively push them out against the band',
+      'Hyperextending the lower back at the top — squeeze glutes only, not your spine',
+      'Not squeezing at the top — the peak contraction is where the work happens',
+    ],
+    difficulty: 'beginner',
+    isUnilateral: false,
+    substituteIds: ['ex_hip_thrust', 'ex_romanian_deadlift'],
+  },
+
+  {
+    id: 'ex_band_lat_pulldown',
+    name: 'Band Lat Pulldown',
+    slug: 'band-lat-pulldown',
+    category: 'strength',
+    primaryMuscles: ['lats'],
+    secondaryMuscles: ['biceps', 'rear deltoids'],
+    equipment: 'band',
+    movementPattern: 'pull',
+    description: 'A band-anchored overhead pulldown that trains the lats through a full range of motion. Ideal for building pull strength at home.',
+    formCues: [
+      'Anchor the band overhead (door anchor or pull-up bar)',
+      'Pull your elbows down and back — think "elbows to your back pockets"',
+      'Lean back slightly and maintain a proud chest throughout',
+      'Full stretch at the top, full squeeze at the bottom',
+    ],
+    commonMistakes: [
+      'Pulling with the arms only — initiate with your lats, not your biceps',
+      'Not extending fully at the top — the stretch loads the lats for better muscle growth',
+      'Shrugging at the top — keep your shoulders packed down',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_lat_pulldown', 'ex_assisted_pull_up'],
+  },
+
+  {
+    id: 'ex_band_face_pull',
+    name: 'Band Face Pull',
+    slug: 'band-face-pull',
+    category: 'strength',
+    primaryMuscles: ['rear deltoids', 'upper back'],
+    secondaryMuscles: ['rotator cuff', 'traps'],
+    equipment: 'band',
+    movementPattern: 'pull',
+    description: 'A band variation of the face pull. Targets the rear delts and external rotators to improve shoulder health and posture.',
+    formCues: [
+      'Anchor the band at face height — pull toward your forehead, not your chin',
+      'Flare your elbows out and up as you pull — hands finish beside your ears',
+      'Externally rotate at the top: think "double bicep pose" at the end',
+      'Control the return — don\'t let the band yank your arms forward',
+    ],
+    commonMistakes: [
+      'Pulling to the chin or neck — the target is your face/forehead level',
+      'Elbows dropping — keep them flared high throughout the pull',
+      'Using momentum — this is a slow, controlled shoulder-health movement',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_band_pull_apart', 'ex_cable_row'],
+  },
+
+  // ── Mobility ──────────────────────────────────────────────────────────────
+
+  {
+    id: 'ex_hip_90_90',
+    name: 'Hip 90/90 Stretch',
+    slug: 'hip-90-90',
+    category: 'mobility',
+    primaryMuscles: ['hip flexors', 'glutes', 'hip rotators'],
+    secondaryMuscles: ['adductors', 'piriformis'],
+    equipment: 'bodyweight',
+    description: 'A seated hip mobility drill that simultaneously stretches the internal and external rotators of both hips. Essential for squatters and desk workers.',
+    formCues: [
+      'Sit with both legs at 90° — front leg externally rotated, back leg internally rotated',
+      'Keep both hips on (or as close to) the floor as possible',
+      'Sit tall with a neutral spine — don\'t round your lower back',
+      'Lean forward over your front shin to increase the stretch',
+    ],
+    commonMistakes: [
+      'Letting the back hip lift off the floor — reduce the range until both hips stay grounded',
+      'Rounding the lower back instead of hinging at the hips',
+      'Rushing between sides — hold each position for 60–90 seconds minimum',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_pigeon_pose', 'ex_worlds_greatest_stretch'],
+  },
+
+  {
+    id: 'ex_worlds_greatest_stretch',
+    name: "World's Greatest Stretch",
+    slug: 'worlds-greatest-stretch',
+    category: 'mobility',
+    primaryMuscles: ['hip flexors', 'thoracic spine', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'adductors', 'shoulders'],
+    equipment: 'bodyweight',
+    movementPattern: 'core',
+    description: 'A multi-joint mobility drill that opens the hips, thoracic spine, and shoulders in one flowing movement. Excellent as a warm-up or standalone mobility work.',
+    formCues: [
+      'Start in a lunge: front foot flat on the floor, back knee hovering',
+      'Place the same-side hand as your front foot on the floor inside your front foot',
+      'Rotate your opposite elbow and arm toward the ceiling, following with your eyes',
+      'Keep your hips square and low — resist the urge to let them rotate open',
+    ],
+    commonMistakes: [
+      'Front knee caving inward — push it out over your little toe',
+      'Rushing through the rotation — pause at the top to breathe and deepen the stretch',
+      'Letting the back hip rise — keep it low and engaged throughout',
+    ],
+    difficulty: 'beginner',
+    isUnilateral: true,
+    substituteIds: ['ex_hip_90_90', 'ex_thoracic_rotation'],
+  },
+
+  {
+    id: 'ex_thoracic_rotation',
+    name: 'Thoracic Spine Rotation',
+    slug: 'thoracic-rotation',
+    category: 'mobility',
+    primaryMuscles: ['thoracic spine', 'upper back'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: 'bodyweight',
+    description: 'A ground-based drill to restore rotation in the upper spine. Combats the stiffness caused by sitting and improves overhead and pressing mechanics.',
+    formCues: [
+      'Lie on your side in the fetal position, knees stacked at 90°',
+      'Place your top hand behind your head — elbow pointing up to the ceiling',
+      'Rotate your top elbow open toward the floor behind you, following with your eyes',
+      'Keep your knees stacked and grounded — all movement comes from the upper back',
+    ],
+    commonMistakes: [
+      'Rotating from the lower back — the lumbar spine should stay still',
+      'Knees separating — place a foam roller or pillow between them',
+      'Not breathing into the rotation — inhale at the bottom, exhale as you open',
+    ],
+    difficulty: 'beginner',
+    isUnilateral: true,
+    substituteIds: ['ex_worlds_greatest_stretch', 'ex_cat_cow'],
+  },
+
+  {
+    id: 'ex_cat_cow',
+    name: 'Cat-Cow',
+    slug: 'cat-cow',
+    category: 'mobility',
+    primaryMuscles: ['spine', 'core'],
+    secondaryMuscles: ['hip flexors', 'glutes'],
+    equipment: 'bodyweight',
+    description: 'A rhythmic spinal mobilisation done on all fours. Moves the spine through full flexion and extension to lubricate the joints and activate deep core muscles.',
+    formCues: [
+      'Start on hands and knees — wrists under shoulders, knees under hips',
+      'Cow (arch): drop your belly, lift your head and tailbone simultaneously',
+      'Cat (round): tuck your tailbone, push the floor away, round your entire spine up',
+      'Move slowly and breathe: inhale into cow, exhale into cat',
+    ],
+    commonMistakes: [
+      'Only moving from the lower back — try to segment the movement through each vertebra',
+      'Collapsing the elbows — keep arms straight and push actively through the floor',
+      'Moving too fast — slower reps mean deeper spinal mobilisation',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_thoracic_rotation', 'ex_worlds_greatest_stretch'],
+  },
+
+  {
+    id: 'ex_pigeon_pose',
+    name: 'Pigeon Pose',
+    slug: 'pigeon-pose',
+    category: 'mobility',
+    primaryMuscles: ['glutes', 'hip rotators', 'piriformis'],
+    secondaryMuscles: ['hip flexors', 'groin'],
+    equipment: 'bodyweight',
+    description: 'A deep hip opener from yoga. Front leg externally rotated, back leg extended. Targets the piriformis and glutes aggressively.',
+    formCues: [
+      'Front shin as parallel to the top of the mat as your flexibility allows — work toward it',
+      'Square your hips to the floor — resist the urge to tilt to one side',
+      'Fold forward over your front leg to deepen the glute stretch',
+      'Breathe slowly and let gravity do the work — hold 60–120 seconds per side',
+    ],
+    commonMistakes: [
+      'Hips tilting sideways — use a folded blanket under the front hip to keep them level',
+      'Forcing the front shin to 90° before flexibility allows — work progressively',
+      'Holding your breath — steady breathing accelerates the release',
+    ],
+    difficulty: 'beginner',
+    isUnilateral: true,
+    substituteIds: ['ex_hip_90_90', 'ex_worlds_greatest_stretch'],
+  },
+
+  {
+    id: 'ex_couch_stretch',
+    name: 'Couch Stretch',
+    slug: 'couch-stretch',
+    category: 'mobility',
+    primaryMuscles: ['hip flexors', 'quads'],
+    secondaryMuscles: ['glutes', 'groin'],
+    equipment: 'bodyweight',
+    description: 'A powerful hip flexor and quad stretch done with your rear foot elevated against a wall. Essential for desk workers and anyone who squats or runs.',
+    formCues: [
+      'Rear knee on the floor, rear foot up against the wall — shin vertical against the wall',
+      'Drive your hips forward and squeeze your glute on the elevated side',
+      'Keep your torso upright — don\'t lean forward to cheat the stretch',
+      'Hold for 90–120 seconds per side, breathing deeply throughout',
+    ],
+    commonMistakes: [
+      'Anterior pelvic tilt — squeeze your glute to posteriorly tilt and deepen the stretch',
+      'Leaning forward — the stretch happens when you stay upright and push the hip forward',
+      'Only holding for 20–30 seconds — hip flexors need long holds to release',
+    ],
+    difficulty: 'beginner',
+    isUnilateral: true,
+    substituteIds: ['ex_worlds_greatest_stretch', 'ex_hip_90_90'],
+  },
+
+  {
+    id: 'ex_ankle_mobility',
+    name: 'Ankle Circles & Wall Drill',
+    slug: 'ankle-mobility',
+    category: 'mobility',
+    primaryMuscles: ['ankle', 'calves'],
+    secondaryMuscles: ['achilles', 'tibialis'],
+    equipment: 'bodyweight',
+    description: 'Ankle mobility work combining rotations and the knee-to-wall drill. Poor ankle mobility limits squatting depth and running mechanics.',
+    formCues: [
+      'Wall drill: toes 5 cm from wall, drive knee forward over little toe without heel rising',
+      'If knee touches wall, move toes back 1 cm; if not, move them closer',
+      'Ankle circles: full range in both directions, moving slowly through the stiff points',
+      '10–15 reps each direction, then test squat depth immediately after',
+    ],
+    commonMistakes: [
+      'Moving too fast through the circles — slow down at the stiff ranges',
+      'Heel rising during the wall drill — it must stay flat to count as mobility gain',
+      'Only doing this in warm-ups — daily practice is what creates lasting change',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_cat_cow', 'ex_worlds_greatest_stretch'],
+  },
+
+  // ── Additional Strength ───────────────────────────────────────────────────
+
+  {
+    id: 'ex_hip_thrust',
+    name: 'Barbell Hip Thrust',
+    slug: 'barbell-hip-thrust',
+    category: 'strength',
+    primaryMuscles: ['glutes'],
+    secondaryMuscles: ['hamstrings', 'core', 'quads'],
+    equipment: 'barbell',
+    movementPattern: 'hinge',
+    description: 'The premier glute isolation exercise. Upper back on a bench, barbell across the hips, drive hips up to full extension.',
+    formCues: [
+      'Bench at knee height — upper back (not neck) rests on the pad',
+      'Feet flat, shin vertical at the top — knees at 90° at peak contraction',
+      'Drive hips up by squeezing glutes hard — not by extending the lower back',
+      'Pause 1–2 seconds at the top for maximum glute activation',
+    ],
+    commonMistakes: [
+      'Hyperextending the lower back at the top — it\'s a glute squeeze, not a back arch',
+      'Feet too far forward — changes the joint angles and reduces glute work',
+      'No pause at the top — momentum replaces muscle work',
+    ],
+    difficulty: 'intermediate',
+    substituteIds: ['ex_banded_glute_bridge', 'ex_rdl', 'ex_bw_split_squat'],
+  },
+
+  {
+    id: 'ex_trap_bar_deadlift',
+    name: 'Trap Bar Deadlift',
+    slug: 'trap-bar-deadlift',
+    category: 'strength',
+    primaryMuscles: ['quads', 'glutes', 'hamstrings'],
+    secondaryMuscles: ['traps', 'lats', 'lower back', 'core'],
+    equipment: 'barbell',
+    movementPattern: 'hinge',
+    description: 'Deadlift variation using a hex/trap bar. More quad involvement than conventional, easier to learn, and less lower back stress.',
+    formCues: [
+      'Stand in the center of the trap bar — handles at mid-shin level',
+      'Hinge and grip the handles, chest up, lats tight',
+      'Drive through your heels — it\'s more of a squat-pull hybrid than a pure hinge',
+      'Full hip lockout and stand tall at the top',
+    ],
+    commonMistakes: [
+      'Standing too far back in the bar — keep yourself centered',
+      'Rounding the lower back — same rules as conventional: brace hard before the pull',
+      'Not driving through the legs — engage the quads from the start of the pull',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_deadlift', 'ex_leg_press', 'ex_rdl'],
+  },
+
+  {
+    id: 'ex_sumo_deadlift',
+    name: 'Sumo Deadlift',
+    slug: 'sumo-deadlift',
+    category: 'strength',
+    primaryMuscles: ['glutes', 'adductors', 'quads'],
+    secondaryMuscles: ['hamstrings', 'traps', 'lower back'],
+    equipment: 'barbell',
+    movementPattern: 'hinge',
+    description: 'Wide-stance deadlift variation with toes turned out. Shorter range of motion, more hip involvement, and less lower back demand.',
+    formCues: [
+      'Stance wider than shoulder-width, toes turned out 30–45°',
+      'Grip inside the legs, hands shoulder-width',
+      'Knees track over toes on the way down and up — don\'t let them cave',
+      'Lead with the chest, drive the floor apart with your feet',
+    ],
+    commonMistakes: [
+      'Hips shooting up first — keep hips and shoulders rising at the same rate',
+      'Knees caving in — think "spread the floor" with your feet',
+      'Stance too narrow — defeats the purpose; go wide enough to shorten the ROM',
+    ],
+    difficulty: 'intermediate',
+    substituteIds: ['ex_deadlift', 'ex_rdl', 'ex_leg_press'],
+  },
+
+  {
+    id: 'ex_close_grip_bench',
+    name: 'Close Grip Bench Press',
+    slug: 'close-grip-bench-press',
+    category: 'strength',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['chest', 'front deltoids'],
+    equipment: 'barbell',
+    movementPattern: 'push',
+    description: 'Bench press with hands shoulder-width apart to emphasise the triceps over the chest. Builds pressing lockout strength.',
+    formCues: [
+      'Grip shoulder-width — not too narrow or wrists will angle awkwardly',
+      'Same scapular retraction as regular bench — shoulder blades pinched back',
+      'Tuck elbows at 45-60° to keep tension on the triceps',
+      'Full lockout at the top — squeeze your triceps hard at extension',
+    ],
+    commonMistakes: [
+      'Grip too narrow — places excessive stress on the wrists',
+      'Letting elbows flare wide — negates the close-grip purpose',
+      'Bouncing off the chest — control the eccentric and press from a dead stop',
+    ],
+    difficulty: 'intermediate',
+    substituteIds: ['ex_skull_crusher', 'ex_tricep_pushdown', 'ex_dip'],
+  },
+
+  {
+    id: 'ex_arnold_press',
+    name: 'Arnold Press',
+    slug: 'arnold-press',
+    category: 'strength',
+    primaryMuscles: ['shoulders', 'front deltoids'],
+    secondaryMuscles: ['lateral deltoids', 'triceps', 'upper chest'],
+    equipment: 'dumbbell',
+    movementPattern: 'push',
+    description: 'Dumbbell shoulder press with a rotation from palms facing you at the bottom to palms facing forward at the top. Hits all three deltoid heads.',
+    formCues: [
+      'Start with dumbbells at chin height, palms facing you',
+      'As you press up, rotate palms outward so they face forward at the top',
+      'Reverse the rotation on the way down — palms face you again at the bottom',
+      'Keep core tight — don\'t arch your lower back to press more weight',
+    ],
+    commonMistakes: [
+      'Not completing the full rotation — do the full palm rotation each rep',
+      'Going too heavy — the rotation requires control, not just pressing power',
+      'Losing scapular stability at the bottom — keep your shoulder blades packed',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_db_shoulder_press', 'ex_overhead_press', 'ex_lateral_raise'],
+  },
+
+  {
+    id: 'ex_assisted_pull_up',
+    name: 'Assisted Pull-Up',
+    slug: 'assisted-pull-up',
+    category: 'strength',
+    primaryMuscles: ['lats', 'upper back'],
+    secondaryMuscles: ['biceps', 'rear deltoids'],
+    equipment: 'machine',
+    movementPattern: 'pull',
+    description: 'Pull-up on an assisted pull-up machine. The counterweight reduces effective bodyweight, allowing you to build pull-up strength progressively.',
+    formCues: [
+      'Use the minimum assistance that allows clean reps with full range',
+      'Overhand grip slightly wider than shoulder-width',
+      'Pull your chest toward the bar — lead with your elbows driving down',
+      'Lower under control to a full dead hang between reps',
+    ],
+    commonMistakes: [
+      'Too much assistance — reduces the stimulus; use as little as needed',
+      'Only going chin over bar — pull your chest to the bar for full range',
+      'Kipping — keep the movement strict for strength development',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_lat_pulldown', 'ex_inverted_row', 'ex_pull_up'],
+  },
+
+  {
+    id: 'ex_farmers_walk',
+    name: "Farmer's Walk",
+    slug: 'farmers-walk',
+    category: 'strength',
+    primaryMuscles: ['forearms', 'traps', 'core'],
+    secondaryMuscles: ['quads', 'glutes', 'shoulders'],
+    equipment: 'dumbbell',
+    movementPattern: 'carry',
+    description: 'Walk a set distance or time while carrying heavy dumbbells. One of the most functional exercises for total-body strength and grip.',
+    formCues: [
+      'Stand tall — chest up, shoulders packed back and down',
+      'Take short, controlled steps — don\'t let the weight pull you into a lean',
+      'Grip the handles hard — a strong grip transfers to almost every other lift',
+      'Breathe steadily — brace your core throughout the walk',
+    ],
+    commonMistakes: [
+      'Leaning to one side — keep even weight and a level torso',
+      'Walking too fast — controlled steps keep the core engaged properly',
+      'Going too light — use a weight that challenges your grip, not just your arms',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_plank', 'ex_deadlift', 'ex_cable_row'],
+  },
+
+  {
+    id: 'ex_battle_ropes',
+    name: 'Battle Ropes',
+    slug: 'battle-ropes',
+    category: 'cardio',
+    primaryMuscles: ['shoulders', 'arms', 'core'],
+    secondaryMuscles: ['back', 'legs'],
+    equipment: 'other',
+    movementPattern: 'carry',
+    description: 'High-intensity cardio using thick ropes anchored to a wall. Waves, slams, and circles create metabolic demand while building shoulder endurance.',
+    formCues: [
+      'Athletic stance — soft knees, slight hip hinge',
+      'Keep elbows at 90° and drive the waves from your shoulders, not just your wrists',
+      'Maintain consistent rhythm — aim for maximum output for the set duration',
+      'Breathe rhythmically — don\'t hold your breath during the set',
+    ],
+    commonMistakes: [
+      'Standing upright — a slight hip hinge protects your lower back',
+      'Tiny waves with only wrist movement — drive from the shoulders for full-body demand',
+      'Stopping when it burns — push through the burn; that\'s the metabolic stimulus',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_rowing_machine', 'ex_jump_rope', 'ex_treadmill_run'],
+  },
+
+  {
+    id: 'ex_box_jump',
+    name: 'Box Jump',
+    slug: 'box-jump',
+    category: 'cardio',
+    primaryMuscles: ['quads', 'glutes', 'calves'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: 'bodyweight',
+    movementPattern: 'squat',
+    description: 'Explosive jump onto a raised box. Develops lower body power and improves fast-twitch muscle fibre recruitment.',
+    formCues: [
+      'Start in a quarter-squat with an athletic stance, arms back',
+      'Swing arms forward and explode through your hips, knees, and ankles simultaneously',
+      'Land softly in a quarter-squat on the box — absorb the impact with your legs',
+      'Stand fully upright on the box, then step (not jump) back down',
+    ],
+    commonMistakes: [
+      'Jumping down instead of stepping — this multiplies impact force and injury risk',
+      'Landing stiff-legged — always land softly with bent knees to absorb the force',
+      'Box too high — start conservatively; height should allow a soft landing',
+    ],
+    difficulty: 'intermediate',
+    substituteIds: ['ex_bw_squat', 'ex_lunge', 'ex_jump_rope'],
+  },
+
+  {
+    id: 'ex_band_squat',
+    name: 'Banded Squat',
+    slug: 'banded-squat',
+    category: 'strength',
+    primaryMuscles: ['quads', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core', 'hip abductors'],
+    equipment: 'band',
+    movementPattern: 'squat',
+    description: 'Squat with a resistance band just above the knees. The lateral tension forces the glutes and hip abductors to stay active throughout the movement.',
+    formCues: [
+      'Band sits just above the knees — actively push outward against it every rep',
+      'Feet shoulder-width, toes out slightly — drive your knees over your toes',
+      'Brace your core, chest up, and squat to parallel or below',
+      'Drive up through your whole foot — don\'t let heels rise',
+    ],
+    commonMistakes: [
+      'Knees caving in — the whole point of the band is to resist this; push them out',
+      'Only partial depth — use a box or chair to practice sitting to depth',
+      'Not pushing outward — passive wearing of the band does nothing; actively push against it',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_goblet_squat', 'ex_bw_squat', 'ex_leg_press'],
+  },
+
+  {
+    id: 'ex_band_row',
+    name: 'Resistance Band Row',
+    slug: 'resistance-band-row',
+    category: 'strength',
+    primaryMuscles: ['lats', 'upper back', 'rhomboids'],
+    secondaryMuscles: ['biceps', 'rear deltoids'],
+    equipment: 'band',
+    movementPattern: 'pull',
+    description: 'Seated or standing horizontal row using a resistance band. A great home or travel substitute for cable and machine rows.',
+    formCues: [
+      'Anchor the band at waist height — door anchor or around a pole',
+      'Sit or stand with a slight forward lean, arms fully extended at the start',
+      'Row the band to your lower chest, driving elbows back and squeezing shoulder blades',
+      'Pause at full contraction, then extend arms slowly back to the start',
+    ],
+    commonMistakes: [
+      'Leaning back to pull more — stay in a fixed position and move only your arms',
+      'Not fully extending — always start each rep with arms fully stretched forward',
+      'Band too tight — you should feel a full stretch at the start position',
+    ],
+    difficulty: 'beginner',
+    substituteIds: ['ex_cable_row', 'ex_db_row', 'ex_barbell_row'],
+  },
+
 ]
 
 // ─── Seed function ────────────────────────────────────────────────────────────
 
 export function seedExercisesIfNeeded(): void {
-  const row = db.getFirstSync<{ c: number }>('SELECT COUNT(*) as c FROM exercises')
-  if (row && row.c > 0) return
+  const existing = db.getAllSync<{ id: string }>('SELECT id FROM exercises')
+  const existingIds = new Set(existing.map((r) => r.id))
+  const toInsert = EXERCISES.filter((ex) => !existingIds.has(ex.id))
+
+  if (toInsert.length === 0) return
 
   const now = new Date().toISOString()
 
-  for (const ex of EXERCISES) {
-    db.runSync(
-      `INSERT INTO exercises (
-        id, name, slug, category, primary_muscles, secondary_muscles,
-        equipment, movement_pattern, description, form_cues, common_mistakes,
-        difficulty, substitute_ids, is_unilateral, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        ex.id,
-        ex.name,
-        ex.slug,
-        ex.category,
-        JSON.stringify(ex.primaryMuscles),
-        ex.secondaryMuscles ? JSON.stringify(ex.secondaryMuscles) : null,
-        ex.equipment,
-        ex.movementPattern ?? null,
-        ex.description,
-        JSON.stringify(ex.formCues),
-        JSON.stringify(ex.commonMistakes),
-        ex.difficulty,
-        ex.substituteIds ? JSON.stringify(ex.substituteIds) : null,
-        ex.isUnilateral ? 1 : 0,
-        now,
-      ],
-    )
+  for (const ex of toInsert) {
+    try {
+      db.runSync(
+        `INSERT OR IGNORE INTO exercises (
+          id, name, slug, category, primary_muscles, secondary_muscles,
+          equipment, movement_pattern, description, form_cues, common_mistakes,
+          difficulty, substitute_ids, is_unilateral, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ex.id,
+          ex.name,
+          ex.slug,
+          ex.category,
+          JSON.stringify(ex.primaryMuscles),
+          ex.secondaryMuscles ? JSON.stringify(ex.secondaryMuscles) : null,
+          ex.equipment,
+          ex.movementPattern ?? null,
+          ex.description,
+          JSON.stringify(ex.formCues),
+          JSON.stringify(ex.commonMistakes),
+          ex.difficulty,
+          ex.substituteIds ? JSON.stringify(ex.substituteIds) : null,
+          ex.isUnilateral ? 1 : 0,
+          now,
+        ],
+      )
+    } catch { /* slug conflict or other constraint — skip */ }
   }
 }

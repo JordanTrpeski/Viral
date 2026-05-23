@@ -322,29 +322,30 @@ export default function ExerciseHistoryScreen() {
             <Pressable
               key={t.key}
               onPress={() => setTab(t.key)}
-              style={({ pressed }) => ({
+              style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.7 : 1 })}
+            >
+              <View style={{
                 flex: 1,
                 alignItems: 'center',
                 paddingVertical: spacing.sm,
                 borderBottomWidth: 2,
                 borderBottomColor: active ? colors.primary : 'transparent',
-                opacity: pressed ? 0.7 : 1,
                 gap: 3,
-              })}
-            >
-              <Ionicons
-                name={t.icon}
-                size={16}
-                color={active ? colors.primary : colors.textMuted}
-              />
-              <Text style={{
-                color: active ? colors.primary : colors.textMuted,
-                fontSize: fontSize.micro,
-                fontWeight: active ? '600' : '400',
-                fontFamily: active ? `${fonts.ui}_600SemiBold` : `${fonts.ui}_400Regular`,
               }}>
-                {t.label}
-              </Text>
+                <Ionicons
+                  name={t.icon}
+                  size={16}
+                  color={active ? colors.primary : colors.textMuted}
+                />
+                <Text style={{
+                  color: active ? colors.primary : colors.textMuted,
+                  fontSize: fontSize.micro,
+                  fontWeight: active ? '600' : '400',
+                  fontFamily: active ? `${fonts.ui}_600SemiBold` : `${fonts.ui}_400Regular`,
+                }}>
+                  {t.label}
+                </Text>
+              </View>
             </Pressable>
           )
         })}
