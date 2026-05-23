@@ -504,11 +504,11 @@ function BudgetCard({ spent, income, month, onPress }: {
           <Text style={{ color: colors.textMuted, fontSize: fontSize.label }}>{month}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginBottom: spacing.sm }}>
-          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.mono}_700Bold` }}>€{spent.toFixed(0)}</Text>
-          <Text style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.mono}_400Regular` }}>/ €{income.toFixed(0)} income</Text>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', fontFamily: `${fonts.ui}_700Bold` }}>€{spent.toFixed(0)}</Text>
+          <Text numberOfLines={1} style={{ color: colors.textMuted, fontSize: fontSize.label, fontFamily: `${fonts.ui}_400Regular`, flexShrink: 1 }}>/ €{income.toFixed(0)} income</Text>
         </View>
         <ProgressBar progress={pct} color={barColor} height={4} />
-        <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs }}>
+        <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, marginTop: spacing.xs, fontFamily: `${fonts.ui}_400Regular` }}>
           Left this month: €{Math.max(0, left).toFixed(2)}
         </Text>
       </View>

@@ -100,37 +100,40 @@ function DayCell({
   onPress: () => void
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1, alignItems: 'center', paddingVertical: spacing.xs,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <View style={{
-        width: 32, height: 32, borderRadius: 16,
-        alignItems: 'center', justifyContent: 'center',
-        backgroundColor: isSelected ? colors.organizer : isToday ? `${colors.organizer}33` : 'transparent',
-        borderWidth: isToday && !isSelected ? 1 : 0,
-        borderColor: colors.organizer,
-      }}>
-        <Text style={{
-          color: isSelected ? '#fff' : isToday ? colors.organizer : colors.text,
-          fontSize: fontSize.micro, fontWeight: isToday || isSelected ? '700' : '400',
+    <View style={{ flex: 1 }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          alignItems: 'center', paddingVertical: spacing.xs,
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <View style={{
+          width: 32, height: 32, borderRadius: 16,
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: isSelected ? colors.organizer : isToday ? `${colors.organizer}33` : 'transparent',
+          borderWidth: isToday && !isSelected ? 1 : 0,
+          borderColor: colors.organizer,
         }}>
-          {day}
-        </Text>
-      </View>
-      {hasBirthday && !isSelected && (
-        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.people, marginTop: 2 }} />
-      )}
-      {dotColors.length > 0 && !hasBirthday && (
-        <EventDots colors={dotColors} />
-      )}
-      {hasBirthday && dotColors.length > 0 && (
-        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.people, marginTop: 2 }} />
-      )}
-    </Pressable>
+          <Text style={{
+            color: isSelected ? '#fff' : isToday ? colors.organizer : colors.text,
+            fontSize: fontSize.micro, fontWeight: isToday || isSelected ? '700' : '400',
+            includeFontPadding: false,
+          }}>
+            {day}
+          </Text>
+        </View>
+        {hasBirthday && !isSelected && (
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.people, marginTop: 2 }} />
+        )}
+        {dotColors.length > 0 && !hasBirthday && (
+          <EventDots colors={dotColors} />
+        )}
+        {hasBirthday && dotColors.length > 0 && (
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.people, marginTop: 2 }} />
+        )}
+      </Pressable>
+    </View>
   )
 }
 
@@ -232,10 +235,10 @@ function WeekView({
           const isT  = ds === today
           const isSel = ds === selectedDate
           return (
+            <View key={i} style={{ flex: 1 }}>
             <Pressable
-              key={i}
               onPress={() => onDayHeaderPress(ds)}
-              style={{ flex: 1, alignItems: 'center', paddingTop: 4 }}
+              style={({ pressed }) => ({ alignItems: 'center', paddingTop: 4, opacity: pressed ? 0.7 : 1 })}
             >
               <Text style={{
                 color: colors.textMuted,
@@ -262,6 +265,7 @@ function WeekView({
                 </Text>
               </View>
             </Pressable>
+            </View>
           )
         })}
       </View>

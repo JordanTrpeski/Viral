@@ -45,28 +45,31 @@ function FilterChip({
   label, active, onPress,
 }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1, marginRight: spacing.xs })}
-    >
-      <View style={{
-        backgroundColor: active ? colors.primary : colors.surface2,
-        borderRadius: radius.full,
-        paddingHorizontal: spacing.md,
-        paddingVertical: 6,
-        borderWidth: 1,
-        borderColor: active ? colors.primary : colors.borderAccent,
-      }}>
-        <Text style={{
-          color: active ? '#fff' : colors.text,
-          fontSize: fontSize.label,
-          fontWeight: '600',
-          fontFamily: `${fonts.ui}_600SemiBold`,
+    <View style={{ marginRight: spacing.xs }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+      >
+        <View style={{
+          backgroundColor: active ? colors.primary : colors.surface2,
+          borderRadius: radius.full,
+          paddingHorizontal: spacing.md,
+          paddingVertical: 6,
+          borderWidth: 1,
+          borderColor: active ? colors.primary : colors.borderAccent,
         }}>
-          {label}
-        </Text>
-      </View>
-    </Pressable>
+          <Text style={{
+            color: active ? '#fff' : colors.text,
+            fontSize: fontSize.label,
+            fontWeight: '600',
+            fontFamily: `${fonts.ui}_600SemiBold`,
+            includeFontPadding: false,
+          }}>
+            {label}
+          </Text>
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
