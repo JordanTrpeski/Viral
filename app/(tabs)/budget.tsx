@@ -241,36 +241,40 @@ export default function BudgetScreen() {
 
         {/* History links */}
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Pressable
-            onPress={() => router.push('/budget/income-history' as never)}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, flex: 1 })}
-          >
-            <View style={{
-              backgroundColor: colors.surface, borderRadius: radius.md,
-              borderWidth: 1, borderColor: colors.border,
-              flexDirection: 'row', alignItems: 'center',
-              paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-            }}>
-              <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-            </View>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/budget/expense-history' as never)}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, flex: 1 })}
-          >
-            <View style={{
-              backgroundColor: colors.surface, borderRadius: radius.md,
-              borderWidth: 1, borderColor: colors.border,
-              flexDirection: 'row', alignItems: 'center',
-              paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-            }}>
-              <Ionicons name="receipt-outline" size={16} color={colors.budget} style={{ marginRight: spacing.xs }} />
-              <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Expenses</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-            </View>
-          </Pressable>
+          <View style={{ flex: 1, borderRadius: radius.md, overflow: 'hidden' }}>
+            <Pressable
+              onPress={() => router.push('/budget/income-history' as never)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <View style={{
+                backgroundColor: colors.surface, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border,
+                flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+              }}>
+                <Ionicons name="cash-outline" size={16} color={colors.success} style={{ marginRight: spacing.xs }} />
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Income</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+              </View>
+            </Pressable>
+          </View>
+          <View style={{ flex: 1, borderRadius: radius.md, overflow: 'hidden' }}>
+            <Pressable
+              onPress={() => router.push('/budget/expense-history' as never)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <View style={{
+                backgroundColor: colors.surface, borderRadius: radius.md,
+                borderWidth: 1, borderColor: colors.border,
+                flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+              }}>
+                <Ionicons name="receipt-outline" size={16} color={colors.budget} style={{ marginRight: spacing.xs }} />
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.label, flex: 1 }}>Expenses</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+              </View>
+            </Pressable>
+          </View>
         </View>
 
         {/* Pending recurring banners */}
@@ -506,7 +510,7 @@ export default function BudgetScreen() {
             </Text>
             <Pressable
               onPress={() => router.push('/budget/add-expense' as never)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, padding: spacing.sm })}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
             >
               <View style={{
                 backgroundColor: colors.budget,
