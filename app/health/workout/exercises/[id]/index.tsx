@@ -77,38 +77,40 @@ function ExpandableSection({
     }}>
       <Pressable
         onPress={() => setOpen((v) => !v)}
-        style={({ pressed }) => ({
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <View style={{
           flexDirection: 'row',
           alignItems: 'center',
           padding: spacing.md,
           gap: spacing.sm,
-          opacity: pressed ? 0.8 : 1,
-        })}
-      >
-        <View style={{
-          width: 30,
-          height: 30,
-          borderRadius: radius.sm,
-          backgroundColor: `${accentColor}22`,
-          alignItems: 'center',
-          justifyContent: 'center',
         }}>
-          <Ionicons name={icon} size={16} color={accentColor} />
+          <View style={{
+            width: 30,
+            height: 30,
+            borderRadius: radius.sm,
+            backgroundColor: `${accentColor}22`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Ionicons name={icon} size={16} color={accentColor} />
+          </View>
+          <Text style={{
+            flex: 1,
+            color: colors.text,
+            fontSize: fontSize.cardTitle,
+            fontWeight: '600',
+            fontFamily: `${fonts.ui}_600SemiBold`,
+          }}>
+            {title}
+          </Text>
+          <Ionicons
+            name={open ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={colors.textMuted}
+          />
         </View>
-        <Text style={{
-          flex: 1,
-          color: colors.text,
-          fontSize: fontSize.cardTitle,
-          fontWeight: '600',
-          fontFamily: `${fonts.ui}_600SemiBold`,
-        }}>
-          {title}
-        </Text>
-        <Ionicons
-          name={open ? 'chevron-up' : 'chevron-down'}
-          size={16}
-          color={colors.textMuted}
-        />
       </Pressable>
       {open && (
         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.md, gap: spacing.xs }}>
