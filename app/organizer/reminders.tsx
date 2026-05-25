@@ -9,7 +9,6 @@ import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import SwipeableRow from '@core/components/SwipeableRow'
 import type { OrganizerReminder, OrganizerPerson } from '@core/types'
-import { dbInsertReminder } from '@core/db/organizerQueries'
 import { localDateStr } from '@core/utils/units'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -34,6 +33,17 @@ const REPEAT_LABELS: Record<string, string> = {
 function todayStr()    { return localDateStr() }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return localDateStr(d) }
 function weekLaterStr() { const d = new Date(); d.setDate(d.getDate() + 7); return localDateStr(d) }
+
+function formatSnoozeUntil(iso: string): string {
+  const d = new Date(iso)
+  const todayDate = new Date()
+  const tomorrowDate = new Date()
+  tomorrowDate.setDate(todayDate.getDate() + 1)
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  if (d.toDateString() === todayDate.toDateString()) return `today ${time}`
+  if (d.toDateString() === tomorrowDate.toDateString()) return `tomorrow ${time}`
+  return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${time}`
+}
 
 function nextOccurrence(dueDate: string, repeat: string): string {
   const d = new Date(dueDate + 'T12:00:00')
@@ -63,7 +73,7 @@ function ReminderRow({
   const isOverdue = !isCompleted && reminder.dueDate < today
   const priorityColor = PRIORITY_COLORS[reminder.priority] ?? colors.textMuted
   const repeatLabel   = reminder.repeat && reminder.repeat !== 'none' ? REPEAT_LABELS[reminder.repeat] : null
-  const isSnoozed     = !isCompleted && !!reminder.snoozedUntil
+  const isSnoozed     = !isCompleted && !!reminder.snoozedUntil && new Date(reminder.snoozedUntil).getTime() > Date.now()
 
   const rightActions = isCompleted
     ? [
@@ -123,7 +133,7 @@ function ReminderRow({
             {/* Snoozed */}
             {isSnoozed && (
               <View style={{ backgroundColor: `${colors.organizer}22`, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 }}>
-                <Text style={{ color: colors.organizer, fontSize: fontSize.micro }}>Snoozed</Text>
+                <Text style={{ color: colors.organizer, fontSize: fontSize.micro }}>⏰ Until {formatSnoozeUntil(reminder.snoozedUntil!)}</Text>
               </View>
             )}
 
@@ -219,15 +229,20 @@ export default function RemindersScreen() {
   const today    = todayStr()
   const tomorrow = tomorrowStr()
   const weekEnd  = weekLaterStr()
+  const now      = Date.now()
 
   const active    = reminders.filter((r) => !r.isCompleted)
   const completed = reminders.filter((r) => r.isCompleted)
 
-  const overdue    = active.filter((r) => r.dueDate < today)
-  const todayList  = active.filter((r) => r.dueDate === today)
-  const tomorrowList = active.filter((r) => r.dueDate === tomorrow)
-  const thisWeek   = active.filter((r) => r.dueDate > tomorrow && r.dueDate <= weekEnd)
-  const later      = active.filter((r) => r.dueDate > weekEnd)
+  const isActivelySnoozed = (r: OrganizerReminder) =>
+    !!r.snoozedUntil && new Date(r.snoozedUntil).getTime() > now
+
+  const snoozed      = active.filter(isActivelySnoozed)
+  const overdue      = active.filter((r) => !isActivelySnoozed(r) && r.dueDate < today)
+  const todayList    = active.filter((r) => !isActivelySnoozed(r) && r.dueDate === today)
+  const tomorrowList = active.filter((r) => !isActivelySnoozed(r) && r.dueDate === tomorrow)
+  const thisWeek     = active.filter((r) => !isActivelySnoozed(r) && r.dueDate > tomorrow && r.dueDate <= weekEnd)
+  const later        = active.filter((r) => !isActivelySnoozed(r) && r.dueDate > weekEnd)
 
   function handleComplete(reminder: OrganizerReminder) {
     completeReminder(reminder.id)
@@ -303,6 +318,13 @@ export default function RemindersScreen() {
             <>
               <SectionHeader title="OVERDUE" color={colors.danger} count={overdue.length} />
               <View style={{ gap: spacing.xs }}>{overdue.map((r) => renderRow(r))}</View>
+            </>
+          )}
+
+          {snoozed.length > 0 && (
+            <>
+              <SectionHeader title="SNOOZED" color={colors.textMuted} count={snoozed.length} />
+              <View style={{ gap: spacing.xs, opacity: 0.75 }}>{snoozed.map((r) => renderRow(r))}</View>
             </>
           )}
 
