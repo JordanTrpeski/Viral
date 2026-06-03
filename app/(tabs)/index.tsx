@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Alert, AppState } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
@@ -661,6 +661,11 @@ function OrganizerCard({ onPress }: { onPress: () => void }) {
   )
 }
 
+// ─── Staleness threshold ───────────────────────────────────────────────────────
+// Dashboard data is considered fresh for this long after the last full load.
+// Tab switches within the window skip all 11 DB queries.
+const STALE_MS = 5 * 60 * 1000 // 5 minutes
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -679,6 +684,8 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false)
   const [previewItems, setPreviewItems] = useState<ChecklistItem[]>([])
+  // Tracks when loadAll() last ran. 0 = never (guarantees first-mount load).
+  const lastLoadedAt = useRef(0)
 
   const today = todayStr()
   const hour = new Date().getHours()
@@ -702,12 +709,18 @@ export default function HomeScreen() {
     loadOrgReminders()
     loadOrgPeople()
     loadOrgNotes()
+    lastLoadedAt.current = Date.now()
   }
 
-  // Re-run loadAll every time this screen comes into focus (covers returning
-  // from settings, switching tabs, and the initial mount).
+  // On focus: only run loadAll if data is stale (>5 min old) or never loaded.
+  // Prevents re-querying all 11 stores on every tab switch.
+  // Pull-to-refresh (handleRefresh) bypasses this check and always reloads.
   useFocusEffect(
-    useCallback(() => { loadAll() }, [])
+    useCallback(() => {
+      if (Date.now() - lastLoadedAt.current > STALE_MS) {
+        loadAll()
+      }
+    }, [])
   )
 
   // Secondary guard for the launch race: _layout calls loadProfile() async,
