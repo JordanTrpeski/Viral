@@ -16,6 +16,11 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
 const orgStorage = createStorage('organizer')
 
+// Hub-level data is considered fresh for this long after the last full load.
+// Sub-screens (reminders.tsx, notes.tsx, etc.) have their own useFocusEffect
+// and are intentionally NOT gated — they always want current data.
+const STALE_MS = 5 * 60 * 1000 // 5 minutes
+
 interface HubCard {
   title: string
   subtitle: string
@@ -39,14 +44,26 @@ export default function OrganizerScreen() {
   const { people, reminders, notes, loadPeople, loadReminders, loadNotes } = useOrganizerStore()
   const { checklists, loadChecklists } = useChecklistStore()
   const [permissionGranted, setPermissionGranted] = useState(true)
-  const permSheetRef = useRef<BottomSheet>(null)
+  const permSheetRef   = useRef<BottomSheet>(null)
+  // Tracks when the hub's 4 DB loads last ran. 0 = never (first mount always loads).
+  const lastLoadedAt   = useRef(0)
+
+  function loadHubData() {
+    loadPeople()
+    loadReminders()
+    loadNotes()
+    loadChecklists()
+    lastLoadedAt.current = Date.now()
+  }
 
   useFocusEffect(
     useCallback(() => {
-      loadPeople()
-      loadReminders()
-      loadNotes()
-      loadChecklists()
+      // Gate the 4 DB reads — skip if data is fresh (< 5 min old).
+      if (Date.now() - lastLoadedAt.current > STALE_MS) {
+        loadHubData()
+      }
+      // Permission check + birthday scheduler: always run regardless of staleness.
+      // It's async/non-blocking and notification permission can change between focuses.
       checkPermissionAndSchedule()
     }, [])
   )
@@ -146,9 +163,14 @@ export default function OrganizerScreen() {
         <Text style={{ color: colors.text, fontSize: fontSize.screenTitle, fontWeight: '700' }}>
           Organizer
         </Text>
-        <Pressable onPress={() => router.push('/organizer/tiers' as never)} hitSlop={12}>
-          <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Pressable onPress={() => loadHubData()} hitSlop={12}>
+            <Ionicons name="refresh-outline" size={22} color={colors.textMuted} />
+          </Pressable>
+          <Pressable onPress={() => router.push('/organizer/tiers' as never)} hitSlop={12}>
+            <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Permission banner */}
