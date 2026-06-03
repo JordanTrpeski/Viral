@@ -160,6 +160,9 @@ export default function NotesScreen() {
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
           Notes
         </Text>
+        <Pressable onPress={() => router.push('/organizer/tags' as never)} style={{ padding: spacing.sm }}>
+          <Ionicons name="pricetags-outline" size={20} color={colors.textMuted} />
+        </Pressable>
         <Pressable
           onPress={() => setShowArchived((v) => !v)}
           style={{ padding: spacing.sm }}

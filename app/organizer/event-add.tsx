@@ -143,12 +143,13 @@ async function scheduleEventReminder(
 
 export default function EventAddScreen() {
   const router = useRouter()
-  const { date: dateParam, time: timeParam, id: editId } = useLocalSearchParams<{
-    date?: string; time?: string; id?: string
+  const { date: dateParam, time: timeParam, id: editId, occurrenceDate } = useLocalSearchParams<{
+    date?: string; time?: string; id?: string; occurrenceDate?: string
   }>()
   const isEditing = !!editId
+  const isDetach  = isEditing && !!occurrenceDate  // "edit this occurrence only"
 
-  const { people, loadPeople, addEvent, editEvent } = useOrganizerStore()
+  const { people, loadPeople, addEvent, editEvent, detachOccurrence } = useOrganizerStore()
 
   const [title,     setTitle]     = useState('')
   const [date,      setDate]      = useState(dateParam ?? localDateStr())
@@ -215,20 +216,29 @@ export default function EventAddScreen() {
     const [y, m] = date.split('-').map(Number)
 
     if (isEditing && editId) {
-      // ── Edit mode ──────────────────────────────────────────────────────────
-      // NOTE: editing a repeating event updates the base record (all occurrences).
-      // "Edit this occurrence only" requires organizer_event_exceptions (Phase 2).
       const baseId = editId.includes('__occurs__') ? editId.split('__occurs__')[0] : editId
 
-      editEvent(baseId, t, date, st, et, isAllDay, location.trim() || null, repeat, color, noteText.trim() || null, personId, y, m)
+      if (isDetach && occurrenceDate) {
+        // ── Detach mode: edit this occurrence only ─────────────────────────
+        // Adds an exception for the original date + creates a new standalone event.
+        detachOccurrence(
+          baseId, occurrenceDate, t, st, et,
+          isAllDay, location.trim() || null, color, noteText.trim() || null, personId, y, m,
+        )
+        // Note: reminder scheduling for detached events follows the same path as new events below.
+        // No notifications are carried over from the base event's reminder rows.
+      } else {
+        // ── Edit all occurrences ───────────────────────────────────────────
+        editEvent(baseId, t, date, st, et, isAllDay, location.trim() || null, repeat, color, noteText.trim() || null, personId, y, m)
 
-      // Reminder diff: cancel all old notifications, wipe old rows, re-insert desired set
-      await cancelNotificationsByPrefix(`event-${baseId}-`)
-      dbDeleteEventReminders(baseId)
-      for (const minutesBefore of reminders) {
-        dbInsertEventReminder(Crypto.randomUUID(), baseId, minutesBefore)
-        for (const occurrenceDate of occurrenceDates(date, repeat)) {
-          await scheduleEventReminder(baseId, t, occurrenceDate, st, minutesBefore)
+        // Reminder diff: cancel all old notifications, wipe old rows, re-insert desired set
+        await cancelNotificationsByPrefix(`event-${baseId}-`)
+        dbDeleteEventReminders(baseId)
+        for (const minutesBefore of reminders) {
+          dbInsertEventReminder(Crypto.randomUUID(), baseId, minutesBefore)
+          for (const oDate of occurrenceDates(date, repeat)) {
+            await scheduleEventReminder(baseId, t, oDate, st, minutesBefore)
+          }
         }
       }
     } else {
@@ -238,8 +248,8 @@ export default function EventAddScreen() {
       if (reminders.size > 0 && eventId) {
         for (const minutesBefore of reminders) {
           dbInsertEventReminder(Crypto.randomUUID(), eventId, minutesBefore)
-          for (const occurrenceDate of occurrenceDates(date, repeat)) {
-            await scheduleEventReminder(eventId, t, occurrenceDate, st, minutesBefore)
+          for (const oDate of occurrenceDates(date, repeat)) {
+            await scheduleEventReminder(eventId, t, oDate, st, minutesBefore)
           }
         }
       }
@@ -260,7 +270,7 @@ export default function EventAddScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
-          {isEditing ? 'Edit Event' : 'New Event'}
+          {isDetach ? 'Edit Occurrence' : isEditing ? 'Edit Event' : 'New Event'}
         </Text>
         <Pressable onPress={handleSave} style={{ padding: spacing.sm }}>
           <Text style={{ color: colors.organizer, fontSize: fontSize.body, fontWeight: '700' }}>

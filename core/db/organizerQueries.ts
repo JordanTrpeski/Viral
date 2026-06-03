@@ -400,6 +400,7 @@ function rowToVirtualEvent(row: EventRow, targetDate: string): OrganizerEvent {
 
 export function dbGetEventsForMonth(year: number, month: number): OrganizerEvent[] {
   const prefix    = `${year}-${String(month).padStart(2, '0')}`
+  const deleted   = loadDeletedExceptions() // one bulk load
 
   // Non-repeating + repeating events that START this month
   const thisMonth = db.getAllSync<EventRow>(
@@ -414,25 +415,29 @@ export function dbGetEventsForMonth(year: number, month: number): OrganizerEvent
     [prefix],
   )
 
-  // Generate virtual occurrences for past repeating events within this month
+  // Generate virtual occurrences, skipping deleted exceptions
   const daysInMonth = new Date(year, month, 0).getDate()
   const virtual: OrganizerEvent[] = []
   for (const row of pastRepeating) {
     if (!row.repeat || row.repeat === 'none') continue
     for (let day = 1; day <= daysInMonth; day++) {
       const targetDate = `${prefix}-${String(day).padStart(2, '0')}`
-      if (doesRepeatOn(row.date, row.repeat, targetDate)) {
+      if (doesRepeatOn(row.date, row.repeat, targetDate) && !deleted.has(`${row.id}__${targetDate}`)) {
         virtual.push(rowToVirtualEvent(row, targetDate))
       }
     }
   }
 
-  return [...thisMonth.map(rowToEvent), ...virtual]
-    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+  return [
+    ...thisMonth.map(rowToEvent).filter((e) => !deleted.has(`${e.id}__${e.date}`)),
+    ...virtual,
+  ].sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 }
 
 export function dbGetEventsForDate(date: string): OrganizerEvent[] {
-  // Exact matches
+  const deleted = loadDeletedExceptions() // one bulk load
+
+  // Exact matches (filter out deleted exceptions for the base event on its own date)
   const exact = db.getAllSync<EventRow>(
     'SELECT * FROM organizer_events WHERE date=? ORDER BY start_time ASC',
     [date],
@@ -445,11 +450,40 @@ export function dbGetEventsForDate(date: string): OrganizerEvent[] {
   )
 
   const virtual: OrganizerEvent[] = repeating
-    .filter((r) => r.repeat && doesRepeatOn(r.date, r.repeat, date))
+    .filter((r) => r.repeat && doesRepeatOn(r.date, r.repeat, date) && !deleted.has(`${r.id}__${date}`))
     .map((r) => rowToVirtualEvent(r, date))
 
-  return [...exact.map(rowToEvent), ...virtual]
-    .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+  return [
+    ...exact.map(rowToEvent).filter((e) => !deleted.has(`${e.id}__${e.date}`)),
+    ...virtual,
+  ].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+}
+
+// ── Event Exceptions ──────────────────────────────────────────────────────────
+
+export function dbInsertEventException(
+  id: string, eventId: string, exceptionDate: string, exceptionType: 'deleted' | 'rescheduled',
+): void {
+  const now = new Date().toISOString()
+  db.runSync(
+    `INSERT OR REPLACE INTO organizer_event_exceptions
+     (id, event_id, exception_date, exception_type, created_at) VALUES (?, ?, ?, ?, ?)`,
+    [id, eventId, exceptionDate, exceptionType, now],
+  )
+}
+
+/**
+ * Returns a Set<eventId__date> of all deleted-type exceptions.
+ * Used by event query functions to filter out single deleted occurrences.
+ * Single bulk load per query call avoids N+1 against the exceptions table.
+ */
+function loadDeletedExceptions(): Set<string> {
+  const rows = db.getAllSync<{ event_id: string; exception_date: string }>(
+    `SELECT event_id, exception_date FROM organizer_event_exceptions WHERE exception_type='deleted'`,
+  )
+  const s = new Set<string>()
+  for (const r of rows) s.add(`${r.event_id}__${r.exception_date}`)
+  return s
 }
 
 export function dbInsertEvent(
@@ -604,6 +638,10 @@ export function dbAddNoteTag(noteId: string, tagId: string): void {
 
 export function dbRemoveNoteTag(noteId: string, tagId: string): void {
   db.runSync('DELETE FROM organizer_note_tags WHERE note_id=? AND tag_id=?', [noteId, tagId])
+}
+
+export function dbRenameTag(id: string, newName: string): void {
+  db.runSync('UPDATE organizer_tags SET name=? WHERE id=?', [newName, id])
 }
 
 export function dbDeleteTag(id: string): void {

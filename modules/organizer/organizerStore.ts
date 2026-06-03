@@ -15,9 +15,9 @@ import {
   dbGetPeople, dbInsertPerson, dbUpdatePerson, dbDeletePerson,
   dbGetReminders, dbInsertReminder, dbUpdateReminder, dbCompleteReminder, dbUncompleteReminder,
   dbDeleteReminder, dbSnoozeReminder, dbUpdateReminderDueDate,
-  dbGetEventsForMonth, dbInsertEvent, dbUpdateEvent, dbDeleteEvent,
+  dbGetEventsForMonth, dbInsertEvent, dbUpdateEvent, dbDeleteEvent, dbInsertEventException,
   dbGetNotes, dbInsertNote, dbUpdateNote, dbPinNote, dbArchiveNote, dbDeleteNote,
-  dbGetTags, dbInsertTag, dbDeleteTag, dbAddNoteTag, dbRemoveNoteTag, dbGetAllNoteTagPairs,
+  dbGetTags, dbInsertTag, dbRenameTag, dbDeleteTag, dbAddNoteTag, dbRemoveNoteTag, dbGetAllNoteTagPairs,
 } from '@core/db/organizerQueries'
 
 let _idCounter = 0
@@ -88,6 +88,16 @@ interface OrganizerStore {
     color: string | null, notes: string | null, personId: string | null,
   ) => string | null  // returns the new event id
   removeEvent: (id: string, year: number, month: number) => Promise<void>
+  /** Delete a single occurrence of a repeating event without touching other occurrences. */
+  deleteEventOccurrence: (occurrenceId: string, occurrenceDate: string, year: number, month: number) => void
+  /** Detach one occurrence: add exception + create a new standalone event with updated fields. */
+  detachOccurrence: (
+    baseId: string, occurrenceDate: string,
+    title: string, startTime: string | null, endTime: string | null,
+    isAllDay: boolean, location: string | null,
+    color: string | null, notes: string | null, personId: string | null,
+    year: number, month: number,
+  ) => string  // returns new standalone event id
   editEvent: (
     id: string, title: string, date: string,
     startTime: string | null, endTime: string | null,
@@ -108,6 +118,7 @@ interface OrganizerStore {
   // Tags
   loadTags: () => void
   addTag: (name: string, color: string) => string
+  renameTag: (id: string, newName: string) => void
   deleteTag: (id: string) => void
   tagNote: (noteId: string, tagId: string, add: boolean) => void
 }
@@ -253,6 +264,24 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
     return id
   },
 
+  deleteEventOccurrence(occurrenceId, occurrenceDate, year, month) {
+    const baseId = occurrenceId.includes('__occurs__')
+      ? occurrenceId.split('__occurs__')[0]
+      : occurrenceId
+    dbInsertEventException(genId('exc'), baseId, occurrenceDate, 'deleted')
+    get().loadEvents(year, month)
+  },
+
+  detachOccurrence(baseId, occurrenceDate, title, startTime, endTime, isAllDay, location, color, notes, personId, year, month) {
+    // 1. Mark the occurrence as deleted in the series
+    dbInsertEventException(genId('exc'), baseId, occurrenceDate, 'rescheduled')
+    // 2. Create a new standalone event for this occurrence with the provided fields
+    const newId = genId('event')
+    dbInsertEvent(newId, title, occurrenceDate, startTime, endTime, isAllDay, location, null, color, notes, personId)
+    get().loadEvents(year, month)
+    return newId
+  },
+
   editEvent(id, title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId, year, month) {
     // Strip __occurs__ suffix — edits always target the base event record (affects all occurrences).
     // "Edit this occurrence only" requires organizer_event_exceptions table (Phase 2).
@@ -315,6 +344,11 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
     dbInsertTag(id, name, color)
     get().loadTags()
     return id
+  },
+
+  renameTag(id, newName) {
+    dbRenameTag(id, newName.trim())
+    get().loadTags()
   },
 
   deleteTag(id) {

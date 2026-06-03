@@ -565,4 +565,15 @@ export function initDatabase(): void {
       PRIMARY KEY (note_id, tag_id)
     );
   `)
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS organizer_event_exceptions (
+      id             TEXT PRIMARY KEY,
+      event_id       TEXT NOT NULL REFERENCES organizer_events(id) ON DELETE CASCADE,
+      exception_date TEXT NOT NULL,
+      exception_type TEXT NOT NULL CHECK(exception_type IN ('deleted','rescheduled')),
+      created_at     TEXT NOT NULL,
+      UNIQUE(event_id, exception_date)
+    );
+  `)
 }

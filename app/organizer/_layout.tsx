@@ -22,6 +22,7 @@ export default function OrganizerLayout() {
       <Stack.Screen name="event-add" />
       <Stack.Screen name="notes" />
       <Stack.Screen name="note-edit" />
+      <Stack.Screen name="tags" />
     </Stack>
   )
 }

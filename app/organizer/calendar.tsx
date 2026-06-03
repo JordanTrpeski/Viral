@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, Pressable } from 'react-native'
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -391,7 +391,7 @@ function WeekView({
 // ── Day sheet content ──────────────────────────────────────────────────────────
 
 function DaySheet({
-  date, events, birthdays, onAddEvent, onEditEvent, onDeleteEvent,
+  date, events, birthdays, onAddEvent, onEditEvent, onDeleteEvent, onDeleteOccurrence,
 }: {
   date: string
   events: OrganizerEvent[]
@@ -399,6 +399,7 @@ function DaySheet({
   onAddEvent: () => void
   onEditEvent: (id: string) => void
   onDeleteEvent: (id: string) => void
+  onDeleteOccurrence: (id: string, occurrenceDate: string) => void
 }) {
   const dateObj = new Date(date + 'T12:00:00')
   const label   = `${DAY_NAMES[dateObj.getDay()]}, ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}`
@@ -486,10 +487,46 @@ function DaySheet({
               <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>📍 {ev.location}</Text>
             )}
           </View>
-          <Pressable onPress={() => onEditEvent(ev.id)} hitSlop={8} style={{ padding: spacing.xs }}>
+          <Pressable
+            hitSlop={8}
+            style={{ padding: spacing.xs }}
+            onPress={() => {
+              if (ev.repeat && ev.repeat !== 'none') {
+                Alert.alert(
+                  'Edit recurring event',
+                  `"${ev.title}" repeats. Edit just this occurrence or all?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'This occurrence', onPress: () => onEditEvent(`${ev.id}__occurrence__${ev.date}`) },
+                    { text: 'All occurrences', onPress: () => onEditEvent(ev.id) },
+                  ],
+                )
+              } else {
+                onEditEvent(ev.id)
+              }
+            }}
+          >
             <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
           </Pressable>
-          <Pressable onPress={() => onDeleteEvent(ev.id)} hitSlop={8} style={{ padding: spacing.xs }}>
+          <Pressable
+            hitSlop={8}
+            style={{ padding: spacing.xs }}
+            onPress={() => {
+              if (ev.repeat && ev.repeat !== 'none') {
+                Alert.alert(
+                  'Delete recurring event',
+                  `"${ev.title}" repeats. Delete just this date or all occurrences?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'This occurrence', onPress: () => onDeleteOccurrence(ev.id, ev.date) },
+                    { text: 'All occurrences', style: 'destructive', onPress: () => onDeleteEvent(ev.id) },
+                  ],
+                )
+              } else {
+                onDeleteEvent(ev.id)
+              }
+            }}
+          >
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
           </Pressable>
         </View>
@@ -502,7 +539,7 @@ function DaySheet({
 
 export default function CalendarScreen() {
   const router = useRouter()
-  const { events, people, loadEvents, loadPeople, removeEvent } = useOrganizerStore()
+  const { events, people, loadEvents, loadPeople, removeEvent, deleteEventOccurrence } = useOrganizerStore()
 
   const today     = todayStr()
   const todayDate = new Date()
@@ -858,15 +895,23 @@ export default function CalendarScreen() {
           }}
           onEditEvent={(id) => {
             daySheetRef.current?.close()
-            router.push(`/organizer/event-add?id=${id}` as never)
+            // id may be "baseId__occurrence__date" when user chose "this occurrence"
+            if (id.includes('__occurrence__')) {
+              const [baseId, , occDate] = id.split('__')
+              router.push(`/organizer/event-add?id=${baseId}&occurrenceDate=${occDate}` as never)
+            } else {
+              router.push(`/organizer/event-add?id=${id}` as never)
+            }
+          }}
+          onDeleteOccurrence={(id, occurrenceDate) => {
+            const [y, m] = selectedDate.split('-').map(Number)
+            deleteEventOccurrence(id, occurrenceDate, y, m)
+            if (viewMode === 'week') loadWeekEvents(weekDateStrs)
           }}
           onDeleteEvent={async (id) => {
             const [y, m] = selectedDate.split('-').map(Number)
             await removeEvent(id, y, m)
-            // Reload week events if in week mode
-            if (viewMode === 'week') {
-              loadWeekEvents(weekDateStrs)
-            }
+            if (viewMode === 'week') loadWeekEvents(weekDateStrs)
           }}
         />
       </BottomSheet>
