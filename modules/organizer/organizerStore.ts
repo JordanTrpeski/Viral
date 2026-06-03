@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import * as Notifications from 'expo-notifications'
+import { scheduleBirthdaysForPerson } from './shared/notificationScheduler'
 import type {
   OrganizerTier, OrganizerTierRule,
   OrganizerPerson,
@@ -174,12 +175,19 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
     const id = genId('person')
     dbInsertPerson(id, name, birthdayDay, birthdayMonth, birthdayYear, photoUri, tierId, relationship, phone, notes)
     get().loadPeople()
+    // Fire-and-forget: schedule full-year birthday notifications immediately (Option A)
+    if (birthdayDay !== null && birthdayMonth !== null) {
+      scheduleBirthdaysForPerson(id)
+    }
     return id
   },
 
   editPerson(id, name, birthdayDay, birthdayMonth, birthdayYear, photoUri, tierId, relationship, phone, notes, overrideNotifications) {
     dbUpdatePerson(id, name, birthdayDay, birthdayMonth, birthdayYear, photoUri, tierId, relationship, phone, notes, overrideNotifications)
     get().loadPeople()
+    // Fire-and-forget: cancel old birthday-${id}-* notifications + reschedule
+    // (scheduleBirthdaysForPerson cancels before rescheduling internally)
+    scheduleBirthdaysForPerson(id)
   },
 
   removePerson(id) {

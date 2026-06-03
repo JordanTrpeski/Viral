@@ -27,6 +27,7 @@ import { seedChecklistIfNeeded } from '@modules/checklist/checklistSeed'
 import { seedFoodsIfNeeded } from '@modules/health/data/foodSeed'
 import { seedBudgetCategoriesIfNeeded } from '@modules/budget/budgetSeed'
 import { seedOrganizerTiersIfNeeded } from '@modules/organizer/organizerSeed'
+import { registerBirthdayBackgroundTask } from '@modules/organizer/shared/notificationScheduler'
 
 Sentry.init({
   dsn: 'https://377853c6d1f84fafc119393db68e7648@o4511366080757760.ingest.de.sentry.io/4511366093209680',
@@ -82,6 +83,9 @@ export default function RootLayout() {
     seedOrganizerTiersIfNeeded()
     loadProfile()
     setReady(true)
+    // Register daily background task for birthday notifications (Option B fallback).
+    // Requires a native EAS build — no-ops silently on OTA-only installs.
+    registerBirthdayBackgroundTask()
   }, [])
 
   useEffect(() => {
