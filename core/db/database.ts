@@ -109,6 +109,8 @@ export function initDatabase(): void {
     );
   `)
   try { db.execSync(`ALTER TABLE template_exercises ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN start_image TEXT`) } catch { /* already exists */ }
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN end_image TEXT`) } catch { /* already exists */ }
 
   db.execSync(`
     CREATE TABLE IF NOT EXISTS workout_sessions (

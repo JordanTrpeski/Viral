@@ -18,6 +18,8 @@ interface SeedExercise {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   substituteIds?: string[]
   isUnilateral?: boolean
+  startImage?: string   // key into EXERCISE_IMAGES map (e.g. 'ex_rdl_start')
+  endImage?: string     // key into EXERCISE_IMAGES map (e.g. 'ex_rdl_end')
 }
 
 // ─── Exercise Library ─────────────────────────────────────────────────────────
@@ -76,6 +78,8 @@ const EXERCISES: SeedExercise[] = [
     ],
     difficulty: 'intermediate',
     substituteIds: ['ex_incline_bench', 'ex_machine_chest_press', 'ex_push_up'],
+    startImage: 'ex_bench_press_start',
+    endImage: 'ex_bench_press_end',
   },
 
   {
@@ -201,6 +205,8 @@ const EXERCISES: SeedExercise[] = [
     ],
     difficulty: 'intermediate',
     substituteIds: ['ex_deadlift', 'ex_db_rdl', 'ex_leg_curl'],
+    startImage: 'ex_rdl_start',
+    endImage: 'ex_rdl_end',
   },
 
   {
@@ -1896,8 +1902,8 @@ export function seedExercisesIfNeeded(): void {
         `INSERT OR IGNORE INTO exercises (
           id, name, slug, category, primary_muscles, secondary_muscles,
           equipment, movement_pattern, description, form_cues, common_mistakes,
-          difficulty, substitute_ids, is_unilateral, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          difficulty, substitute_ids, is_unilateral, start_image, end_image, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           ex.id,
           ex.name,
@@ -1913,9 +1919,22 @@ export function seedExercisesIfNeeded(): void {
           ex.difficulty,
           ex.substituteIds ? JSON.stringify(ex.substituteIds) : null,
           ex.isUnilateral ? 1 : 0,
+          ex.startImage ?? null,
+          ex.endImage ?? null,
           now,
         ],
       )
     } catch { /* slug conflict or other constraint — skip */ }
+  }
+
+  // Backfill start_image / end_image on exercises that were already seeded
+  // (INSERT OR IGNORE above skips rows that already exist).
+  for (const ex of EXERCISES) {
+    if (!ex.startImage && !ex.endImage) continue
+    db.runSync(
+      `UPDATE exercises SET start_image = ?, end_image = ?
+       WHERE id = ? AND (start_image IS NULL AND end_image IS NULL)`,
+      [ex.startImage ?? null, ex.endImage ?? null, ex.id],
+    )
   }
 }

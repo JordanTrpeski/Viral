@@ -20,6 +20,8 @@ export interface ExerciseV2 {
   difficulty: Difficulty
   substituteIds: string[]
   isUnilateral: boolean
+  startImage?: string   // lookup key into EXERCISE_IMAGES map in the detail screen
+  endImage?: string     // same — null until actual image files are generated
   createdAt: string
 }
 

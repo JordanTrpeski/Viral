@@ -26,6 +26,8 @@ type ExerciseRow = {
   difficulty: string
   substitute_ids: string
   is_unilateral: number
+  start_image: string | null
+  end_image: string | null
   created_at: string
 }
 
@@ -47,6 +49,8 @@ function parseExerciseRow(row: ExerciseRow): ExerciseV2 {
     difficulty: row.difficulty as ExerciseV2['difficulty'],
     substituteIds: JSON.parse(row.substitute_ids ?? '[]'),
     isUnilateral: row.is_unilateral === 1,
+    startImage: row.start_image ?? undefined,
+    endImage: row.end_image ?? undefined,
     createdAt: row.created_at,
   }
 }

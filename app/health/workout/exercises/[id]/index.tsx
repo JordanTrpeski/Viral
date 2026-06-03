@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { View, Text, ScrollView, Pressable } from 'react-native'
+import { View, Text, ScrollView, Pressable, Image, type ImageSourcePropType } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
@@ -258,6 +258,82 @@ function SubstituteCard({ exercise, onPress }: { exercise: ExerciseV2; onPress: 
   )
 }
 
+// ─── Exercise image map ───────────────────────────────────────────────────────
+// Keys match the startImage / endImage strings stored in SQLite.
+// Add entries here when image assets are generated.
+// e.g.:  'ex_rdl_start': require('@/assets/exercises/ex_rdl_start.png'),
+
+const EXERCISE_IMAGES: Record<string, ImageSourcePropType> = {
+  // placeholder — wire real assets here once generated:
+  // 'ex_bench_press_start': require('@/assets/exercises/ex_bench_press_start.png'),
+  // 'ex_bench_press_end':   require('@/assets/exercises/ex_bench_press_end.png'),
+  // 'ex_rdl_start':         require('@/assets/exercises/ex_rdl_start.png'),
+  // 'ex_rdl_end':           require('@/assets/exercises/ex_rdl_end.png'),
+}
+
+function ExerciseImagePair({
+  startKey, endKey,
+}: { startKey?: string; endKey?: string }) {
+  if (!startKey && !endKey) return null
+
+  const startSrc = startKey ? EXERCISE_IMAGES[startKey] : undefined
+  const endSrc   = endKey   ? EXERCISE_IMAGES[endKey]   : undefined
+
+  function ImageTile({ src, label }: { src?: ImageSourcePropType; label: string }) {
+    return (
+      <View style={{ flex: 1, gap: 6 }}>
+        <Text style={{
+          color: colors.textMuted,
+          fontSize: fontSize.micro,
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: 0.8,
+          textAlign: 'center',
+          fontFamily: `${fonts.ui}_600SemiBold`,
+        }}>
+          {label}
+        </Text>
+        <View style={{
+          aspectRatio: 4 / 3,
+          borderRadius: radius.md,
+          overflow: 'hidden',
+          backgroundColor: colors.surface2,
+          borderWidth: 1,
+          borderColor: colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {src ? (
+            <Image
+              source={src}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{ alignItems: 'center', gap: 6 }}>
+              <Ionicons name="image-outline" size={28} color={colors.textMuted} />
+              <Text style={{
+                color: colors.textMuted,
+                fontSize: fontSize.micro,
+                fontFamily: `${fonts.ui}_400Regular`,
+              }}>
+                Coming soon
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    )
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+      <ImageTile src={startSrc} label="Start position" />
+      <ImageTile src={endSrc}   label="End position" />
+    </View>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function ExerciseDetailScreen() {
@@ -352,6 +428,9 @@ export default function ExerciseDetailScreen() {
             )}
           </View>
         )}
+
+        {/* Start / end position images — only rendered when at least one key is set */}
+        <ExerciseImagePair startKey={exercise.startImage} endKey={exercise.endImage} />
 
         {/* Muscles */}
         <View style={{
