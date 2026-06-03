@@ -22,6 +22,8 @@ export interface ExerciseV2 {
   isUnilateral: boolean
   startImage?: string   // lookup key into EXERCISE_IMAGES map in the detail screen
   endImage?: string     // same — null until actual image files are generated
+  isCustom?: boolean    // true for user-created exercises from custom_exercises table
+  customNotes?: string  // free-form notes, only present on custom exercises
   createdAt: string
 }
 

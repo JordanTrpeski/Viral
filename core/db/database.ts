@@ -112,6 +112,21 @@ export function initDatabase(): void {
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN start_image TEXT`) } catch { /* already exists */ }
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN end_image TEXT`) } catch { /* already exists */ }
 
+  // User-created exercises — kept in a separate table, never mixed with seeded exercises at the DB level.
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS custom_exercises (
+      id                TEXT PRIMARY KEY,
+      name              TEXT NOT NULL,
+      category          TEXT NOT NULL,
+      equipment         TEXT NOT NULL,
+      difficulty        TEXT NOT NULL,
+      primary_muscles   TEXT NOT NULL,
+      secondary_muscles TEXT,
+      notes             TEXT,
+      created_at        TEXT NOT NULL
+    );
+  `)
+
   db.execSync(`
     CREATE TABLE IF NOT EXISTS workout_sessions (
       id                   TEXT PRIMARY KEY,

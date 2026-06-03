@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import {
-  View, Text, TextInput, FlatList, Pressable, ScrollView,
+  View, Text, TextInput, FlatList, Pressable, ScrollView, Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
@@ -10,8 +10,10 @@ import { colors, fontSize, spacing, radius, fonts } from '@core/theme'
 import {
   getAllExercises,
   searchExercises,
+  deleteCustomExercise,
 } from '@core/db/workoutQueriesV2'
 import { useWorkoutStoreV2 } from '@modules/health/workout/workoutStoreV2'
+import { SwipeableRow } from '@core/components'
 import type { ExerciseV2, ExerciseCategory, ExerciseEquipmentV2 } from '@modules/health/shared/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -94,69 +96,98 @@ function MuscleTag({ label }: { label: string }) {
   )
 }
 
-function ExerciseRow({ exercise, onPress, selectMode }: { exercise: ExerciseV2; onPress: () => void; selectMode?: boolean }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: spacing.sm })}
-    >
-      <View style={{
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        padding: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-      }}>
-        {/* Equipment icon */}
-        <View style={{
-          width: 44,
-          height: 44,
-          borderRadius: radius.md,
-          backgroundColor: `${colors.workout}18`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Ionicons name="barbell-outline" size={20} color={colors.workout} />
-        </View>
+function ExerciseRow({
+  exercise, onPress, selectMode, onEdit, onDelete,
+}: {
+  exercise: ExerciseV2
+  onPress: () => void
+  selectMode?: boolean
+  onEdit?: () => void
+  onDelete?: () => void
+}) {
+  const rightActions = exercise.isCustom
+    ? [
+        { label: 'Edit',   icon: 'pencil'        as const, color: colors.primary, onPress: onEdit!   },
+        { label: 'Delete', icon: 'trash-outline'  as const, color: colors.danger,  onPress: onDelete! },
+      ]
+    : []
 
-        {/* Info */}
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{
-            color: colors.text,
-            fontSize: fontSize.cardTitle,
-            fontWeight: '600',
-            fontFamily: `${fonts.ui}_600SemiBold`,
+  return (
+    <SwipeableRow rightActions={rightActions} style={{ marginBottom: spacing.sm }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+      >
+        <View style={{
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: exercise.isCustom ? `${colors.primary}44` : colors.border,
+          padding: spacing.md,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        }}>
+          {/* Equipment icon */}
+          <View style={{
+            width: 44, height: 44, borderRadius: radius.md,
+            backgroundColor: exercise.isCustom ? `${colors.primary}18` : `${colors.workout}18`,
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            {exercise.name}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-            {exercise.primaryMuscles.slice(0, 2).map((m) => (
-              <MuscleTag key={m} label={m} />
-            ))}
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
-              · {exercise.equipment}
-            </Text>
+            <Ionicons
+              name="barbell-outline" size={20}
+              color={exercise.isCustom ? colors.primary : colors.workout}
+            />
+          </View>
+
+          {/* Info */}
+          <View style={{ flex: 1, gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Text style={{
+                color: colors.text, fontSize: fontSize.cardTitle, fontWeight: '600',
+                fontFamily: `${fonts.ui}_600SemiBold`, flexShrink: 1,
+              }}>
+                {exercise.name}
+              </Text>
+              {exercise.isCustom && (
+                <View style={{
+                  backgroundColor: `${colors.primary}22`, borderRadius: radius.full,
+                  paddingHorizontal: 6, paddingVertical: 1,
+                }}>
+                  <Text style={{
+                    color: colors.primary, fontSize: fontSize.micro, fontWeight: '700',
+                    fontFamily: `${fonts.ui}_700Bold`,
+                  }}>
+                    custom
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+              {exercise.primaryMuscles.slice(0, 2).map((m) => (
+                <MuscleTag key={m} label={m} />
+              ))}
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>
+                · {exercise.equipment}
+              </Text>
+            </View>
+          </View>
+
+          {/* Difficulty dot + action icon */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{
+              width: 8, height: 8, borderRadius: 4,
+              backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
+            }} />
+            <Ionicons
+              name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
+              size={selectMode ? 20 : 16}
+              color={selectMode ? colors.primary : colors.textMuted}
+            />
           </View>
         </View>
-
-        {/* Difficulty dot + action icon */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{
-            width: 8, height: 8, borderRadius: 4,
-            backgroundColor: DIFFICULTY_COLOR[exercise.difficulty],
-          }} />
-          <Ionicons
-            name={selectMode ? 'add-circle-outline' : 'chevron-forward'}
-            size={selectMode ? 20 : 16}
-            color={selectMode ? colors.primary : colors.textMuted}
-          />
-        </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </SwipeableRow>
   )
 }
 
@@ -189,6 +220,23 @@ export default function ExerciseLibraryScreen() {
     }
     return list
   }, [exercises, search, categoryFilter, equipmentFilter])
+
+  function handleDeleteCustom(ex: ExerciseV2) {
+    Alert.alert(
+      'Delete exercise',
+      `Delete "${ex.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: () => {
+            deleteCustomExercise(ex.id)
+            setExercises(getAllExercises())
+          },
+        },
+      ],
+    )
+  }
 
   function handleSelect(ex: ExerciseV2) {
     if (mode === 'template') {
@@ -233,6 +281,14 @@ export default function ExerciseLibraryScreen() {
         }}>
           {filtered.length}
         </Text>
+        {!isSelectMode && (
+          <Pressable
+            onPress={() => router.push('/health/workout/exercises/custom' as never)}
+            style={{ padding: spacing.xs }}
+          >
+            <Ionicons name="add" size={26} color={colors.primary} />
+          </Pressable>
+        )}
       </View>
 
       {/* Search */}
@@ -360,6 +416,12 @@ export default function ExerciseLibraryScreen() {
             exercise={item}
             onPress={() => handleSelect(item)}
             selectMode={isSelectMode}
+            onEdit={item.isCustom
+              ? () => router.push(`/health/workout/exercises/custom?id=${item.id}` as never)
+              : undefined}
+            onDelete={item.isCustom
+              ? () => handleDeleteCustom(item)
+              : undefined}
           />
         )}
       />

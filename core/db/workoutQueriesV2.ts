@@ -55,23 +55,66 @@ function parseExerciseRow(row: ExerciseRow): ExerciseV2 {
   }
 }
 
+// ─── Custom Exercise Row ──────────────────────────────────────────────────────
+
+type CustomExerciseRow = {
+  id: string
+  name: string
+  category: string
+  equipment: string
+  difficulty: string
+  primary_muscles: string
+  secondary_muscles: string | null
+  notes: string | null
+  created_at: string
+}
+
+function parseCustomExerciseRow(row: CustomExerciseRow): ExerciseV2 {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.id,   // custom exercises have no slug; id is unique enough
+    category: row.category as ExerciseV2['category'],
+    primaryMuscles: JSON.parse(row.primary_muscles ?? '[]'),
+    secondaryMuscles: JSON.parse(row.secondary_muscles ?? '[]'),
+    equipment: row.equipment as ExerciseV2['equipment'],
+    movementPattern: undefined,
+    description: undefined,
+    formCues: [],
+    commonMistakes: [],
+    difficulty: row.difficulty as ExerciseV2['difficulty'],
+    substituteIds: [],
+    isUnilateral: false,
+    isCustom: true,
+    customNotes: row.notes ?? undefined,
+    createdAt: row.created_at,
+  }
+}
+
 // ─── Exercise Library ─────────────────────────────────────────────────────────
 
 export function getAllExercises(): ExerciseV2[] {
-  const rows = db.getAllSync<ExerciseRow>(
+  const seeded = db.getAllSync<ExerciseRow>(
     'SELECT * FROM exercises ORDER BY name ASC',
-  )
-  return rows.map(parseExerciseRow)
+  ).map(parseExerciseRow)
+  const custom = db.getAllSync<CustomExerciseRow>(
+    'SELECT * FROM custom_exercises ORDER BY name ASC',
+  ).map(parseCustomExerciseRow)
+  // Merge and sort: custom exercises appear inline alphabetically
+  return [...seeded, ...custom].sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function searchExercises(query: string): ExerciseV2[] {
-  const rows = db.getAllSync<ExerciseRow>(
-    `SELECT * FROM exercises
-     WHERE name LIKE ? OR primary_muscles LIKE ?
-     ORDER BY name ASC`,
-    [`%${query}%`, `%${query}%`],
-  )
-  return rows.map(parseExerciseRow)
+  const q = `%${query}%`
+  const seeded = db.getAllSync<ExerciseRow>(
+    `SELECT * FROM exercises WHERE name LIKE ? OR primary_muscles LIKE ? ORDER BY name ASC`,
+    [q, q],
+  ).map(parseExerciseRow)
+  const custom = db.getAllSync<CustomExerciseRow>(
+    `SELECT * FROM custom_exercises WHERE name LIKE ? OR primary_muscles LIKE ? ORDER BY name ASC`,
+    [q, q],
+  ).map(parseCustomExerciseRow)
+  return [...seeded, ...custom].sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function getExercisesByCategory(category: ExerciseV2['category']): ExerciseV2[] {
@@ -92,10 +135,14 @@ export function getExercisesByEquipment(equipment: ExerciseV2['equipment']): Exe
 
 export function getExerciseById(id: string): ExerciseV2 | null {
   const row = db.getFirstSync<ExerciseRow>(
-    'SELECT * FROM exercises WHERE id = ?',
-    [id],
+    'SELECT * FROM exercises WHERE id = ?', [id],
   )
-  return row ? parseExerciseRow(row) : null
+  if (row) return parseExerciseRow(row)
+  // Fall through to user-created exercises
+  const custom = db.getFirstSync<CustomExerciseRow>(
+    'SELECT * FROM custom_exercises WHERE id = ?', [id],
+  )
+  return custom ? parseCustomExerciseRow(custom) : null
 }
 
 export function getExerciseBySlug(slug: string): ExerciseV2 | null {
@@ -114,6 +161,60 @@ export function getExercisesByIds(ids: string[]): ExerciseV2[] {
     ids,
   )
   return rows.map(parseExerciseRow)
+}
+
+// ─── Custom Exercise CRUD ─────────────────────────────────────────────────────
+
+export interface CustomExerciseParams {
+  id: string
+  name: string
+  category: ExerciseV2['category']
+  equipment: ExerciseV2['equipment']
+  difficulty: ExerciseV2['difficulty']
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
+  notes: string | null
+}
+
+export function insertCustomExercise(p: CustomExerciseParams): void {
+  const now = new Date().toISOString()
+  db.runSync(
+    `INSERT INTO custom_exercises
+       (id, name, category, equipment, difficulty, primary_muscles, secondary_muscles, notes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      p.id, p.name, p.category, p.equipment, p.difficulty,
+      JSON.stringify(p.primaryMuscles),
+      p.secondaryMuscles.length > 0 ? JSON.stringify(p.secondaryMuscles) : null,
+      p.notes, now,
+    ],
+  )
+}
+
+export function updateCustomExercise(p: CustomExerciseParams): void {
+  db.runSync(
+    `UPDATE custom_exercises SET
+       name=?, category=?, equipment=?, difficulty=?,
+       primary_muscles=?, secondary_muscles=?, notes=?
+     WHERE id=?`,
+    [
+      p.name, p.category, p.equipment, p.difficulty,
+      JSON.stringify(p.primaryMuscles),
+      p.secondaryMuscles.length > 0 ? JSON.stringify(p.secondaryMuscles) : null,
+      p.notes, p.id,
+    ],
+  )
+}
+
+export function deleteCustomExercise(id: string): void {
+  db.runSync('DELETE FROM custom_exercises WHERE id=?', [id])
+}
+
+export function getCustomExerciseById(id: string): ExerciseV2 | null {
+  const row = db.getFirstSync<CustomExerciseRow>(
+    'SELECT * FROM custom_exercises WHERE id=?', [id],
+  )
+  return row ? parseCustomExerciseRow(row) : null
 }
 
 // ─── Exercise PRs ─────────────────────────────────────────────────────────────
