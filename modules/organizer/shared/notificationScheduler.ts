@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as TaskManager from 'expo-task-manager'
 import * as BackgroundFetch from 'expo-background-fetch'
+import { scheduleNotification, scheduleImmediateNotification, cancelNotificationsByPrefix } from '@core/utils/notificationManager'
 import { dbGetPeople, dbGetTiers, dbGetTierRules, dbGetPersonRules } from '@core/db/organizerQueries'
 import {
   daysUntilBirthday, nextBirthdayDate, ageTheyAreTurning, resolveTemplate,
@@ -68,12 +69,7 @@ export async function scheduleBirthdaysForPerson(personId: string): Promise<void
   if (status !== 'granted') return
 
   // Cancel all existing birthday notifications for this person
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync()
-  await Promise.all(
-    scheduled
-      .filter((n) => n.identifier.startsWith(`${PERSON_NOTIF_PREFIX}${personId}-`))
-      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
-  )
+  await cancelNotificationsByPrefix(`${PERSON_NOTIF_PREFIX}${personId}-`)
 
   // Fetch person from DB
   const people = dbGetPeople()
@@ -163,12 +159,7 @@ export async function runBirthdayScheduler(): Promise<void> {
   if (status !== 'granted') return
 
   // One-time cleanup of legacy notification IDs from the old scheduler
-  const all = await Notifications.getAllScheduledNotificationsAsync()
-  await Promise.all(
-    all
-      .filter((n) => n.identifier.startsWith(LEGACY_PREFIX))
-      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
-  )
+  await cancelNotificationsByPrefix(LEGACY_PREFIX)
 
   // Reschedule for every person with a birthday
   const people = dbGetPeople()
@@ -179,18 +170,11 @@ export async function runBirthdayScheduler(): Promise<void> {
 }
 
 export async function sendTestBirthdayNotification(): Promise<void> {
-  if (Platform.OS === 'web') return
-  const { status } = await Notifications.getPermissionsAsync()
-  if (status !== 'granted') return
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: `${LEGACY_PREFIX}test`,
-    content: {
-      title: '🎂 Birthday Today!',
-      body: "Ana's birthday is today! Don't forget to wish her well 🎉",
-    },
-    trigger: null,
-  })
+  await scheduleImmediateNotification(
+    `${LEGACY_PREFIX}test`,
+    '🎂 Birthday Today!',
+    "Ana's birthday is today! Don't forget to wish her well 🎉",
+  )
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
@@ -205,7 +189,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 /**
  * Schedule a notification at a specific date + HH:MM time.
- * Silently skips if the trigger datetime is already in the past.
+ * Delegates to notificationManager.scheduleNotification().
  */
 async function scheduleAtFuture(
   identifier: string,
@@ -220,15 +204,5 @@ async function scheduleAtFuture(
   const triggerDate = new Date(date)
   triggerDate.setHours(hh, mm, 0, 0)
 
-  if (triggerDate <= new Date()) return // already past — skip
-
-  try {
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: { title, body, sound: true },
-      trigger: { date: triggerDate, type: Notifications.SchedulableTriggerInputTypes.DATE },
-    })
-  } catch {
-    // Best-effort — silently ignore scheduling failures
-  }
+  await scheduleNotification(identifier, title, body, triggerDate)
 }

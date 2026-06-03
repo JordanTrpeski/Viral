@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
-import * as Notifications from 'expo-notifications'
 import * as Crypto from 'expo-crypto'
 import { colors, fontSize, spacing, radius } from '@core/theme'
+import { scheduleNotification, cancelNotificationsByPrefix } from '@core/utils/notificationManager'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
 import {
   dbGetEventById, dbGetEventReminders,
@@ -121,34 +121,22 @@ async function scheduleEventReminder(
   startTime: string | null,
   minutesBefore: number,
 ): Promise<void> {
-  try {
-    const { status } = await Notifications.getPermissionsAsync()
-    if (status !== 'granted') return
+  const timeStr = startTime ?? '09:00'
+  const [hh, mm] = timeStr.split(':').map(Number)
+  const eventDt  = new Date(`${date}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`)
+  const notifyDt = new Date(eventDt.getTime() - minutesBefore * 60_000)
 
-    // Build event datetime
-    const timeStr = startTime ?? '09:00'
-    const [hh, mm] = timeStr.split(':').map(Number)
-    const eventDt = new Date(`${date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`)
-    const notifyDt = new Date(eventDt.getTime() - minutesBefore * 60_000)
+  const bodyText = minutesBefore === 0
+    ? 'Your event is starting now'
+    : `Starts in ${minutesBefore < 60 ? `${minutesBefore} min` : minutesBefore < 1440 ? `${minutesBefore / 60}h` : minutesBefore < 10080 ? '1 day' : '1 week'}`
 
-    if (notifyDt <= new Date()) return // Already past
-
-    const bodyText = minutesBefore === 0
-      ? `Your event is starting now`
-      : `Starts in ${minutesBefore < 60 ? `${minutesBefore} min` : minutesBefore < 1440 ? `${minutesBefore / 60}h` : minutesBefore < 10080 ? '1 day' : '1 week'}`
-
-    await Notifications.scheduleNotificationAsync({
-      identifier: `event-${eventId}-${date}-${minutesBefore}`,
-      content: {
-        title,
-        body: bodyText,
-        data: { type: 'event', eventId, eventDate: date },
-      },
-      trigger: { date: notifyDt, type: Notifications.SchedulableTriggerInputTypes.DATE },
-    })
-  } catch {
-    // Silently fail — notifications are best-effort
-  }
+  await scheduleNotification(
+    `event-${eventId}-${date}-${minutesBefore}`,
+    title,
+    bodyText,
+    notifyDt,
+    { type: 'event', eventId, eventDate: date },
+  )
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────────
@@ -235,12 +223,7 @@ export default function EventAddScreen() {
       editEvent(baseId, t, date, st, et, isAllDay, location.trim() || null, repeat, color, noteText.trim() || null, personId, y, m)
 
       // Reminder diff: cancel all old notifications, wipe old rows, re-insert desired set
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync()
-      await Promise.all(
-        scheduled
-          .filter((n) => n.identifier.startsWith(`event-${baseId}-`))
-          .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
-      )
+      await cancelNotificationsByPrefix(`event-${baseId}-`)
       dbDeleteEventReminders(baseId)
       for (const minutesBefore of reminders) {
         dbInsertEventReminder(Crypto.randomUUID(), baseId, minutesBefore)

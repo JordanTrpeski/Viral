@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Platform } from 'react-native'
-import * as Notifications from 'expo-notifications'
 import { localDateStr } from '@core/utils/units'
+import { scheduleImmediateNotification } from '@core/utils/notificationManager'
 import { createStorage } from '@core/utils/storage'
 import {
   BudgetCategory,
@@ -184,8 +184,6 @@ async function maybeNotifyLimitBreach(
   totalIncome: number,
 ) {
   if (Platform.OS === 'web') return
-  const { status } = await Notifications.getPermissionsAsync()
-  if (status !== 'granted') return
 
   // ── Per-category limit check (80%) ─────────────────────────────────────────
   const cat = categories.find((c) => c.id === categoryId)
@@ -196,13 +194,11 @@ async function maybeNotifyLimitBreach(
       const key = alertKey(categoryId)
       if (!alertMmkv.getBoolean(key)) {
         alertMmkv.set(key, true)
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `${cat.emoji} ${cat.name} at ${Math.round(pct * 100)}%`,
-            body: `You've spent €${spent.toFixed(2)} of your €${cat.monthlyLimit.toFixed(0)} monthly limit.`,
-          },
-          trigger: null,
-        })
+        await scheduleImmediateNotification(
+          `budget-limit-${categoryId}`,
+          `${cat.emoji} ${cat.name} at ${Math.round(pct * 100)}%`,
+          `You've spent €${spent.toFixed(2)} of your €${cat.monthlyLimit.toFixed(0)} monthly limit.`,
+        )
       }
     }
   }
@@ -215,13 +211,11 @@ async function maybeNotifyLimitBreach(
       const key = alertKey('__global__')
       if (!alertMmkv.getBoolean(key)) {
         alertMmkv.set(key, true)
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '💸 Monthly spending at 85%',
-            body: `You've spent €${totalSpent.toFixed(2)} of your €${totalIncome.toFixed(2)} income this month.`,
-          },
-          trigger: null,
-        })
+        await scheduleImmediateNotification(
+          'budget-limit-global',
+          '💸 Monthly spending at 85%',
+          `You've spent €${totalSpent.toFixed(2)} of your €${totalIncome.toFixed(2)} income this month.`,
+        )
       }
     }
   }
@@ -327,41 +321,33 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
     set({ pendingRecurring: pending, pendingRecurringExpenses: pendingExpenses })
 
     if (Platform.OS !== 'web' && pending.length > 0) {
-      Notifications.getPermissionsAsync().then(({ status }) => {
-        if (status !== 'granted') return
-        const key = alertKey('__recurring__')
-        if (alertMmkv.getBoolean(key)) return
+      const key = alertKey('__recurring__')
+      if (!alertMmkv.getBoolean(key)) {
         alertMmkv.set(key, true)
         const total = pending.reduce((s, p) => s + p.amount, 0)
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🔄 Recurring income due',
-            body: pending.length === 1
-              ? `€${pending[0].amount.toFixed(2)} from ${pending[0].sourceName} is ready to confirm.`
-              : `${pending.length} recurring entries totalling €${total.toFixed(2)} are ready.`,
-          },
-          trigger: null,
-        })
-      })
+        scheduleImmediateNotification(
+          'budget-recurring-income',
+          '🔄 Recurring income due',
+          pending.length === 1
+            ? `€${pending[0].amount.toFixed(2)} from ${pending[0].sourceName} is ready to confirm.`
+            : `${pending.length} recurring entries totalling €${total.toFixed(2)} are ready.`,
+        )
+      }
     }
 
     if (Platform.OS !== 'web' && pendingExpenses.length > 0) {
-      Notifications.getPermissionsAsync().then(({ status }) => {
-        if (status !== 'granted') return
-        const key = alertKey('__recurring_expense__')
-        if (alertMmkv.getBoolean(key)) return
+      const key = alertKey('__recurring_expense__')
+      if (!alertMmkv.getBoolean(key)) {
         alertMmkv.set(key, true)
         const total = pendingExpenses.reduce((s, p) => s + p.amount, 0)
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: '💸 Recurring expense due',
-            body: pendingExpenses.length === 1
-              ? `${pendingExpenses[0].merchantName ?? pendingExpenses[0].categoryName} (€${pendingExpenses[0].amount.toFixed(2)}) is ready to log.`
-              : `${pendingExpenses.length} recurring expenses totalling €${total.toFixed(2)} are ready.`,
-          },
-          trigger: null,
-        })
-      })
+        scheduleImmediateNotification(
+          'budget-recurring-expense',
+          '💸 Recurring expense due',
+          pendingExpenses.length === 1
+            ? `${pendingExpenses[0].merchantName ?? pendingExpenses[0].categoryName} (€${pendingExpenses[0].amount.toFixed(2)}) is ready to log.`
+            : `${pendingExpenses.length} recurring expenses totalling €${total.toFixed(2)} are ready.`,
+        )
+      }
     }
   },
 

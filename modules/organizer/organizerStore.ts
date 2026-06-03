@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import * as Notifications from 'expo-notifications'
+import { cancelNotificationsByPrefix } from '@core/utils/notificationManager'
 import { scheduleBirthdaysForPerson } from './shared/notificationScheduler'
 import type {
   OrganizerTier, OrganizerTierRule,
@@ -263,12 +263,7 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
 
   async removeEvent(id, year, month) {
     const originalEventId = id.includes('__occurs__') ? id.split('__occurs__')[0] : id
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
-    await Promise.all(
-      scheduled
-        .filter((n) => n.identifier.startsWith(`event-${originalEventId}-`))
-        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
-    )
+    await cancelNotificationsByPrefix(`event-${originalEventId}-`)
     dbDeleteEvent(originalEventId)
     get().loadEvents(year, month)
   },
