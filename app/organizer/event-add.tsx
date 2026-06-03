@@ -8,7 +8,10 @@ import * as Notifications from 'expo-notifications'
 import * as Crypto from 'expo-crypto'
 import { colors, fontSize, spacing, radius } from '@core/theme'
 import { useOrganizerStore } from '@modules/organizer/organizerStore'
-import { dbInsertEventReminder } from '@core/db/organizerQueries'
+import {
+  dbGetEventById, dbGetEventReminders,
+  dbInsertEventReminder, dbDeleteEventReminders,
+} from '@core/db/organizerQueries'
 import { localDateStr } from '@core/utils/units'
 import type { EventRepeat } from '@core/types'
 
@@ -152,9 +155,12 @@ async function scheduleEventReminder(
 
 export default function EventAddScreen() {
   const router = useRouter()
-  const { date: dateParam, time: timeParam } = useLocalSearchParams<{ date?: string; time?: string }>()
+  const { date: dateParam, time: timeParam, id: editId } = useLocalSearchParams<{
+    date?: string; time?: string; id?: string
+  }>()
+  const isEditing = !!editId
 
-  const { people, loadPeople, addEvent } = useOrganizerStore()
+  const { people, loadPeople, addEvent, editEvent } = useOrganizerStore()
 
   const [title,     setTitle]     = useState('')
   const [date,      setDate]      = useState(dateParam ?? localDateStr())
@@ -171,6 +177,26 @@ export default function EventAddScreen() {
   const personSheetRef = useRef<BottomSheet>(null)
 
   useEffect(() => { loadPeople() }, [])
+
+  // Prefill form when editing an existing event
+  useEffect(() => {
+    if (!editId) return
+    const event = dbGetEventById(editId)
+    if (!event) return
+    setTitle(event.title)
+    setDate(event.date)
+    setStartTime(event.startTime ?? '')
+    setEndTime(event.endTime ?? '')
+    setIsAllDay(event.isAllDay)
+    setLocation(event.location ?? '')
+    setNoteText(event.notes ?? '')
+    setColor(event.color ?? colors.organizer)
+    setRepeat(event.repeat ?? null)
+    setPersonId(event.personId ?? null)
+    // Pre-select reminder chips from existing DB rows
+    const existing = dbGetEventReminders(editId)
+    setReminders(new Set(existing.map((r) => r.minutesBefore)))
+  }, [editId])
 
   const selectedPerson = personId ? people.find((p) => p.id === personId) : null
 
@@ -196,26 +222,42 @@ export default function EventAddScreen() {
       return
     }
 
-    const eventId = addEvent(
-      t, date,
-      isAllDay ? null : (startTime.trim() || null),
-      isAllDay ? null : (endTime.trim() || null),
-      isAllDay,
-      location.trim() || null,
-      repeat,
-      color,
-      noteText.trim() || null,
-      personId,
-    )
+    const st   = isAllDay ? null : (startTime.trim() || null)
+    const et   = isAllDay ? null : (endTime.trim() || null)
+    const [y, m] = date.split('-').map(Number)
 
-    // Save event reminders + schedule notifications
-    if (reminders.size > 0 && eventId) {
-      const time = isAllDay ? null : (startTime.trim() || null)
+    if (isEditing && editId) {
+      // ── Edit mode ──────────────────────────────────────────────────────────
+      // NOTE: editing a repeating event updates the base record (all occurrences).
+      // "Edit this occurrence only" requires organizer_event_exceptions (Phase 2).
+      const baseId = editId.includes('__occurs__') ? editId.split('__occurs__')[0] : editId
+
+      editEvent(baseId, t, date, st, et, isAllDay, location.trim() || null, repeat, color, noteText.trim() || null, personId, y, m)
+
+      // Reminder diff: cancel all old notifications, wipe old rows, re-insert desired set
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+      await Promise.all(
+        scheduled
+          .filter((n) => n.identifier.startsWith(`event-${baseId}-`))
+          .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+      )
+      dbDeleteEventReminders(baseId)
       for (const minutesBefore of reminders) {
-        const remId = Crypto.randomUUID()
-        dbInsertEventReminder(remId, eventId, minutesBefore)
+        dbInsertEventReminder(Crypto.randomUUID(), baseId, minutesBefore)
         for (const occurrenceDate of occurrenceDates(date, repeat)) {
-          await scheduleEventReminder(eventId, t, occurrenceDate, time, minutesBefore)
+          await scheduleEventReminder(baseId, t, occurrenceDate, st, minutesBefore)
+        }
+      }
+    } else {
+      // ── Create mode ────────────────────────────────────────────────────────
+      const eventId = addEvent(t, date, st, et, isAllDay, location.trim() || null, repeat, color, noteText.trim() || null, personId)
+
+      if (reminders.size > 0 && eventId) {
+        for (const minutesBefore of reminders) {
+          dbInsertEventReminder(Crypto.randomUUID(), eventId, minutesBefore)
+          for (const occurrenceDate of occurrenceDates(date, repeat)) {
+            await scheduleEventReminder(eventId, t, occurrenceDate, st, minutesBefore)
+          }
         }
       }
     }
@@ -235,10 +277,12 @@ export default function EventAddScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={{ flex: 1, color: colors.text, fontSize: fontSize.sectionHeader, fontWeight: '600', marginLeft: spacing.xs }}>
-          New Event
+          {isEditing ? 'Edit Event' : 'New Event'}
         </Text>
         <Pressable onPress={handleSave} style={{ padding: spacing.sm }}>
-          <Text style={{ color: colors.organizer, fontSize: fontSize.body, fontWeight: '700' }}>Save</Text>
+          <Text style={{ color: colors.organizer, fontSize: fontSize.body, fontWeight: '700' }}>
+            {isEditing ? 'Save Changes' : 'Save'}
+          </Text>
         </Pressable>
       </View>
 
@@ -256,7 +300,7 @@ export default function EventAddScreen() {
             onChangeText={setTitle}
             placeholder="Event name"
             placeholderTextColor={colors.textMuted}
-            autoFocus
+            autoFocus={!isEditing}
             style={{
               backgroundColor: colors.surface, borderRadius: radius.md,
               borderWidth: 1, borderColor: colors.border,

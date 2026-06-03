@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import * as Notifications from 'expo-notifications'
 import type {
   OrganizerTier, OrganizerTierRule,
   OrganizerPerson,
@@ -13,7 +14,7 @@ import {
   dbGetPeople, dbInsertPerson, dbUpdatePerson, dbDeletePerson,
   dbGetReminders, dbInsertReminder, dbUpdateReminder, dbCompleteReminder, dbUncompleteReminder,
   dbDeleteReminder, dbSnoozeReminder, dbUpdateReminderDueDate,
-  dbGetEventsForMonth, dbInsertEvent, dbDeleteEvent,
+  dbGetEventsForMonth, dbInsertEvent, dbUpdateEvent, dbDeleteEvent,
   dbGetNotes, dbInsertNote, dbUpdateNote, dbPinNote, dbArchiveNote, dbDeleteNote,
   dbGetTags, dbInsertTag, dbDeleteTag, dbAddNoteTag, dbRemoveNoteTag, dbGetAllNoteTagPairs,
 } from '@core/db/organizerQueries'
@@ -84,7 +85,15 @@ interface OrganizerStore {
     isAllDay: boolean, location: string | null, repeat: string | null,
     color: string | null, notes: string | null, personId: string | null,
   ) => string | null  // returns the new event id
-  removeEvent: (id: string, year: number, month: number) => void
+  removeEvent: (id: string, year: number, month: number) => Promise<void>
+  editEvent: (
+    id: string, title: string, date: string,
+    startTime: string | null, endTime: string | null,
+    isAllDay: boolean, location: string | null,
+    repeat: string | null, color: string | null,
+    notes: string | null, personId: string | null,
+    year: number, month: number,
+  ) => void
 
   // Notes
   loadNotes: () => void
@@ -225,8 +234,23 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
     return id
   },
 
-  removeEvent(id, year, month) {
-    dbDeleteEvent(id)
+  editEvent(id, title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId, year, month) {
+    // Strip __occurs__ suffix — edits always target the base event record (affects all occurrences).
+    // "Edit this occurrence only" requires organizer_event_exceptions table (Phase 2).
+    const baseId = id.includes('__occurs__') ? id.split('__occurs__')[0] : id
+    dbUpdateEvent(baseId, title, date, startTime, endTime, isAllDay, location, repeat, color, notes, personId)
+    get().loadEvents(year, month)
+  },
+
+  async removeEvent(id, year, month) {
+    const originalEventId = id.includes('__occurs__') ? id.split('__occurs__')[0] : id
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(`event-${originalEventId}-`))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+    )
+    dbDeleteEvent(originalEventId)
     get().loadEvents(year, month)
   },
 

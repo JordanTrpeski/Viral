@@ -456,6 +456,44 @@ export function dbDeleteEvent(id: string): void {
   db.runSync('DELETE FROM organizer_events WHERE id=?', [originalEventId(id)])
 }
 
+export function dbGetEventById(id: string): OrganizerEvent | null {
+  try {
+    const row = db.getFirstSync<EventRow>(
+      'SELECT * FROM organizer_events WHERE id=?',
+      [originalEventId(id)],
+    )
+    return row ? rowToEvent(row) : null
+  } catch (e) {
+    console.error('dbGetEventById error:', e)
+    return null
+  }
+}
+
+export function dbUpdateEvent(
+  id: string,
+  title: string,
+  date: string,
+  startTime: string | null,
+  endTime: string | null,
+  isAllDay: boolean,
+  location: string | null,
+  repeat: EventRepeat | null,
+  color: string | null,
+  notes: string | null,
+  personId: string | null,
+): void {
+  // NOTE: organizer_events has no updated_at column — omitted from SET.
+  // Editing a repeating event updates the base record and affects all occurrences.
+  // "Edit this occurrence only" requires the organizer_event_exceptions table (Phase 2).
+  db.runSync(
+    `UPDATE organizer_events SET
+       title=?, date=?, start_time=?, end_time=?, is_all_day=?,
+       location=?, repeat=?, color=?, notes=?, person_id=?
+     WHERE id=?`,
+    [title, date, startTime, endTime, isAllDay ? 1 : 0, location, repeat, color, notes, personId, id],
+  )
+}
+
 // ── Event Reminders ───────────────────────────────────────────────────────────
 
 export function dbGetEventReminders(eventId: string): OrganizerEventReminder[] {

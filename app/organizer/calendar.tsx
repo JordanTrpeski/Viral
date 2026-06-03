@@ -391,12 +391,13 @@ function WeekView({
 // ── Day sheet content ──────────────────────────────────────────────────────────
 
 function DaySheet({
-  date, events, birthdays, onAddEvent, onDeleteEvent,
+  date, events, birthdays, onAddEvent, onEditEvent, onDeleteEvent,
 }: {
   date: string
   events: OrganizerEvent[]
   birthdays: OrganizerPerson[]
   onAddEvent: () => void
+  onEditEvent: (id: string) => void
   onDeleteEvent: (id: string) => void
 }) {
   const dateObj = new Date(date + 'T12:00:00')
@@ -462,9 +463,8 @@ function DaySheet({
       )}
 
       {events.map((ev) => (
-        <Pressable
+        <View
           key={ev.id}
-          onLongPress={() => onDeleteEvent(ev.id)}
           style={{
             flexDirection: 'row', alignItems: 'flex-start',
             backgroundColor: colors.surface, borderRadius: radius.md,
@@ -486,13 +486,14 @@ function DaySheet({
               <Text style={{ color: colors.textMuted, fontSize: fontSize.micro }}>📍 {ev.location}</Text>
             )}
           </View>
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.textMuted} />
-        </Pressable>
+          <Pressable onPress={() => onEditEvent(ev.id)} hitSlop={8} style={{ padding: spacing.xs }}>
+            <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+          </Pressable>
+          <Pressable onPress={() => onDeleteEvent(ev.id)} hitSlop={8} style={{ padding: spacing.xs }}>
+            <Ionicons name="trash-outline" size={16} color={colors.danger} />
+          </Pressable>
+        </View>
       ))}
-
-      <Text style={{ color: colors.textMuted, fontSize: fontSize.micro, textAlign: 'center', marginTop: spacing.sm }}>
-        Long-press an event to delete
-      </Text>
     </BottomSheetScrollView>
   )
 }
@@ -855,9 +856,13 @@ export default function CalendarScreen() {
             daySheetRef.current?.close()
             router.push(`/organizer/event-add?date=${selectedDate}` as never)
           }}
-          onDeleteEvent={(id) => {
+          onEditEvent={(id) => {
+            daySheetRef.current?.close()
+            router.push(`/organizer/event-add?id=${id}` as never)
+          }}
+          onDeleteEvent={async (id) => {
             const [y, m] = selectedDate.split('-').map(Number)
-            removeEvent(id, y, m)
+            await removeEvent(id, y, m)
             // Reload week events if in week mode
             if (viewMode === 'week') {
               loadWeekEvents(weekDateStrs)
