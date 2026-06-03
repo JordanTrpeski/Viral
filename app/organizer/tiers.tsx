@@ -77,15 +77,12 @@ function TierRow({
 
 export default function TiersScreen() {
   const router = useRouter()
-  const { tiers, tierRules, loadTiers, loadTierRules, reorderTiers, removeTier, people } = useOrganizerStore()
+  const { tiers, tierRules, loadTiers, loadAllTierRules, reorderTiers, removeTier, people } = useOrganizerStore()
 
   useEffect(() => {
     loadTiers()
+    loadAllTierRules()
   }, [])
-
-  useEffect(() => {
-    tiers.forEach((t) => loadTierRules(t.id))
-  }, [tiers.length])
 
   function move(tier: OrganizerTier, dir: 'up' | 'down') {
     const list = [...tiers].sort((a, b) => a.orderIndex - b.orderIndex)

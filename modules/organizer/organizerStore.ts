@@ -10,7 +10,7 @@ import type {
   OrganizerTag,
 } from '@core/types'
 import {
-  dbGetTiers, dbGetTierRules, dbInsertTier, dbUpdateTier, dbDeleteTier,
+  dbGetTiers, dbGetTierRules, dbGetAllTierRules, dbInsertTier, dbUpdateTier, dbDeleteTier,
   dbDeleteTierRules, dbInsertTierRule, dbReorderTiers, dbToggleTierRule,
   dbGetPeople, dbInsertPerson, dbUpdatePerson, dbDeletePerson,
   dbGetReminders, dbInsertReminder, dbUpdateReminder, dbCompleteReminder, dbUncompleteReminder,
@@ -38,6 +38,7 @@ interface OrganizerStore {
   // Tiers
   loadTiers: () => void
   loadTierRules: (tierId: string) => void
+  loadAllTierRules: () => void
   addTier: (name: string, color: string, emoji: string, dailyCountdown: boolean, dailyCountdownStartDays: number) => string
   editTier: (id: string, name: string, color: string, emoji: string, dailyCountdown: boolean, dailyCountdownStartDays: number) => void
   removeTier: (id: string) => void
@@ -127,6 +128,16 @@ export const useOrganizerStore = create<OrganizerStore>((set, get) => ({
 
   loadTierRules(tierId) {
     set((s) => ({ tierRules: { ...s.tierRules, [tierId]: dbGetTierRules(tierId) } }))
+  },
+
+  loadAllTierRules() {
+    const all = dbGetAllTierRules()
+    const grouped: Record<string, OrganizerTierRule[]> = {}
+    for (const rule of all) {
+      if (!grouped[rule.tierId]) grouped[rule.tierId] = []
+      grouped[rule.tierId].push(rule)
+    }
+    set({ tierRules: grouped })
   },
 
   addTier(name, color, emoji, dailyCountdown, dailyCountdownStartDays) {

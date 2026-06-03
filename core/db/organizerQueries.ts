@@ -92,6 +92,21 @@ export function dbGetTierRules(tierId: string): OrganizerTierRule[] {
   }))
 }
 
+export function dbGetAllTierRules(): OrganizerTierRule[] {
+  const rows = db.getAllSync<{
+    id: string; tier_id: string; days_before: number
+    notification_time: string; message_template: string
+    is_enabled: number; created_at: string
+  }>('SELECT * FROM organizer_tier_rules ORDER BY tier_id, days_before DESC')
+  return rows.map((r) => ({
+    id: r.id, tierId: r.tier_id, daysBefore: r.days_before,
+    notificationTime: r.notification_time,
+    messageTemplate: r.message_template,
+    isEnabled: bool(r.is_enabled),
+    createdAt: r.created_at,
+  }))
+}
+
 export function dbInsertTierRule(
   id: string, tierId: string, daysBefore: number,
   notificationTime: string, messageTemplate: string,
